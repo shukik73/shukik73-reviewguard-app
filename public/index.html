@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Request Manager - Repair Service</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .helper-text {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .alert.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 25px;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .info-box a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .info-box a:hover {
+            text-decoration: underline;
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f9f9f9;
+        }
+
+        .file-upload-label:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .file-upload-label.has-file {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-icon {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+
+        .file-text {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .preview-container {
+            margin-top: 10px;
+            display: none;
+        }
+
+        .preview-container.active {
+            display: block;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Send Review Request</h1>
+            <p>Request Google reviews from your happy customers</p>
+        </div>
+
+        <div class="info-box">
+            <h3>💡 How to get your Google Review Link:</h3>
+            <p>
+                1. Go to your <a href="https://business.google.com" target="_blank">Google Business Profile</a><br>
+                2. Click "Ask for reviews" and copy the link<br>
+                3. Paste it in the form below (optional but recommended!)
+            </p>
+        </div>
+
+        <div id="alertBox" class="alert"></div>
+
+        <form id="reviewForm">
+            <div class="form-group">
+                <label for="customerName">Customer Name *</label>
+                <input 
+                    type="text" 
+                    id="customerName" 
+                    name="customerName" 
+                    placeholder="e.g., John Smith" 
+                    required
+                />
+            </div>
+
+            <div class="form-group">
+                <label for="customerPhone">Customer Phone Number *</label>
+                <input 
+                    type="tel" 
+                    id="customerPhone" 
+                    name="customerPhone" 
+                    placeholder="e.g., +1234567890 or +44 20 7123 4567" 
+                    required
+                />
+                <div class="helper-text">Include country code (e.g., +1 for US, +44 for UK). Spaces and dashes OK.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="googleReviewLink">Google Review Link (Optional)</label>
+                <input 
+                    type="url" 
+                    id="googleReviewLink" 
+                    name="googleReviewLink" 
+                    placeholder="https://g.page/YourBusiness/review"
+                />
+                <div class="helper-text">Add your Google review link for better results</div>
+            </div>
+
+            <div class="form-group">
+                <label for="additionalInfo">Additional Message (Optional)</label>
+                <textarea 
+                    id="additionalInfo" 
+                    name="additionalInfo" 
+                    placeholder="Add any specific notes about the repair or service..."
+                ></textarea>
+                <div class="helper-text">Personalize the message with repair details</div>
+            </div>
+
+            <div class="form-group">
+                <label for="photo">Attach Photo of Repair (Optional)</label>
+                <div class="file-upload-wrapper">
+                    <input 
+                        type="file" 
+                        id="photo" 
+                        name="photo" 
+                        accept="image/jpeg,image/png,image/gif,application/pdf"
+                    />
+                    <label for="photo" class="file-upload-label" id="fileLabel">
+                        <span class="file-icon">📎</span>
+                        <span class="file-text" id="fileText">Click to upload before/after photo</span>
+                    </label>
+                </div>
+                <div class="helper-text">Images (JPEG, PNG, GIF) or PDF up to 5MB</div>
+                <div class="preview-container" id="previewContainer">
+                    <img id="previewImage" class="preview-image" alt="Preview" />
+                </div>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                Send Review Request
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('reviewForm');
+        const alertBox = document.getElementById('alertBox');
+        const submitBtn = document.getElementById('submitBtn');
+        const photoInput = document.getElementById('photo');
+        const fileLabel = document.getElementById('fileLabel');
+        const fileText = document.getElementById('fileText');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImage = document.getElementById('previewImage');
+
+        photoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                fileLabel.classList.add('has-file');
+                fileText.textContent = file.name;
+                
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImage.src = e.target.result;
+                        previewContainer.classList.add('active');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    previewContainer.classList.remove('active');
+                }
+            } else {
+                fileLabel.classList.remove('has-file');
+                fileText.textContent = 'Click to upload before/after photo';
+                previewContainer.classList.remove('active');
+            }
+        });
+
+        function showAlert(message, type) {
+            alertBox.textContent = message;
+            alertBox.className = `alert ${type}`;
+            alertBox.style.display = 'block';
+            
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 5000);
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const customerName = document.getElementById('customerName').value.trim();
+            const customerPhone = document.getElementById('customerPhone').value.trim();
+            const googleReviewLink = document.getElementById('googleReviewLink').value.trim();
+            const additionalInfo = document.getElementById('additionalInfo').value.trim();
+            const photoFile = photoInput.files[0];
+
+            if (!customerName || !customerPhone) {
+                showAlert('Please fill in all required fields', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+
+            try {
+                const formData = new FormData();
+                formData.append('customerName', customerName);
+                formData.append('customerPhone', customerPhone);
+                if (googleReviewLink) formData.append('googleReviewLink', googleReviewLink);
+                if (additionalInfo) formData.append('additionalInfo', additionalInfo);
+                if (photoFile) formData.append('photo', photoFile);
+
+                const response = await fetch('/api/send-review-request', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    let successMsg = `✅ Review request sent successfully to ${customerName}!`;
+                    if (data.photoAttached) {
+                        successMsg += ' (Photo included)';
+                    }
+                    showAlert(successMsg, 'success');
+                    form.reset();
+                    fileLabel.classList.remove('has-file');
+                    fileText.textContent = 'Click to upload before/after photo';
+                    previewContainer.classList.remove('active');
+                } else {
+                    showAlert(`❌ Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert('❌ Failed to send request. Please try again.', 'error');
+                console.error('Error:', error);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Review Request';
+            }
+        });
+    </script>
+</body>
+</html>
