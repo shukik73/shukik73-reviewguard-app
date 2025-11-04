@@ -1,13 +1,14 @@
 {
-  "name": "nodejs",
+  "name": "techy-miramar-review-manager",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "SMS Review Request Manager for Techy Miramar",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["sms", "reviews", "twilio", "repair-business"],
+  "author": "Techy Miramar",
   "license": "ISC",
   "dependencies": {
     "@types/node": "^20.10.4",
@@ -16,7 +17,6 @@
     "express": "^5.1.0",
     "multer": "^2.0.2",
     "node-fetch": "^3.3.2",
-    "openai": "^4.21.0",
     "twilio": "^5.10.4"
   },
   "type": "module"
