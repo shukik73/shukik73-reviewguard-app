@@ -142,13 +142,13 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
 
-    let message = `Hi ${customerName}! Thank you for choosing our repair service. We hope you're satisfied with the work we did.`;
+    let message = `Hi ${customerName}! Thank you for choosing Techy Miramar for your repair. We hope you're satisfied with the work we did.`;
     
     if (additionalInfo) {
       message += ` ${additionalInfo}`;
     }
     
-    message += ` Could you take a moment to share your experience with a Google review? ${googleReviewLink || 'Your feedback means a lot to us!'} 🙏`;
+    message += ` Could you take a moment to leave us a Google review? ${googleReviewLink || 'Your feedback means a lot to us!'} Thank you! 🙏`;
 
     const messageOptions = {
       body: message,
