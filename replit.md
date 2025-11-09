@@ -1,9 +1,9 @@
 # Overview
 
-This is a Node.js web application that serves as a Review Request Manager for repair service businesses. The application allows business owners to easily send SMS/MMS review requests to customers via Twilio, with support for photo attachments and personalized messages. It features a simple, modern web interface for managing customer review requests.
+This is a Node.js web application that serves as a Review Request Manager for repair service businesses. The application allows business owners to easily send SMS/MMS review requests to customers via Twilio, with support for photo attachments and personalized messages. It features OCR-powered automatic data extraction from repair orders and a simple, modern web interface for managing customer review requests.
 
 **Date Created**: November 4, 2025  
-**Last Updated**: November 4, 2025
+**Last Updated**: November 9, 2025
 
 # User Preferences
 
@@ -11,7 +11,11 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## November 9, 2025
+## November 9, 2025 (Latest)
+- **OCR Auto-Fill Feature**: Upload repair order photo to automatically extract customer name and phone number using Tesseract.js
+- **Improved UI**: Changed message type selector from radio buttons to cleaner dropdown menu
+- **Smart Text Parsing**: Algorithm detects "Customer Information" sections and phone numbers with international format support
+- **Manual Override**: All auto-populated fields remain editable for corrections
 - Added dual message type feature: Google Review requests OR Device Ready notifications
 - Google review link now auto-populated (https://g.page/r/CXmh-C0UxHgqEBM/review)
 - Dynamic UI that adapts based on selected message type
@@ -95,24 +99,49 @@ Preferred communication style: Simple, everyday language.
   - E.164 phone number validation
   - Error handling for delivery failures
 
+## OCR Text Extraction
+
+**Tesseract.js Integration**
+- **Purpose**: Automatically extract customer name and phone number from repair order photos
+- **Technology**: Tesseract.js v5 (client-side OCR via CDN)
+- **Processing**: Browser-based text recognition (no server-side API calls required)
+- **Text Parsing Algorithm**:
+  - Scans for "Customer Information" section headers
+  - Regex-based phone number detection with international format support
+  - ALL CAPS name detection as fallback heuristic
+  - Filters out common false positives (invoice numbers, labels)
+- **Phone Number Normalization**:
+  - Auto-adds +1 prefix for 10-digit US numbers
+  - Handles international formats (+44, +33, etc.)
+  - Strips formatting characters (spaces, dashes, parentheses)
+- **User Experience**:
+  - Real-time processing status feedback
+  - Preview of uploaded repair order
+  - Display of extracted data before auto-fill
+  - Manual editing always available (fields remain editable)
+- **Error Handling**: Graceful fallback to manual entry if OCR fails
+
 ## Frontend Architecture
 
 **Static HTML/CSS/JavaScript (public/index.html)**
-- **Design**: Purple gradient theme with modern UI elements
+- **Design**: Purple gradient theme with modern UI elements, pink OCR section for visual separation
 - **Features**:
-  - Message type selector (Review Request or Device Ready)
-  - Customer name and phone number input (required)
+  - **OCR Upload Section**: Upload repair order photo for auto-extraction (optional)
+  - Message type dropdown selector (Review Request or Device Ready)
+  - Customer name and phone number input (required, can be auto-filled)
   - Google review link field (auto-populated, shows for review type only)
   - Additional message field for repair/pickup details (optional)
-  - Photo upload with preview
+  - Photo upload with preview for before/after repair images
   - Real-time form validation
   - Success/error notifications
   - Responsive mobile-friendly design
 - **User Experience**:
+  - OCR section processes repair orders and displays extracted data
   - Dynamic UI adapts based on message type selection
   - Submit button text changes ("Send Review Request" vs "Send Pickup Notification")
   - Helper text updates contextually
   - Drag-and-drop file upload with image preview
+  - All auto-filled fields remain editable
   - Automatic form reset after successful send
 
 # External Dependencies
@@ -136,6 +165,9 @@ Preferred communication style: Simple, everyday language.
 **File Handling**
 - multer: Latest - Multipart form data and file uploads
 
+**OCR Processing**
+- tesseract.js: v5 - Client-side OCR for text extraction from images
+
 ## Storage
 
 **File System Storage**
@@ -148,10 +180,20 @@ Preferred communication style: Simple, everyday language.
 
 ## For Business Owners
 
+### Quick Start with OCR (Recommended)
+
+1. **Upload Repair Order** (Optional but time-saving):
+   - Click "Click to upload repair order photo" in the pink section at the top
+   - Select a photo of your repair order
+   - Wait a few seconds while the app extracts customer info
+   - Name and phone number will auto-fill below (you can edit if needed)
+
+2. **Continue with your message** as described below...
+
 ### Option 1: Send Google Review Request
 
-1. **Select Message Type**: Choose "🌟 Google Review Request"
-2. **Fill in Details**:
+1. **Select Message Type**: Choose "🌟 Google Review Request" from dropdown
+2. **Fill in Details** (or use OCR auto-fill above):
    - Enter customer's name
    - Enter phone number (with country code for international)
    - Google review link is already filled in: https://g.page/r/CXmh-C0UxHgqEBM/review
