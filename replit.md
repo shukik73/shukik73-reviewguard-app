@@ -30,17 +30,41 @@ Twilio SMS/MMS integration facilitates sending Google Review requests or Device 
 
 ## OCR Text Extraction
 
-Tesseract.js (client-side via CDN) automatically extracts customer names and phone numbers from repair order photos. This browser-based processing includes algorithms to scan for "Customer Information" sections, use regex for phone numbers (supporting international formats), and detect all-caps names as a fallback. Extracted data is previewed and user-editable, with graceful fallback if OCR fails.
+Tesseract.js (client-side via CDN) automatically extracts customer information from repair order photos. This browser-based processing includes:
+
+**Extracted Data:**
+- Customer name from "Customer Information" section
+- Phone number with international format support
+- **Device type** from "Service Information" section (e.g., "HP Laptop", "iPhone 14")
+- **Repair issue** from "Device Issue" line (e.g., "Motherboard Replacement", "Battery Replacement")
+
+**Smart Template Generation:**
+When both device and repair are detected, the app automatically suggests contextual message templates:
+- Review Request template: "We completed the [repair] on your [device]. Everything is working perfectly!"
+- Pickup Notification template: "Your [device] is ready! We successfully completed the [repair]."
+- One-click "Use This" button to apply template to message
+
+**Processing:**
+- Scans for "Customer Information" and "Service Information" sections
+- Brand-agnostic device extraction (handles "HP", "Apple", "Samsung", etc.)
+- Regex-based phone number detection
+- Template section only appears when device + repair are found
+- All extracted data is editable with graceful fallback if OCR fails
 
 ## Frontend Architecture
 
 The static HTML/CSS/JavaScript frontend features a modern, purple gradient design with a tabbed interface:
-- **Send SMS:** Main interface for sending messages, including an OCR section, message type dropdown (Review Request or Device Ready), customer details input (OCR/customer database auto-fill), Google review link auto-population, optional additional message fields, and photo upload with preview.
+- **Send SMS:** Main interface for sending messages, including an OCR section with smart template suggestions, message type dropdown (Review Request or Device Ready), customer details input (OCR/customer database auto-fill), Google review link auto-population, optional additional message fields, and photo upload with preview.
 - **Dashboard:** Displays real-time analytics (total messages, customers, daily/weekly activity, recent messages).
-- **History:** Provides a chronological log of all sent messages with type badges, customer info, and timestamps.
-- **Customers:** Lists all customers with contact info, message counts, last contact dates, and a "Load Customer" button to pre-fill the send form.
+- **History:** Chronological log of all sent messages with type badges, customer info, timestamps, **search/filter box**, and **CSV export button**.
+- **Customers:** Lists all customers with contact info, message counts, last contact dates, **search/filter box**, **CSV export button**, and "Load Customer" button to pre-fill the send form.
 
-The UI offers real-time validation, notifications, responsiveness, dynamic adaptation based on message type, one-click customer selection, automatic data refresh on tab switching, drag-and-drop file upload, and automatic form reset.
+**New Features:**
+- **Search & Filter**: Real-time search boxes in History and Customers tabs filter by name, phone, or message type
+- **CSV Export**: Green export buttons download data as timestamped CSV files for record keeping or use in other tools
+- **Smart Templates**: OCR-detected device and repair info automatically generates contextual message suggestions
+
+The UI offers real-time validation, notifications, responsiveness, dynamic adaptation based on message type, one-click customer selection, automatic data refresh on tab switching, drag-and-drop file upload, smart template generation, searchable history/customers, and automatic form reset.
 
 # External Dependencies
 
