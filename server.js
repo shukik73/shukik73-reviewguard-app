@@ -216,7 +216,7 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
     
-    const reviewToken = messageType === 'review' ? crypto.randomBytes(4).toString('hex') : null;
+    const reviewToken = messageType === 'review' ? crypto.randomBytes(3).toString('hex') : null;
     const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
     const trackedReviewLink = reviewToken && googleReviewLink ? `${appHost}/r/${reviewToken}` : googleReviewLink;
 
