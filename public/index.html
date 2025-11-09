@@ -568,16 +568,30 @@
             <h3>📸 Quick Fill from Repair Order (Optional)</h3>
             <p style="font-size: 14px; margin-bottom: 15px; opacity: 0.9;">Upload a photo of your repair order to automatically extract customer information</p>
             
-            <input 
-                type="file" 
-                id="ocrPhoto" 
-                accept="image/*"
-                style="display: none;"
-            />
-            <label for="ocrPhoto" class="ocr-upload-label" id="ocrUploadLabel">
-                <span class="file-icon">📄</span>
-                <span id="ocrUploadText">Click to upload repair order photo</span>
-            </label>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input 
+                    type="file" 
+                    id="ocrPhoto" 
+                    accept="image/*"
+                    style="display: none;"
+                />
+                <label for="ocrPhoto" class="ocr-upload-label" id="ocrUploadLabel" style="flex: 1; margin: 0;">
+                    <span class="file-icon">📄</span>
+                    <span id="ocrUploadText">Click to upload repair order photo</span>
+                </label>
+                
+                <input 
+                    type="file" 
+                    id="ocrCamera" 
+                    accept="image/*"
+                    capture="environment"
+                    style="display: none;"
+                />
+                <label for="ocrCamera" class="ocr-upload-label" id="ocrCameraLabel" style="flex: 1; margin: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <span class="file-icon">📷</span>
+                    <span>Take Photo</span>
+                </label>
+            </div>
             
             <img id="ocrPreview" class="ocr-preview" alt="Repair order preview" />
             
@@ -855,12 +869,11 @@
             return { name: name.trim(), phone: phone, device: device.trim(), repair: repair.trim() };
         }
 
-        ocrPhotoInput.addEventListener('change', async function(e) {
-            const file = e.target.files[0];
+        async function processOCRImage(file, labelElement, textElement) {
             if (!file) return;
 
-            ocrUploadLabel.classList.add('processing');
-            ocrUploadText.textContent = 'Processing...';
+            labelElement.classList.add('processing');
+            if (textElement) textElement.textContent = 'Processing...';
             ocrStatus.textContent = '⏳ Scanning image and extracting text...';
             ocrStatus.classList.add('active');
 
@@ -908,10 +921,21 @@
                     ocrStatus.textContent = '❌ Error processing image. Please enter information manually.';
                 }
 
-                ocrUploadLabel.classList.remove('processing');
-                ocrUploadText.textContent = file.name;
+                labelElement.classList.remove('processing');
+                if (textElement) textElement.textContent = file.name;
             };
             reader.readAsDataURL(file);
+        }
+
+        ocrPhotoInput.addEventListener('change', async function(e) {
+            await processOCRImage(e.target.files[0], ocrUploadLabel, ocrUploadText);
+        });
+
+        const ocrCameraInput = document.getElementById('ocrCamera');
+        const ocrCameraLabel = document.getElementById('ocrCameraLabel');
+        
+        ocrCameraInput.addEventListener('change', async function(e) {
+            await processOCRImage(e.target.files[0], ocrCameraLabel, null);
         });
 
         photoInput.addEventListener('change', function(e) {
