@@ -1034,6 +1034,12 @@
                     const stats = data.stats;
                     const statsGrid = document.getElementById('statsGrid');
                     
+                    const reviewPending = stats.reviewStats?.find(s => s.review_status === 'pending')?.count || 0;
+                    const reviewClicked = stats.reviewStats?.find(s => s.review_status === 'link_clicked')?.count || 0;
+                    const reviewReceived = stats.reviewStats?.find(s => s.review_status === 'reviewed')?.count || 0;
+                    const followUpSent = stats.reviewStats?.find(s => s.review_status === 'follow_up_sent')?.count || 0;
+                    const needsFollowUp = stats.needsFollowUp || 0;
+                    
                     statsGrid.innerHTML = `
                         <div class="stat-card">
                             <div class="stat-number">${stats.totalMessages}</div>
@@ -1050,6 +1056,23 @@
                         <div class="stat-card">
                             <div class="stat-number">${stats.weekMessages}</div>
                             <div class="stat-label">This Week</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #34d399 0%, #10b981 100%);">
+                            <div class="stat-number">${reviewReceived}</div>
+                            <div class="stat-label">✅ Reviews Received</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);">
+                            <div class="stat-number">${reviewClicked}</div>
+                            <div class="stat-label">👆 Links Clicked</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);">
+                            <div class="stat-number">${reviewPending}</div>
+                            <div class="stat-label">⏳ Pending Reviews</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);">
+                            <div class="stat-number">${needsFollowUp}</div>
+                            <div class="stat-label">🔔 Needs Follow-up</div>
+                            ${needsFollowUp > 0 ? `<button onclick="sendFollowUps()" style="margin-top: 12px; padding: 8px 16px; background: white; color: #ef4444; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px;">Send Follow-ups</button>` : ''}
                         </div>
                     `;
 
@@ -1086,21 +1109,44 @@
                     if (data.messages.length === 0) {
                         messageHistory.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No message history yet. Send your first message!</p></div>';
                     } else {
-                        messageHistory.innerHTML = data.messages.map(msg => `
+                        messageHistory.innerHTML = data.messages.map(msg => {
+                            let reviewStatusBadge = '';
+                            let reviewButton = '';
+                            
+                            if (msg.message_type === 'review' && msg.review_status) {
+                                const statusMap = {
+                                    'pending': { text: 'Pending', icon: '⏳', color: '#fbbf24' },
+                                    'link_clicked': { text: 'Link Clicked', icon: '👆', color: '#60a5fa' },
+                                    'reviewed': { text: 'Reviewed ✓', icon: '✅', color: '#34d399' },
+                                    'follow_up_sent': { text: 'Follow-up Sent', icon: '🔔', color: '#a78bfa' }
+                                };
+                                const status = statusMap[msg.review_status] || statusMap['pending'];
+                                reviewStatusBadge = `<span class="review-status-badge" style="background: ${status.color}20; color: ${status.color}; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-left: 8px;">${status.icon} ${status.text}</span>`;
+                                
+                                if (msg.review_status !== 'reviewed') {
+                                    reviewButton = `<button onclick="markReviewReceived(${msg.id})" style="margin-top: 10px; background: #34d399; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 600;">Mark Review Received ✓</button>`;
+                                }
+                            }
+                            
+                            return `
                             <div class="message-card">
                                 <div class="message-header">
                                     <span class="message-name">${msg.customer_name}</span>
-                                    <span class="message-type ${msg.message_type}">
-                                        ${msg.message_type === 'review' ? '🌟 Review Request' : '✅ Device Ready'}
-                                    </span>
+                                    <div>
+                                        <span class="message-type ${msg.message_type}">
+                                            ${msg.message_type === 'review' ? '🌟 Review Request' : msg.message_type === 'review_follow_up' ? '🔔 Follow-up' : '✅ Device Ready'}
+                                        </span>
+                                        ${reviewStatusBadge}
+                                    </div>
                                 </div>
                                 <div class="message-time">
                                     📞 ${msg.customer_phone} | 📅 ${new Date(msg.sent_at).toLocaleString()}
                                 </div>
                                 ${msg.additional_info ? `<div style="margin-top: 10px; color: #666; font-size: 14px;">${msg.additional_info}</div>` : ''}
                                 ${msg.photo_path ? `<div style="margin-top: 10px; color: #667eea; font-size: 13px;">📷 Photo attached</div>` : ''}
+                                ${reviewButton}
                             </div>
-                        `).join('');
+                        `}).join('');
                     }
                 }
             } catch (error) {
@@ -1189,6 +1235,63 @@
         function useTemplate(template) {
             document.getElementById('additionalInfo').value = template;
             showAlert('✅ Template added to your message!', 'success');
+        }
+
+        async function markReviewReceived(messageId) {
+            try {
+                const response = await fetch(`/api/messages/${messageId}/review-status`, {
+                    method: 'PATCH'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('✅ Review marked as received!', 'success');
+                    loadHistory();
+                    loadDashboard();
+                } else {
+                    showAlert('❌ Failed to update review status', 'error');
+                }
+            } catch (error) {
+                console.error('Error marking review:', error);
+                showAlert('❌ Error updating review status', 'error');
+            }
+        }
+
+        async function sendFollowUps() {
+            try {
+                const response = await fetch('/api/messages/needs-followup');
+                const data = await response.json();
+                
+                if (!data.success || data.messages.length === 0) {
+                    showAlert('No messages need follow-up right now!', 'info');
+                    return;
+                }
+                
+                const confirmed = confirm(`Send follow-up reminders to ${data.messages.length} customer(s)?\n\nThey haven't clicked their review links and it's been 3+ days.`);
+                
+                if (!confirmed) return;
+                
+                const messageIds = data.messages.map(msg => msg.id);
+                
+                const sendResponse = await fetch('/api/follow-ups/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messageIds })
+                });
+                
+                const sendData = await sendResponse.json();
+                
+                if (sendData.success) {
+                    showAlert(`✅ Sent ${sendData.sent} follow-up message(s)!`, 'success');
+                    loadHistory();
+                    loadDashboard();
+                } else {
+                    showAlert('❌ Failed to send follow-ups', 'error');
+                }
+            } catch (error) {
+                console.error('Error sending follow-ups:', error);
+                showAlert('❌ Error sending follow-ups', 'error');
+            }
         }
 
         function filterHistory() {

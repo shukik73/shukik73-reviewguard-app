@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import pg from 'pg';
+import crypto from 'crypto';
 
 const { Pool } = pg;
 
@@ -46,6 +47,40 @@ async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_messages_customer_id ON messages(customer_id);
     CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
   `);
+
+  await pool.query(`
+    DO $$ 
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='review_status') THEN
+        ALTER TABLE messages ADD COLUMN review_status VARCHAR(20) DEFAULT 'pending' CHECK (review_status IN ('pending', 'link_clicked', 'reviewed', 'follow_up_sent'));
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='review_link_token') THEN
+        ALTER TABLE messages ADD COLUMN review_link_token TEXT UNIQUE;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='review_link_clicked_at') THEN
+        ALTER TABLE messages ADD COLUMN review_link_clicked_at TIMESTAMP;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='review_received_at') THEN
+        ALTER TABLE messages ADD COLUMN review_received_at TIMESTAMP;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='follow_up_due_at') THEN
+        ALTER TABLE messages ADD COLUMN follow_up_due_at TIMESTAMP;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='follow_up_sent_at') THEN
+        ALTER TABLE messages ADD COLUMN follow_up_sent_at TIMESTAMP;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='follow_up_message_id') THEN
+        ALTER TABLE messages ADD COLUMN follow_up_message_id INTEGER REFERENCES messages(id) ON DELETE SET NULL;
+      END IF;
+    END $$;
+  `);
+  
   console.log('✅ Database tables initialized');
 }
 
@@ -180,6 +215,10 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
 
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
+    
+    const reviewToken = messageType === 'review' ? crypto.randomBytes(16).toString('hex') : null;
+    const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
+    const trackedReviewLink = reviewToken && googleReviewLink ? `${appHost}/r/${reviewToken}` : googleReviewLink;
 
     let message;
     
@@ -198,7 +237,7 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
         message += ` ${additionalInfo}`;
       }
       
-      message += ` Could you take a moment to leave us a Google review? ${googleReviewLink || 'Your feedback means a lot to us!'} Thank you! 🙏`;
+      message += ` Could you take a moment to leave us a Google review? ${trackedReviewLink || 'Your feedback means a lot to us!'} Thank you! 🙏`;
     }
 
     const messageOptions = {
@@ -239,8 +278,10 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
         customerId = newCustomer.rows[0].id;
       }
 
+      const followUpDueAt = messageType === 'review' ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) : null;
+
       await pool.query(
-        'INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        'INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid, review_link_token, follow_up_due_at, review_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
         [
           customerId,
           customerName,
@@ -249,7 +290,10 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
           googleReviewLink || null,
           additionalInfo || null,
           req.file ? req.file.filename : null,
-          result.sid
+          result.sid,
+          reviewToken,
+          followUpDueAt,
+          messageType === 'review' ? 'pending' : null
         ]
       );
       dbSaved = true;
@@ -277,7 +321,9 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
 app.get('/api/messages', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT m.*, c.name as customer_name_db, c.phone as customer_phone_db
+      `SELECT m.id, m.customer_name, m.customer_phone, m.message_type, m.review_link, m.additional_info, 
+              m.photo_path, m.sent_at, m.review_status, m.review_link_clicked_at, m.review_received_at, 
+              m.follow_up_sent_at, c.name as customer_name_db, c.phone as customer_phone_db
        FROM messages m
        LEFT JOIN customers c ON m.customer_id = c.id
        ORDER BY m.sent_at DESC
@@ -331,6 +377,23 @@ app.get('/api/stats', async (req, res) => {
        ORDER BY sent_at DESC 
        LIMIT 5`
     );
+    
+    const reviewStats = await pool.query(
+      `SELECT review_status, COUNT(*) as count
+       FROM messages
+       WHERE message_type = 'review'
+       GROUP BY review_status`
+    );
+    
+    const needsFollowUp = await pool.query(
+      `SELECT COUNT(*) as count
+       FROM messages 
+       WHERE message_type = 'review'
+         AND review_status = 'pending'
+         AND review_link_clicked_at IS NULL
+         AND follow_up_sent_at IS NULL
+         AND follow_up_due_at <= CURRENT_TIMESTAMP`
+    );
 
     res.json({
       success: true,
@@ -340,11 +403,154 @@ app.get('/api/stats', async (req, res) => {
         todayMessages: parseInt(todayMessages.rows[0].count),
         weekMessages: parseInt(weekMessages.rows[0].count),
         messagesByType: messagesByType.rows,
-        recentMessages: recentMessages.rows
+        recentMessages: recentMessages.rows,
+        reviewStats: reviewStats.rows,
+        needsFollowUp: parseInt(needsFollowUp.rows[0].count)
       }
     });
   } catch (error) {
     console.error('Error fetching stats:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/r/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    const result = await pool.query(
+      'SELECT id, review_link, review_link_clicked_at FROM messages WHERE review_link_token = $1',
+      [token]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).send('Invalid review link');
+    }
+    
+    const message = result.rows[0];
+    
+    if (!message.review_link_clicked_at) {
+      await pool.query(
+        `UPDATE messages 
+         SET review_link_clicked_at = CURRENT_TIMESTAMP, 
+             review_status = CASE 
+               WHEN review_status = 'reviewed' THEN 'reviewed'
+               ELSE 'link_clicked'
+             END
+         WHERE id = $1`,
+        [message.id]
+      );
+    }
+    
+    res.redirect(302, message.review_link);
+  } catch (error) {
+    console.error('Error tracking review link click:', error);
+    res.status(500).send('Error processing review link');
+  }
+});
+
+app.patch('/api/messages/:id/review-status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    await pool.query(
+      `UPDATE messages 
+       SET review_received_at = CURRENT_TIMESTAMP, review_status = 'reviewed'
+       WHERE id = $1`,
+      [id]
+    );
+    
+    res.json({ success: true, message: 'Review marked as received' });
+  } catch (error) {
+    console.error('Error updating review status:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/messages/needs-followup', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, customer_name, customer_phone, sent_at, review_link, follow_up_due_at
+       FROM messages 
+       WHERE message_type = 'review'
+         AND review_status = 'pending'
+         AND review_link_clicked_at IS NULL
+         AND follow_up_sent_at IS NULL
+         AND follow_up_due_at <= CURRENT_TIMESTAMP
+       ORDER BY sent_at ASC`
+    );
+    
+    res.json({ success: true, messages: result.rows });
+  } catch (error) {
+    console.error('Error fetching messages needing follow-up:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/follow-ups/send', async (req, res) => {
+  try {
+    const { messageIds } = req.body;
+    
+    if (!messageIds || messageIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'No message IDs provided' });
+    }
+    
+    const client = await getTwilioClient();
+    const fromNumber = await getTwilioFromPhoneNumber();
+    const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
+    
+    let successCount = 0;
+    let errors = [];
+    
+    for (const messageId of messageIds) {
+      try {
+        const msgResult = await pool.query(
+          'SELECT customer_name, customer_phone, review_link_token FROM messages WHERE id = $1',
+          [messageId]
+        );
+        
+        if (msgResult.rows.length === 0) continue;
+        
+        const { customer_name, customer_phone, review_link_token } = msgResult.rows[0];
+        const trackedLink = `${appHost}/r/${review_link_token}`;
+        
+        const followUpMessage = `Hi ${customer_name}! Just a friendly reminder - we'd really appreciate your feedback on Google. Your review helps us serve you better! ${trackedLink} Thank you! 🙏`;
+        
+        const result = await client.messages.create({
+          body: followUpMessage,
+          from: fromNumber,
+          to: customer_phone
+        });
+        
+        const newMessageResult = await pool.query(
+          `INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, twilio_sid, follow_up_message_id)
+           SELECT customer_id, customer_name, customer_phone, 'review_follow_up', review_link, $1, $2
+           FROM messages WHERE id = $3
+           RETURNING id`,
+          [result.sid, messageId, messageId]
+        );
+        
+        await pool.query(
+          `UPDATE messages 
+           SET follow_up_sent_at = CURRENT_TIMESTAMP, review_status = 'follow_up_sent'
+           WHERE id = $1`,
+          [messageId]
+        );
+        
+        successCount++;
+      } catch (error) {
+        console.error(`Error sending follow-up for message ${messageId}:`, error);
+        errors.push({ messageId, error: error.message });
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      sent: successCount,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (error) {
+    console.error('Error sending follow-ups:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
