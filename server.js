@@ -120,7 +120,7 @@ function validateAndFormatPhone(phone) {
 
 app.post('/api/send-review-request', upload.single('photo'), async (req, res) => {
   try {
-    const { customerName, customerPhone, googleReviewLink, additionalInfo } = req.body;
+    const { customerName, customerPhone, messageType, googleReviewLink, additionalInfo } = req.body;
 
     if (!customerName || !customerPhone) {
       return res.status(400).json({ 
@@ -142,13 +142,25 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
 
-    let message = `Hi ${customerName}! Thank you for choosing Techy Miramar for your repair. We hope you're satisfied with the work we did.`;
+    let message;
     
-    if (additionalInfo) {
-      message += ` ${additionalInfo}`;
+    if (messageType === 'ready') {
+      message = `Hi ${customerName}! Great news - your device is ready for pickup at Techy Miramar! 🎉`;
+      
+      if (additionalInfo) {
+        message += ` ${additionalInfo}`;
+      }
+      
+      message += ` We're open and ready to see you. Thank you for choosing us!`;
+    } else {
+      message = `Hi ${customerName}! Thank you for choosing Techy Miramar for your repair. We hope you're satisfied with the work we did.`;
+      
+      if (additionalInfo) {
+        message += ` ${additionalInfo}`;
+      }
+      
+      message += ` Could you take a moment to leave us a Google review? ${googleReviewLink || 'Your feedback means a lot to us!'} Thank you! 🙏`;
     }
-    
-    message += ` Could you take a moment to leave us a Google review? ${googleReviewLink || 'Your feedback means a lot to us!'} Thank you! 🙏`;
 
     const messageOptions = {
       body: message,
