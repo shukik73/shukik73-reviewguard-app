@@ -793,25 +793,25 @@
                 const line = lines[i];
                 
                 if (line.match(/customer\s+information/i)) {
-                    for (let j = i + 1; j < Math.min(i + 8, lines.length); j++) {
+                    for (let j = i + 1; j < Math.min(i + 15, lines.length); j++) {
                         const nextLine = lines[j];
-                        if (nextLine && nextLine.length > 2 && nextLine.length < 50 && !nextLine.match(/mobile|store|credits|edit|phone|email/i)) {
-                            const cleaned = nextLine.replace(/[^\w\s]/g, ' ').trim();
-                            const words = cleaned.split(/\s+/);
-                            if (words.length >= 2 && words.length <= 5) {
-                                const possibleName = words.filter(w => 
-                                    w.length > 1 && 
-                                    !w.match(/^\d+$/) && 
-                                    !w.match(/^(customer|information|mobile|store|credits|edit)$/i)
-                                ).join(' ');
-                                
-                                if (possibleName.length > 3 && possibleName.match(/^[a-zA-Z\s]+$/)) {
-                                    const titleCase = possibleName.split(' ')
-                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                                        .join(' ');
-                                    name = titleCase;
-                                    break;
-                                }
+                        if (!nextLine || nextLine.match(/mobile|store|credits|edit|phone|email/i)) continue;
+                        
+                        const cleaned = nextLine.replace(/[|:;\+\-\(\)\.]/g, ' ').trim();
+                        
+                        if (cleaned.length < 5 || cleaned.length > 50) continue;
+                        
+                        const words = cleaned.split(/\s+/).filter(w => w.length > 1);
+                        
+                        if (words.length === 2 || words.length === 3) {
+                            const allLetters = words.every(w => w.match(/^[a-zA-Z]+$/));
+                            
+                            if (allLetters && !words.some(w => w.match(/^(customer|information|mobile|store|credits|edit|by|fg|te)$/i))) {
+                                const titleCase = words
+                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                    .join(' ');
+                                name = titleCase;
+                                break;
                             }
                         }
                     }
