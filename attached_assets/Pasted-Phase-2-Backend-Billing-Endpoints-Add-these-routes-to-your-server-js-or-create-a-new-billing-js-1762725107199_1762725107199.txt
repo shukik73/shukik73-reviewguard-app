@@ -1,0 +1,105 @@
+Phase 2 — Backend: Billing Endpoints
+
+Add these routes to your server.js (or create a new billing.js if you prefer):
+
+import express from "express";
+import Stripe from "stripe";
+
+const router = express.Router();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// 1️⃣ Create Checkout Session
+router.post("/api/create-checkout-session", async (req, res) => {
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price: req.body.priceId, // from Stripe Dashboard
+          quantity: 1,
+        },
+      ],
+      success_url: `${process.env.BASE_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.BASE_URL}/pricing`,
+      customer_email: req.body.email,
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Stripe session error");
+  }
+});
+
+// 2️⃣ Webhook for Subscription Events
+router.post("/api/stripe-webhook", express.raw({ type: "application/json" }), (req, res) => {
+  const sig = req.headers["stripe-signature"];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.log(`⚠️ Webhook signature verification failed.`, err.message);
+    return res.sendStatus(400);
+  }
+
+  switch (event.type) {
+    case "checkout.session.completed":
+      // Save new user/subscription in DB
+      break;
+    case "invoice.payment_failed":
+      // Mark subscription as inactive
+      break;
+  }
+
+  res.json({ received: true });
+});
+
+export default router;
+
+
+Then import in your main server:
+
+import billingRoutes from "./billing.js";
+app.use("/", billingRoutes);
+
+💳 Phase 3 — Stripe Products & Prices
+
+In your Stripe Dashboard:
+
+Go to Products → Add product
+
+Example: Basic Plan, Pro Plan
+
+Add prices as monthly subscriptions.
+
+Copy the price IDs (e.g., price_1Pw98hGd...)
+
+Use them in your frontend for checkout.
+
+🧠 Phase 4 — Database Integration
+
+Extend your current PostgreSQL schema to track subscriptions:
+
+ALTER TABLE customers ADD COLUMN stripe_customer_id TEXT;
+ALTER TABLE customers ADD COLUMN subscription_status TEXT DEFAULT 'inactive';
+ALTER TABLE customers ADD COLUMN plan TEXT;
+
+
+When a checkout.session.completed webhook fires → update these fields.
+
+📊 Phase 5 — Admin Dashboard
+
+Once billing is stable:
+
+Add /dashboard route showing:
+
+Active subscriptions
+
+Monthly revenue
+
+Plan breakdown
+
+Cancelled accounts
+
+You can use Chart.js or simple Bootstrap tables for now.
