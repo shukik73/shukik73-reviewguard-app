@@ -26,9 +26,156 @@
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
+            max-width: 900px;
             width: 100%;
             padding: 40px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .message-card, .customer-card {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .message-header, .customer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .message-name, .customer-name {
+            font-weight: 600;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .message-type {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .message-type.review {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .message-type.ready {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .message-time, .customer-info {
+            font-size: 13px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .customer-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .customer-phone {
+            font-family: monospace;
+            background: #e0e0e0;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .customer-select-btn {
+            padding: 6px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .customer-select-btn:hover {
+            background: #5568d3;
         }
 
         .header {
@@ -337,11 +484,20 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📱 Send SMS to Customer</h1>
-            <p>Send review requests or pickup notifications</p>
+            <h1>📱 Techy Miramar SMS Manager</h1>
+            <p>Review requests, pickup notifications & customer management</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(event, 'send')">📤 Send SMS</button>
+            <button class="tab" onclick="switchTab(event, 'dashboard')">📊 Dashboard</button>
+            <button class="tab" onclick="switchTab(event, 'history')">📜 History</button>
+            <button class="tab" onclick="switchTab(event, 'customers')">👥 Customers</button>
         </div>
 
         <div id="alertBox" class="alert"></div>
+
+        <div id="sendTab" class="tab-content active">
 
         <div class="ocr-section">
             <h3>📸 Quick Fill from Repair Order (Optional)</h3>
@@ -450,6 +606,25 @@
                 Send Review Request
             </button>
         </form>
+        </div>
+
+        <div id="dashboardTab" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #333;">📊 Dashboard</h2>
+            <div class="stats-grid" id="statsGrid"></div>
+            <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">Recent Messages</h3>
+            <div id="recentMessages"></div>
+        </div>
+
+        <div id="historyTab" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #333;">📜 Message History</h2>
+            <div id="messageHistory"></div>
+        </div>
+
+        <div id="customersTab" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #333;">👥 Customer Database</h2>
+            <p style="color: #666; margin-bottom: 20px;">Click on a customer to auto-fill their information in the send form</p>
+            <div id="customerList"></div>
+        </div>
     </div>
 
     <script>
@@ -682,6 +857,159 @@
                 submitBtn.disabled = false;
                 updateFormForMessageType();
             }
+        });
+
+        function switchTab(e, tabName) {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            e.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            if (tabName === 'dashboard') {
+                loadDashboard();
+            } else if (tabName === 'history') {
+                loadHistory();
+            } else if (tabName === 'customers') {
+                loadCustomers();
+            }
+        }
+
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const stats = data.stats;
+                    const statsGrid = document.getElementById('statsGrid');
+                    
+                    statsGrid.innerHTML = `
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.totalMessages}</div>
+                            <div class="stat-label">Total Messages</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.totalCustomers}</div>
+                            <div class="stat-label">Total Customers</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.todayMessages}</div>
+                            <div class="stat-label">Today's Messages</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.weekMessages}</div>
+                            <div class="stat-label">This Week</div>
+                        </div>
+                    `;
+
+                    const recentMessages = document.getElementById('recentMessages');
+                    if (stats.recentMessages.length === 0) {
+                        recentMessages.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No messages sent yet</p></div>';
+                    } else {
+                        recentMessages.innerHTML = stats.recentMessages.map(msg => `
+                            <div class="message-card">
+                                <div class="message-header">
+                                    <span class="message-name">${msg.customer_name}</span>
+                                    <span class="message-type ${msg.message_type}">
+                                        ${msg.message_type === 'review' ? '🌟 Review' : '✅ Pickup'}
+                                    </span>
+                                </div>
+                                <div class="message-time">${new Date(msg.sent_at).toLocaleString()}</div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/messages');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const messageHistory = document.getElementById('messageHistory');
+                    
+                    if (data.messages.length === 0) {
+                        messageHistory.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No message history yet. Send your first message!</p></div>';
+                    } else {
+                        messageHistory.innerHTML = data.messages.map(msg => `
+                            <div class="message-card">
+                                <div class="message-header">
+                                    <span class="message-name">${msg.customer_name}</span>
+                                    <span class="message-type ${msg.message_type}">
+                                        ${msg.message_type === 'review' ? '🌟 Review Request' : '✅ Device Ready'}
+                                    </span>
+                                </div>
+                                <div class="message-time">
+                                    📞 ${msg.customer_phone} | 📅 ${new Date(msg.sent_at).toLocaleString()}
+                                </div>
+                                ${msg.additional_info ? `<div style="margin-top: 10px; color: #666; font-size: 14px;">${msg.additional_info}</div>` : ''}
+                                ${msg.photo_path ? `<div style="margin-top: 10px; color: #667eea; font-size: 13px;">📷 Photo attached</div>` : ''}
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        async function loadCustomers() {
+            try {
+                const response = await fetch('/api/customers');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const customerList = document.getElementById('customerList');
+                    
+                    if (data.customers.length === 0) {
+                        customerList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><p>No customers yet. Send your first message to add a customer!</p></div>';
+                    } else {
+                        customerList.innerHTML = data.customers.map(customer => `
+                            <div class="customer-card">
+                                <div class="customer-header">
+                                    <span class="customer-name">${customer.name}</span>
+                                    <span class="customer-phone">${customer.phone}</span>
+                                </div>
+                                <div class="customer-stats">
+                                    <span>💬 ${customer.message_count} messages</span>
+                                    ${customer.last_message_at ? `<span>📅 Last: ${new Date(customer.last_message_at).toLocaleDateString()}</span>` : ''}
+                                </div>
+                                <button class="customer-select-btn" onclick="selectCustomer('${customer.name}', '${customer.phone}')">
+                                    Use in Send Form
+                                </button>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading customers:', error);
+            }
+        }
+
+        function selectCustomer(name, phone) {
+            document.getElementById('customerName').value = name;
+            document.getElementById('customerPhone').value = phone;
+            
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            document.querySelector('.tab[onclick*="send"]').classList.add('active');
+            document.getElementById('sendTab').classList.add('active');
+            showAlert(`✨ Customer info loaded: ${name}`, 'success');
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadDashboard();
         });
     </script>
 </body>

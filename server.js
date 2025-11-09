@@ -18,6 +18,37 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
+async function initializeDatabase() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS customers (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      phone VARCHAR(50) NOT NULL UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id SERIAL PRIMARY KEY,
+      customer_id INTEGER REFERENCES customers(id),
+      customer_name VARCHAR(255) NOT NULL,
+      customer_phone VARCHAR(50) NOT NULL,
+      message_type VARCHAR(20) NOT NULL,
+      review_link TEXT,
+      additional_info TEXT,
+      photo_path TEXT,
+      sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      status VARCHAR(20) DEFAULT 'sent',
+      twilio_sid VARCHAR(100)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_messages_sent_at ON messages(sent_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_messages_customer_id ON messages(customer_id);
+    CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+  `);
+  console.log('✅ Database tables initialized');
+}
+
 const app = express();
 const PORT = 5000;
 
@@ -186,6 +217,7 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
 
     console.log('SMS sent successfully:', result.sid);
 
+    let dbSaved = false;
     try {
       let customerId = null;
       const customerCheck = await pool.query(
@@ -220,15 +252,17 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
           result.sid
         ]
       );
+      dbSaved = true;
     } catch (dbError) {
-      console.error('Error saving to database:', dbError);
+      console.error('⚠️ Error saving to database (message sent successfully):', dbError);
     }
 
     res.json({ 
       success: true, 
       message: 'Review request sent successfully!',
       messageSid: result.sid,
-      photoAttached: !!req.file
+      photoAttached: !!req.file,
+      dbSaved: dbSaved
     });
 
   } catch (error) {
@@ -323,7 +357,17 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`🌐 Access the app at http://0.0.0.0:${PORT}`);
-});
+async function startServer() {
+  try {
+    await initializeDatabase();
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`✅ Server running on port ${PORT}`);
+      console.log(`🌐 Access the app at http://0.0.0.0:${PORT}`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
