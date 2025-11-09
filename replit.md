@@ -1,6 +1,25 @@
 # Overview
 
-This Node.js web application functions as a comprehensive SMS Manager tailored for repair service businesses. Its primary purpose is to streamline customer communication by enabling business owners to send SMS/MMS messages for review requests or pickup notifications, track message history, manage customer data, and access analytics. Key capabilities include OCR-powered automatic data extraction from repair orders, persistent storage via a PostgreSQL database, and a modern, tabbed user interface for efficient management of all communication aspects. The project aims to provide a complete business tool with analytics and customer management features to enhance customer engagement and operational efficiency.
+This Node.js web application functions as a comprehensive SMS Manager tailored for repair service businesses. Its primary purpose is to streamline customer communication by enabling business owners to send SMS/MMS messages for review requests or pickup notifications, track message history, manage customer data, and access analytics. Key capabilities include OCR-powered automatic data extraction from repair orders, intelligent review tracking with automatic follow-ups, persistent storage via a PostgreSQL database, and a modern, tabbed user interface for efficient management of all communication aspects. The project aims to provide a complete business tool with analytics, customer management, and automated review collection features to enhance customer engagement and operational efficiency.
+
+# Recent Changes (November 2025)
+
+## Review Tracking & Follow-up System
+Implemented a comprehensive hybrid review tracking system that monitors customer engagement and automates follow-up reminders:
+
+**Core Features:**
+- **Link Click Tracking**: Every review link is tracked via unique tokens; the app knows when customers click the link
+- **Review Status Monitoring**: Four states tracked (Pending, Link Clicked, Reviewed, Follow-up Sent)
+- **Automatic Follow-ups**: After 3 days, if a customer hasn't clicked their review link, the system flags them for follow-up
+- **Manual Review Confirmation**: "Mark Review Received ✓" button in History tab when reviews appear on Google
+- **Dashboard Analytics**: Real-time stats showing pending reviews, links clicked, reviews received, and customers needing follow-up
+- **One-Click Bulk Follow-ups**: Send reminder SMS to all customers who need follow-up with a single click
+
+**Technical Implementation:**
+- Tracked review links via redirect endpoint (GET /r/:token)
+- Database fields: review_status, review_link_token, review_link_clicked_at, review_received_at, follow_up_due_at, follow_up_sent_at
+- RESTful API endpoints for status updates and follow-up management
+- Idempotent click tracking (won't double-count repeated clicks)
 
 # User Preferences
 
