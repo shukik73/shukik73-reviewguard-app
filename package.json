@@ -7,7 +7,12 @@
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["sms", "reviews", "twilio", "repair-business"],
+  "keywords": [
+    "sms",
+    "reviews",
+    "twilio",
+    "repair-business"
+  ],
   "author": "Techy Miramar",
   "license": "ISC",
   "dependencies": {
@@ -17,6 +22,7 @@
     "express": "^5.1.0",
     "multer": "^2.0.2",
     "node-fetch": "^3.3.2",
+    "tesseract.js": "^6.0.1",
     "twilio": "^5.10.4"
   },
   "type": "module"

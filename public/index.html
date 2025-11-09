@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Review Request Manager - Repair Service</title>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
         * {
             margin: 0;
@@ -223,6 +224,105 @@
             margin-top: 10px;
         }
 
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            background: white;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .ocr-section {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .ocr-section h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .ocr-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .ocr-upload-label:hover {
+            border-color: white;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .ocr-upload-label.processing {
+            cursor: wait;
+            opacity: 0.7;
+        }
+
+        .ocr-status {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .ocr-status.active {
+            display: block;
+        }
+
+        .ocr-preview {
+            margin-top: 15px;
+            max-height: 150px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .ocr-preview.active {
+            display: block;
+        }
+
+        .extracted-data {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: none;
+        }
+
+        .extracted-data.active {
+            display: block;
+        }
+
+        .extracted-data-item {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .extracted-data-item strong {
+            display: inline-block;
+            width: 80px;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 25px;
@@ -243,19 +343,42 @@
 
         <div id="alertBox" class="alert"></div>
 
+        <div class="ocr-section">
+            <h3>📸 Quick Fill from Repair Order (Optional)</h3>
+            <p style="font-size: 14px; margin-bottom: 15px; opacity: 0.9;">Upload a photo of your repair order to automatically extract customer information</p>
+            
+            <input 
+                type="file" 
+                id="ocrPhoto" 
+                accept="image/*"
+                style="display: none;"
+            />
+            <label for="ocrPhoto" class="ocr-upload-label" id="ocrUploadLabel">
+                <span class="file-icon">📄</span>
+                <span id="ocrUploadText">Click to upload repair order photo</span>
+            </label>
+            
+            <img id="ocrPreview" class="ocr-preview" alt="Repair order preview" />
+            
+            <div class="ocr-status" id="ocrStatus"></div>
+            
+            <div class="extracted-data" id="extractedData">
+                <div class="extracted-data-item">
+                    <strong>Name:</strong> <span id="extractedName">-</span>
+                </div>
+                <div class="extracted-data-item">
+                    <strong>Phone:</strong> <span id="extractedPhone">-</span>
+                </div>
+            </div>
+        </div>
+
         <form id="reviewForm">
             <div class="form-group">
-                <label>Message Type *</label>
-                <div style="display: flex; gap: 20px; margin-top: 10px;">
-                    <label style="display: flex; align-items: center; cursor: pointer;">
-                        <input type="radio" name="messageType" value="review" id="reviewType" checked style="display: inline-block; width: auto; margin-right: 8px;">
-                        <span>🌟 Google Review Request</span>
-                    </label>
-                    <label style="display: flex; align-items: center; cursor: pointer;">
-                        <input type="radio" name="messageType" value="ready" id="readyType" style="display: inline-block; width: auto; margin-right: 8px;">
-                        <span>✅ Device Ready for Pickup</span>
-                    </label>
-                </div>
+                <label for="messageType">Message Type *</label>
+                <select id="messageType" name="messageType" required>
+                    <option value="review">🌟 Google Review Request</option>
+                    <option value="ready">✅ Device Ready for Pickup</option>
+                </select>
             </div>
 
             <div class="form-group">
@@ -338,13 +461,23 @@
         const fileText = document.getElementById('fileText');
         const previewContainer = document.getElementById('previewContainer');
         const previewImage = document.getElementById('previewImage');
-        const reviewType = document.getElementById('reviewType');
-        const readyType = document.getElementById('readyType');
+        const messageTypeSelect = document.getElementById('messageType');
         const reviewLinkGroup = document.getElementById('reviewLinkGroup');
         const additionalInfoHelper = document.getElementById('additionalInfoHelper');
+        const ocrPhotoInput = document.getElementById('ocrPhoto');
+        const ocrUploadLabel = document.getElementById('ocrUploadLabel');
+        const ocrUploadText = document.getElementById('ocrUploadText');
+        const ocrPreview = document.getElementById('ocrPreview');
+        const ocrStatus = document.getElementById('ocrStatus');
+        const extractedData = document.getElementById('extractedData');
+        const extractedName = document.getElementById('extractedName');
+        const extractedPhone = document.getElementById('extractedPhone');
+        const customerNameInput = document.getElementById('customerName');
+        const customerPhoneInput = document.getElementById('customerPhone');
 
         function updateFormForMessageType() {
-            if (reviewType.checked) {
+            const messageType = messageTypeSelect.value;
+            if (messageType === 'review') {
                 reviewLinkGroup.style.display = 'block';
                 submitBtn.textContent = 'Send Review Request';
                 additionalInfoHelper.textContent = 'Personalize the message with repair details';
@@ -355,10 +488,109 @@
             }
         }
 
-        reviewType.addEventListener('change', updateFormForMessageType);
-        readyType.addEventListener('change', updateFormForMessageType);
+        messageTypeSelect.addEventListener('change', updateFormForMessageType);
 
         updateFormForMessageType();
+
+        function parseTextForCustomerInfo(text) {
+            const lines = text.split('\n').map(line => line.trim());
+            let name = '';
+            let phone = '';
+
+            const phoneRegex = /[\+\(]?[1-9]\d{0,2}[\s\-\.]?\(?\d{2,3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{4}/g;
+            const phoneMatches = text.match(phoneRegex);
+            if (phoneMatches && phoneMatches.length > 0) {
+                phone = phoneMatches[0].replace(/[\s\-\(\)\.]/g, '');
+                if (!phone.startsWith('+')) {
+                    if (phone.length === 10) {
+                        phone = '+1' + phone;
+                    } else if (phone.length === 11 && phone.startsWith('1')) {
+                        phone = '+' + phone;
+                    } else {
+                        phone = '+' + phone;
+                    }
+                }
+            }
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                if (line.match(/customer\s+information/i)) {
+                    for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+                        const nextLine = lines[j];
+                        if (nextLine && nextLine.length > 2 && nextLine.length < 50 && !nextLine.match(/mobile|store|credits|edit/i)) {
+                            const words = nextLine.split(/\s+/);
+                            if (words.length >= 2 && words.length <= 5) {
+                                const possibleName = words.filter(w => w.length > 1 && !w.match(/^\d+$/) && !w.match(/^[\+\(\)]/)).join(' ');
+                                if (possibleName.length > 3) {
+                                    name = possibleName;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!name && line.length > 3 && line.length < 50 && line.match(/^[A-Z][A-Z\s]+$/)) {
+                    const words = line.split(/\s+/);
+                    if (words.length >= 2 && words.length <= 5 && !line.match(/CUSTOMER|INFORMATION|SERVICE|REPAIR|DEVICE|STORE|MOBILE|CREDITS/)) {
+                        name = line;
+                    }
+                }
+            }
+
+            return { name: name.trim(), phone: phone };
+        }
+
+        ocrPhotoInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            ocrUploadLabel.classList.add('processing');
+            ocrUploadText.textContent = 'Processing...';
+            ocrStatus.textContent = '⏳ Scanning image and extracting text...';
+            ocrStatus.classList.add('active');
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                ocrPreview.src = e.target.result;
+                ocrPreview.classList.add('active');
+
+                try {
+                    const worker = await Tesseract.createWorker('eng');
+                    const { data: { text } } = await worker.recognize(e.target.result);
+                    await worker.terminate();
+
+                    console.log('Extracted text:', text);
+
+                    const customerInfo = parseTextForCustomerInfo(text);
+                    
+                    extractedName.textContent = customerInfo.name || 'Not found';
+                    extractedPhone.textContent = customerInfo.phone || 'Not found';
+                    extractedData.classList.add('active');
+
+                    if (customerInfo.name) {
+                        customerNameInput.value = customerInfo.name;
+                    }
+                    if (customerInfo.phone) {
+                        customerPhoneInput.value = customerInfo.phone;
+                    }
+
+                    if (customerInfo.name || customerInfo.phone) {
+                        ocrStatus.textContent = '✅ Customer information extracted! You can edit the fields below if needed.';
+                    } else {
+                        ocrStatus.textContent = '⚠️ Could not extract customer info. Please enter manually below.';
+                    }
+                } catch (error) {
+                    console.error('OCR Error:', error);
+                    ocrStatus.textContent = '❌ Error processing image. Please enter information manually.';
+                }
+
+                ocrUploadLabel.classList.remove('processing');
+                ocrUploadText.textContent = file.name;
+            };
+            reader.readAsDataURL(file);
+        });
 
         photoInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -398,7 +630,7 @@
 
             const customerName = document.getElementById('customerName').value.trim();
             const customerPhone = document.getElementById('customerPhone').value.trim();
-            const messageType = document.querySelector('input[name="messageType"]:checked').value;
+            const messageType = messageTypeSelect.value;
             const googleReviewLink = document.getElementById('googleReviewLink').value.trim();
             const additionalInfo = document.getElementById('additionalInfo').value.trim();
             const photoFile = photoInput.files[0];
