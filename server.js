@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import pg from 'pg';
 import crypto from 'crypto';
+import Stripe from 'stripe';
 
 const { Pool } = pg;
 
@@ -18,6 +19,8 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 async function initializeDatabase() {
   await pool.query(`
@@ -46,6 +49,21 @@ async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_messages_sent_at ON messages(sent_at DESC);
     CREATE INDEX IF NOT EXISTS idx_messages_customer_id ON messages(customer_id);
     CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      stripe_customer_id VARCHAR(255) UNIQUE,
+      stripe_subscription_id VARCHAR(255) UNIQUE,
+      subscription_status VARCHAR(50) DEFAULT 'trial',
+      plan VARCHAR(50) DEFAULT 'free',
+      sms_quota INTEGER DEFAULT 50,
+      sms_sent INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   await pool.query(`
@@ -194,12 +212,20 @@ function validateAndFormatPhone(phone) {
 
 app.post('/api/send-review-request', upload.single('photo'), async (req, res) => {
   try {
-    const { customerName, customerPhone, messageType, googleReviewLink, additionalInfo } = req.body;
+    const { customerName, customerPhone, messageType, googleReviewLink, additionalInfo, userEmail } = req.body;
 
     if (!customerName || !customerPhone) {
       return res.status(400).json({ 
         success: false, 
         error: 'Customer name and phone number are required' 
+      });
+    }
+
+    if (!userEmail || !userEmail.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        error: 'A valid email address is required to send SMS. Please enter your email in the Billing tab.',
+        code: 'EMAIL_REQUIRED'
       });
     }
 
@@ -212,6 +238,12 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
         error: error.message
       });
     }
+
+    await pool.query(`
+      INSERT INTO subscriptions (email, subscription_status, plan, sms_quota, sms_sent)
+      VALUES ($1, 'trial', 'free', 50, 0)
+      ON CONFLICT (email) DO NOTHING
+    `, [userEmail]);
 
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
@@ -252,9 +284,68 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
       console.log('Sending MMS with photo:', publicUrl);
     }
 
-    const result = await client.messages.create(messageOptions);
+    const pgClient = await pool.connect();
+    let result;
+    
+    try {
+      await pgClient.query('BEGIN');
+      
+      const quotaLock = await pgClient.query(`
+        SELECT subscription_status, sms_quota, sms_sent 
+        FROM subscriptions 
+        WHERE email = $1
+        FOR UPDATE
+      `, [userEmail]);
 
-    console.log('SMS sent successfully:', result.sid);
+      if (quotaLock.rows.length === 0) {
+        await pgClient.query('ROLLBACK');
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to check subscription. Please try again.',
+          code: 'SUBSCRIPTION_ERROR'
+        });
+      }
+
+      const { subscription_status, sms_quota, sms_sent } = quotaLock.rows[0];
+
+      if (subscription_status !== 'active' && subscription_status !== 'trial') {
+        await pgClient.query('ROLLBACK');
+        return res.status(402).json({
+          success: false,
+          error: 'Your subscription is inactive. Please subscribe in the Billing tab to continue sending SMS.',
+          code: 'SUBSCRIPTION_INACTIVE'
+        });
+      }
+
+      if (sms_sent >= sms_quota) {
+        await pgClient.query('ROLLBACK');
+        return res.status(402).json({
+          success: false,
+          error: `You've reached your SMS quota (${sms_sent}/${sms_quota} messages). Please upgrade your plan in the Billing tab.`,
+          code: 'QUOTA_EXCEEDED',
+          quota: sms_quota,
+          used: sms_sent
+        });
+      }
+
+      await pgClient.query(`
+        UPDATE subscriptions 
+        SET sms_sent = sms_sent + 1, updated_at = CURRENT_TIMESTAMP 
+        WHERE email = $1
+      `, [userEmail]);
+
+      result = await client.messages.create(messageOptions);
+      
+      await pgClient.query('COMMIT');
+      
+      console.log(`✅ SMS sent successfully: ${result.sid} | Quota: ${sms_sent + 1}/${sms_quota} for ${userEmail}`);
+      
+    } catch (twilioError) {
+      await pgClient.query('ROLLBACK');
+      throw twilioError;
+    } finally {
+      pgClient.release();
+    }
 
     let dbSaved = false;
     try {
@@ -296,6 +387,7 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
           messageType === 'review' ? 'pending' : null
         ]
       );
+      
       dbSaved = true;
     } catch (dbError) {
       console.error('⚠️ Error saving to database (message sent successfully):', dbError);
@@ -552,6 +644,206 @@ app.post('/api/follow-ups/send', async (req, res) => {
   } catch (error) {
     console.error('Error sending follow-ups:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/create-checkout-session', async (req, res) => {
+  try {
+    const { email, planId } = req.body;
+    
+    if (!email || !planId) {
+      return res.status(400).json({ error: 'Email and planId are required' });
+    }
+
+    const validPlans = {
+      starter: {
+        priceId: process.env.STRIPE_PRICE_ID_STARTER || 'price_starter',
+        quota: 300,
+        name: 'starter'
+      },
+      pro: {
+        priceId: process.env.STRIPE_PRICE_ID_PRO || 'price_pro',
+        quota: 1000,
+        name: 'pro'
+      }
+    };
+
+    const plan = validPlans[planId];
+    if (!plan) {
+      return res.status(400).json({ error: 'Invalid plan ID' });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [{
+        price: plan.priceId,
+        quantity: 1,
+      }],
+      success_url: `${req.protocol}://${req.get('host')}/?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.protocol}://${req.get('host')}/`,
+      customer_email: email,
+      metadata: {
+        email: email,
+        planId: planId,
+        smsQuota: plan.quota
+      }
+    });
+
+    res.json({ url: session.url, sessionId: session.id });
+  } catch (error) {
+    console.error('Stripe checkout error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/pricing', (req, res) => {
+  const plans = {
+    starter: {
+      id: 'starter',
+      name: 'Starter Plan',
+      priceId: process.env.STRIPE_PRICE_ID_STARTER || 'price_starter',
+      amount: 4900,
+      currency: 'usd',
+      interval: 'month',
+      smsQuota: 300,
+      features: [
+        '300 SMS per month',
+        'Review tracking',
+        'Automatic follow-ups',
+        'Customer database',
+        'OCR text extraction'
+      ]
+    },
+    pro: {
+      id: 'pro',
+      name: 'Pro Plan',
+      priceId: process.env.STRIPE_PRICE_ID_PRO || 'price_pro',
+      amount: 9900,
+      currency: 'usd',
+      interval: 'month',
+      smsQuota: 1000,
+      features: [
+        '1,000 SMS per month',
+        'Review tracking',
+        'Automatic follow-ups',
+        'Customer database',
+        'OCR text extraction',
+        'Priority support'
+      ]
+    }
+  };
+  
+  res.json({ plans });
+});
+
+app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error('❌ STRIPE_WEBHOOK_SECRET is not configured');
+    return res.status(500).send('Webhook secret not configured');
+  }
+  
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.log(`⚠️ Webhook signature verification failed:`, err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const email = session.customer_email || session.metadata?.email;
+        const stripeCustomerId = session.customer;
+        const stripeSubscriptionId = session.subscription;
+        const planId = session.metadata?.planId || 'starter';
+        const smsQuota = parseInt(session.metadata?.smsQuota || '300');
+
+        await pool.query(`
+          INSERT INTO subscriptions (email, stripe_customer_id, stripe_subscription_id, subscription_status, plan, sms_quota)
+          VALUES ($1, $2, $3, 'active', $4, $5)
+          ON CONFLICT (email) 
+          DO UPDATE SET 
+            stripe_customer_id = $2,
+            stripe_subscription_id = $3,
+            subscription_status = 'active',
+            plan = $4,
+            sms_quota = $5,
+            updated_at = CURRENT_TIMESTAMP
+        `, [email, stripeCustomerId, stripeSubscriptionId, planId, smsQuota]);
+        
+        console.log(`✅ Subscription activated for ${email} - Plan: ${planId}, Quota: ${smsQuota}`);
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object;
+        const status = subscription.status === 'active' ? 'active' : 'inactive';
+        
+        await pool.query(`
+          UPDATE subscriptions 
+          SET subscription_status = $1, updated_at = CURRENT_TIMESTAMP
+          WHERE stripe_subscription_id = $2
+        `, [status, subscription.id]);
+        
+        console.log(`✅ Subscription updated: ${subscription.id} -> ${status}`);
+        break;
+      }
+
+      case 'customer.subscription.deleted':
+      case 'invoice.payment_failed': {
+        const subscription = event.data.object;
+        const subscriptionId = subscription.id || subscription.subscription;
+        
+        await pool.query(`
+          UPDATE subscriptions 
+          SET subscription_status = 'inactive', updated_at = CURRENT_TIMESTAMP
+          WHERE stripe_subscription_id = $1
+        `, [subscriptionId]);
+        
+        console.log(`✅ Subscription deactivated: ${subscriptionId}`);
+        break;
+      }
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Webhook processing error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/subscription-status', async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const result = await pool.query(
+      'SELECT subscription_status, plan, sms_quota, sms_sent FROM subscriptions WHERE email = $1',
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ 
+        subscription_status: 'none',
+        plan: 'free',
+        sms_quota: 50,
+        sms_sent: 0
+      });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching subscription status:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

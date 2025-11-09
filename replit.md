@@ -4,11 +4,36 @@ This Node.js web application functions as a comprehensive SMS Manager tailored f
 
 # Recent Changes (November 2025)
 
+## Stripe Subscription Billing with Transaction-Based Quota Enforcement
+Implemented production-ready subscription billing with race-condition-free SMS quota management:
+
+**Core Features:**
+- **Trial Accounts**: Auto-provisioned 50 SMS quota on first email use
+- **Tiered Subscription Plans**: Starter ($20/mo, 500 SMS) and Pro ($50/mo, 2000 SMS) via Stripe Checkout
+- **Transaction-Based Quota Enforcement**: PostgreSQL row-level locking prevents concurrent quota bypass
+- **Email-Based Tracking**: localStorage persistence with mandatory email for all sends
+- **Stripe Webhooks**: Auto-updates subscription status, quota, and handles payment failures
+- **Billing Tab UI**: Real-time subscription status, usage display, and one-click checkout
+
+**Technical Implementation - Quota Enforcement:**
+- **Validation First**: Email format and phone number validated before transaction
+- **SELECT ... FOR UPDATE**: Row-level lock serializes concurrent requests for same email
+- **Atomic Quota Reservation**: Increments sms_sent before Twilio send (inside transaction)
+- **Rollback on Failure**: Failed Twilio sends rollback quota increment (no quota burn)
+- **Connection Leak Prevention**: Finally block ensures pgClient.release() on all code paths
+- **Clear Error Codes**: EMAIL_REQUIRED, QUOTA_EXCEEDED, SUBSCRIPTION_INACTIVE with actionable messages
+
+**Security:**
+- Stripe webhook signature verification (STRIPE_WEBHOOK_SECRET mandatory)
+- Server-side pricing catalog prevents client-side price manipulation
+- Environment variable-based price IDs (STRIPE_PRICE_ID_STARTER/PRO)
+- No bypass paths - email and quota checks enforced on all sends
+
 ## Review Tracking & Follow-up System
 Implemented a comprehensive hybrid review tracking system that monitors customer engagement and automates follow-up reminders:
 
 **Core Features:**
-- **Link Click Tracking**: Every review link is tracked via unique tokens; the app knows when customers click the link
+- **Link Click Tracking**: Every review link is tracked via unique 6-character tokens
 - **Review Status Monitoring**: Four states tracked (Pending, Link Clicked, Reviewed, Follow-up Sent)
 - **Automatic Follow-ups**: After 3 days, if a customer hasn't clicked their review link, the system flags them for follow-up
 - **Manual Review Confirmation**: "Mark Review Received ✓" button in History tab when reviews appear on Google
@@ -16,7 +41,7 @@ Implemented a comprehensive hybrid review tracking system that monitors customer
 - **One-Click Bulk Follow-ups**: Send reminder SMS to all customers who need follow-up with a single click
 
 **Technical Implementation:**
-- Tracked review links via redirect endpoint (GET /r/:token)
+- Tracked review links via redirect endpoint (GET /r/:token) with 6-character tokens
 - Database fields: review_status, review_link_token, review_link_clicked_at, review_received_at, follow_up_due_at, follow_up_sent_at
 - RESTful API endpoints for status updates and follow-up management
 - Idempotent click tracking (won't double-count repeated clicks)
@@ -104,8 +129,8 @@ The UI offers real-time validation, notifications, responsiveness, dynamic adapt
 ## Database Layer
 
 - **PostgreSQL Database**: Replit-managed Neon instance, connected via DATABASE_URL.
-- **Schema**: Includes `customers` (id, name, phone, created_at, updated_at) and `messages` (id, customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, sent_at, status, twilio_sid) tables with foreign key relationships and indexes for performance.
-- **Features**: Auto-saves and updates customer data, maintains complete message history, and initializes tables automatically on server startup.
+- **Schema**: Includes `customers` (id, name, phone, created_at, updated_at), `messages` (id, customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, sent_at, status, twilio_sid, review_link_token, review_status, follow_up_due_at, follow_up_sent_at), and `subscriptions` (email, stripe_customer_id, stripe_subscription_id, subscription_status, plan, sms_quota, sms_sent, created_at, updated_at) tables with foreign key relationships and indexes for performance.
+- **Features**: Auto-saves and updates customer data, maintains complete message history, tracks subscription quotas with transaction-based enforcement, and initializes tables automatically on server startup.
 
 ## File Storage
 
