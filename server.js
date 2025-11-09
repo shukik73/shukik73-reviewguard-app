@@ -6,9 +6,17 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import pg from 'pg';
+
+const { Pool } = pg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 const app = express();
 const PORT = 5000;
@@ -178,6 +186,44 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
 
     console.log('SMS sent successfully:', result.sid);
 
+    try {
+      let customerId = null;
+      const customerCheck = await pool.query(
+        'SELECT id FROM customers WHERE phone = $1',
+        [formattedPhone]
+      );
+
+      if (customerCheck.rows.length > 0) {
+        customerId = customerCheck.rows[0].id;
+        await pool.query(
+          'UPDATE customers SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+          [customerName, customerId]
+        );
+      } else {
+        const newCustomer = await pool.query(
+          'INSERT INTO customers (name, phone) VALUES ($1, $2) RETURNING id',
+          [customerName, formattedPhone]
+        );
+        customerId = newCustomer.rows[0].id;
+      }
+
+      await pool.query(
+        'INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [
+          customerId,
+          customerName,
+          formattedPhone,
+          messageType,
+          googleReviewLink || null,
+          additionalInfo || null,
+          req.file ? req.file.filename : null,
+          result.sid
+        ]
+      );
+    } catch (dbError) {
+      console.error('Error saving to database:', dbError);
+    }
+
     res.json({ 
       success: true, 
       message: 'Review request sent successfully!',
@@ -191,6 +237,81 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
       success: false, 
       error: error.message || 'Failed to send SMS' 
     });
+  }
+});
+
+app.get('/api/messages', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT m.*, c.name as customer_name_db, c.phone as customer_phone_db
+       FROM messages m
+       LEFT JOIN customers c ON m.customer_id = c.id
+       ORDER BY m.sent_at DESC
+       LIMIT 100`
+    );
+    res.json({ success: true, messages: result.rows });
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/customers', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT c.*, COUNT(m.id) as message_count, MAX(m.sent_at) as last_message_at
+       FROM customers c
+       LEFT JOIN messages m ON c.id = m.customer_id
+       GROUP BY c.id
+       ORDER BY c.updated_at DESC`
+    );
+    res.json({ success: true, customers: result.rows });
+  } catch (error) {
+    console.error('Error fetching customers:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/stats', async (req, res) => {
+  try {
+    const totalMessages = await pool.query('SELECT COUNT(*) as count FROM messages');
+    const totalCustomers = await pool.query('SELECT COUNT(*) as count FROM customers');
+    
+    const todayMessages = await pool.query(
+      "SELECT COUNT(*) as count FROM messages WHERE sent_at >= CURRENT_DATE"
+    );
+    
+    const weekMessages = await pool.query(
+      "SELECT COUNT(*) as count FROM messages WHERE sent_at >= CURRENT_DATE - INTERVAL '7 days'"
+    );
+    
+    const messagesByType = await pool.query(
+      `SELECT message_type, COUNT(*) as count 
+       FROM messages 
+       GROUP BY message_type`
+    );
+
+    const recentMessages = await pool.query(
+      `SELECT customer_name, message_type, sent_at 
+       FROM messages 
+       ORDER BY sent_at DESC 
+       LIMIT 5`
+    );
+
+    res.json({
+      success: true,
+      stats: {
+        totalMessages: parseInt(totalMessages.rows[0].count),
+        totalCustomers: parseInt(totalCustomers.rows[0].count),
+        todayMessages: parseInt(todayMessages.rows[0].count),
+        weekMessages: parseInt(weekMessages.rows[0].count),
+        messagesByType: messagesByType.rows,
+        recentMessages: recentMessages.rows
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
