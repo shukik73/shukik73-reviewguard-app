@@ -11,6 +11,12 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## November 9, 2025
+- Added dual message type feature: Google Review requests OR Device Ready notifications
+- Google review link now auto-populated (https://g.page/r/CXmh-C0UxHgqEBM/review)
+- Dynamic UI that adapts based on selected message type
+- Different SMS templates for review requests vs pickup notifications
+
 ## November 4, 2025
 - Complete rebuild of application focused on SMS review requests
 - Implemented Twilio SMS/MMS integration for sending review requests
@@ -75,11 +81,14 @@ Preferred communication style: Simple, everyday language.
 ## Communication Layer
 
 **Twilio SMS/MMS Integration**
-- **Purpose**: Send review request messages to customers
+- **Purpose**: Send review requests or pickup notifications to customers
 - **SDK**: Twilio v5.3.2
 - **Authentication**: Uses Replit Connector integration
   - Account SID, API Key, and API Key Secret managed securely
   - Phone number retrieved from connection settings
+- **Message Types**:
+  - **Google Review Request**: Thank you message with Google review link
+  - **Device Ready**: Pickup notification when repair is complete
 - **Features**:
   - Plain SMS for text-only messages
   - MMS support for messages with photo attachments
@@ -91,17 +100,19 @@ Preferred communication style: Simple, everyday language.
 **Static HTML/CSS/JavaScript (public/index.html)**
 - **Design**: Purple gradient theme with modern UI elements
 - **Features**:
+  - Message type selector (Review Request or Device Ready)
   - Customer name and phone number input (required)
-  - Google review link field (optional)
-  - Additional message field for repair details (optional)
+  - Google review link field (auto-populated, shows for review type only)
+  - Additional message field for repair/pickup details (optional)
   - Photo upload with preview
   - Real-time form validation
   - Success/error notifications
   - Responsive mobile-friendly design
 - **User Experience**:
-  - Drag-and-drop file upload
-  - Image preview before sending
-  - Clear helper text for all fields
+  - Dynamic UI adapts based on message type selection
+  - Submit button text changes ("Send Review Request" vs "Send Pickup Notification")
+  - Helper text updates contextually
+  - Drag-and-drop file upload with image preview
   - Automatic form reset after successful send
 
 # External Dependencies
@@ -137,24 +148,32 @@ Preferred communication style: Simple, everyday language.
 
 ## For Business Owners
 
-1. **Get your Google Review Link**:
-   - Log into Google Business Profile
-   - Click "Ask for reviews"
-   - Copy the review link
+### Option 1: Send Google Review Request
 
-2. **Send Review Request**:
+1. **Select Message Type**: Choose "🌟 Google Review Request"
+2. **Fill in Details**:
    - Enter customer's name
    - Enter phone number (with country code for international)
-   - Paste Google review link (optional but recommended)
+   - Google review link is already filled in: https://g.page/r/CXmh-C0UxHgqEBM/review
    - Add notes about the repair (optional)
    - Upload before/after photo (optional)
-   - Click "Send Review Request"
+3. **Click "Send Review Request"**
 
-3. **Customer Receives**:
-   - SMS message thanking them for the service
-   - Request to leave a Google review
-   - Direct link to review page
-   - Photo of completed repair (if uploaded)
+**Customer Receives**:
+> "Hi [Name]! Thank you for choosing Techy Miramar for your repair. We hope you're satisfied with the work we did. [Your notes]. Could you take a moment to leave us a Google review? [link] Thank you! 🙏"
+
+### Option 2: Send Device Ready Notification
+
+1. **Select Message Type**: Choose "✅ Device Ready for Pickup"
+2. **Fill in Details**:
+   - Enter customer's name
+   - Enter phone number
+   - Add pickup instructions or location details (optional)
+   - Upload photo of the completed device (optional)
+3. **Click "Send Pickup Notification"**
+
+**Customer Receives**:
+> "Hi [Name]! Great news - your device is ready for pickup at Techy Miramar! 🎉 [Your pickup instructions]. We're open and ready to see you. Thank you for choosing us!"
 
 ## Phone Number Tips
 
