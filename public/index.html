@@ -470,6 +470,66 @@
             width: 80px;
         }
 
+        .export-btn {
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .template-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+
+        .template-section.active {
+            display: block;
+        }
+
+        .template-section h4 {
+            margin-bottom: 10px;
+            color: #667eea;
+            font-size: 15px;
+        }
+
+        .template-suggestion {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .use-template-btn {
+            margin-top: 8px;
+            padding: 6px 14px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .use-template-btn:hover {
+            background: #5568d3;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 25px;
@@ -477,6 +537,11 @@
 
             .header h1 {
                 font-size: 24px;
+            }
+
+            .export-btn {
+                padding: 8px 14px;
+                font-size: 12px;
             }
         }
     </style>
@@ -525,7 +590,18 @@
                 <div class="extracted-data-item">
                     <strong>Phone:</strong> <span id="extractedPhone">-</span>
                 </div>
+                <div class="extracted-data-item">
+                    <strong>Device:</strong> <span id="extractedDevice">-</span>
+                </div>
+                <div class="extracted-data-item">
+                    <strong>Repair:</strong> <span id="extractedRepair">-</span>
+                </div>
             </div>
+        </div>
+
+        <div class="template-section" id="templateSection">
+            <h4>💡 Smart Template Suggestions</h4>
+            <div id="templateSuggestions"></div>
         </div>
 
         <form id="reviewForm">
@@ -616,13 +692,37 @@
         </div>
 
         <div id="historyTab" class="tab-content">
-            <h2 style="margin-bottom: 20px; color: #333;">📜 Message History</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #333; margin: 0;">📜 Message History</h2>
+                <button onclick="exportMessagesToCSV()" class="export-btn">📥 Export to CSV</button>
+            </div>
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="historySearch" 
+                    placeholder="🔍 Search by customer name, phone, or message type..."
+                    onkeyup="filterHistory()"
+                    style="margin-bottom: 20px;"
+                />
+            </div>
             <div id="messageHistory"></div>
         </div>
 
         <div id="customersTab" class="tab-content">
-            <h2 style="margin-bottom: 20px; color: #333;">👥 Customer Database</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #333; margin: 0;">👥 Customer Database</h2>
+                <button onclick="exportCustomersToCSV()" class="export-btn">📥 Export to CSV</button>
+            </div>
             <p style="color: #666; margin-bottom: 20px;">Click on a customer to auto-fill their information in the send form</p>
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="customerSearch" 
+                    placeholder="🔍 Search by name or phone number..."
+                    onkeyup="filterCustomers()"
+                    style="margin-bottom: 20px;"
+                />
+            </div>
             <div id="customerList"></div>
         </div>
     </div>
@@ -671,6 +771,8 @@
             const lines = text.split('\n').map(line => line.trim());
             let name = '';
             let phone = '';
+            let device = '';
+            let repair = '';
 
             const phoneRegex = /[\+\(]?[1-9]\d{0,2}[\s\-\.]?\(?\d{2,3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{4}/g;
             const phoneMatches = text.match(phoneRegex);
@@ -712,9 +814,30 @@
                         name = line;
                     }
                 }
+
+                if (line.match(/service\s+information/i)) {
+                    for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
+                        const nextLine = lines[j];
+                        
+                        if (nextLine.match(/(computer|cellphone|laptop|tablet|pc)\s+repairs\s*-/i)) {
+                            const deviceMatch = nextLine.match(/repairs\s*-\s*(.+)/i);
+                            if (deviceMatch) {
+                                const parts = deviceMatch[1].trim().split(/\s*-\s*/);
+                                device = parts.length > 1 ? parts.slice(1).join(' - ') : parts[0];
+                            }
+                        }
+                        
+                        if (nextLine.match(/device\s+issue:/i)) {
+                            const issueMatch = nextLine.match(/device\s+issue:\s*(.+)/i);
+                            if (issueMatch) {
+                                repair = issueMatch[1].trim();
+                            }
+                        }
+                    }
+                }
             }
 
-            return { name: name.trim(), phone: phone };
+            return { name: name.trim(), phone: phone, device: device.trim(), repair: repair.trim() };
         }
 
         ocrPhotoInput.addEventListener('change', async function(e) {
@@ -738,10 +861,15 @@
 
                     console.log('Extracted text:', text);
 
+                    document.getElementById('templateSection').classList.remove('active');
+                    document.getElementById('templateSuggestions').innerHTML = '';
+
                     const customerInfo = parseTextForCustomerInfo(text);
                     
                     extractedName.textContent = customerInfo.name || 'Not found';
                     extractedPhone.textContent = customerInfo.phone || 'Not found';
+                    document.getElementById('extractedDevice').textContent = customerInfo.device || 'Not found';
+                    document.getElementById('extractedRepair').textContent = customerInfo.repair || 'Not found';
                     extractedData.classList.add('active');
 
                     if (customerInfo.name) {
@@ -749,6 +877,10 @@
                     }
                     if (customerInfo.phone) {
                         customerPhoneInput.value = customerInfo.phone;
+                    }
+
+                    if (customerInfo.device && customerInfo.repair) {
+                        generateTemplateSuggestions(customerInfo.device, customerInfo.repair, customerInfo.name);
                     }
 
                     if (customerInfo.name || customerInfo.phone) {
@@ -1006,6 +1138,147 @@
             document.querySelector('.tab[onclick*="send"]').classList.add('active');
             document.getElementById('sendTab').classList.add('active');
             showAlert(`✨ Customer info loaded: ${name}`, 'success');
+        }
+
+        let allMessages = [];
+        let allCustomers = [];
+
+        function generateTemplateSuggestions(device, repair, customerName) {
+            const templateSection = document.getElementById('templateSection');
+            const templateSuggestions = document.getElementById('templateSuggestions');
+            const additionalInfoField = document.getElementById('additionalInfo');
+            
+            const templates = {
+                review: `We completed the ${repair} on your ${device}. Everything is working perfectly!`,
+                pickup: `Your ${device} is ready! We successfully completed the ${repair}. You can pick it up at your convenience.`
+            };
+
+            templateSuggestions.innerHTML = `
+                <div class="template-suggestion">
+                    <strong>Review Request Template:</strong><br>
+                    "${templates.review}"
+                    <br>
+                    <button class="use-template-btn" onclick="useTemplate('${templates.review.replace(/'/g, "\\'")}')">Use This</button>
+                </div>
+                <div class="template-suggestion">
+                    <strong>Pickup Notification Template:</strong><br>
+                    "${templates.pickup}"
+                    <br>
+                    <button class="use-template-btn" onclick="useTemplate('${templates.pickup.replace(/'/g, "\\'")}')">Use This</button>
+                </div>
+            `;
+            
+            templateSection.classList.add('active');
+        }
+
+        function useTemplate(template) {
+            document.getElementById('additionalInfo').value = template;
+            showAlert('✅ Template added to your message!', 'success');
+        }
+
+        function filterHistory() {
+            const searchTerm = document.getElementById('historySearch').value.toLowerCase();
+            const messageCards = document.querySelectorAll('#messageHistory .message-card');
+            
+            messageCards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function filterCustomers() {
+            const searchTerm = document.getElementById('customerSearch').value.toLowerCase();
+            const customerCards = document.querySelectorAll('#customerList .customer-card');
+            
+            customerCards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        async function exportMessagesToCSV() {
+            try {
+                const response = await fetch('/api/messages');
+                const data = await response.json();
+                
+                if (!data.success || data.messages.length === 0) {
+                    showAlert('⚠️ No messages to export', 'error');
+                    return;
+                }
+
+                const headers = ['Date', 'Customer Name', 'Phone', 'Message Type', 'Additional Info'];
+                const rows = data.messages.map(msg => [
+                    new Date(msg.sent_at).toLocaleString(),
+                    msg.customer_name,
+                    msg.customer_phone,
+                    msg.message_type === 'review' ? 'Review Request' : 'Device Ready',
+                    msg.additional_info || ''
+                ]);
+
+                const csvContent = [
+                    headers.join(','),
+                    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+                ].join('\n');
+
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `message-history-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                showAlert('✅ Message history exported successfully!', 'success');
+            } catch (error) {
+                console.error('Export error:', error);
+                showAlert('❌ Failed to export messages', 'error');
+            }
+        }
+
+        async function exportCustomersToCSV() {
+            try {
+                const response = await fetch('/api/customers');
+                const data = await response.json();
+                
+                if (!data.success || data.customers.length === 0) {
+                    showAlert('⚠️ No customers to export', 'error');
+                    return;
+                }
+
+                const headers = ['Name', 'Phone', 'Total Messages', 'Last Contact'];
+                const rows = data.customers.map(customer => [
+                    customer.name,
+                    customer.phone,
+                    customer.message_count,
+                    customer.last_message_at ? new Date(customer.last_message_at).toLocaleDateString() : 'Never'
+                ]);
+
+                const csvContent = [
+                    headers.join(','),
+                    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+                ].join('\n');
+
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `customers-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                showAlert('✅ Customer list exported successfully!', 'success');
+            } catch (error) {
+                console.error('Export error:', error);
+                showAlert('❌ Failed to export customers', 'error');
+            }
         }
 
         window.addEventListener('DOMContentLoaded', () => {
