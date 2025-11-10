@@ -46,6 +46,34 @@ Implemented a comprehensive hybrid review tracking system that monitors customer
 - RESTful API endpoints for status updates and follow-up management
 - Idempotent click tracking (won't double-count repeated clicks)
 
+## User Authentication System with Multi-Tenant Support
+Implemented production-ready user authentication with personalized branding for each company:
+
+**Core Features:**
+- **Sign-up with Company Branding**: Each user registers with company name, personal info, billing address, and subscription choice
+- **Dynamic Company Header**: Main app displays "{Company Name} SMS Manager" based on logged-in user
+- **Password Security**: bcrypt hashing with 10 rounds, minimum 8 characters enforced
+- **Session Management**: PostgreSQL-backed sessions with 30-day expiry via express-session + connect-pg-simple
+- **CSRF Protection**: sameSite:strict cookies prevent cross-site request forgery
+- **Transaction-Safe Signup**: User + subscription creation wrapped in database transaction (no orphaned records)
+- **Welcome Emails**: Automated via Resend for paid plan signups
+
+**Password Reset Flow:**
+- **Forgot Password Link**: Added to login page for easy access
+- **Email-Based Reset**: Users request reset via email, receive secure link
+- **Crypto-Secure Tokens**: 32-byte random tokens with 1-hour expiry
+- **One-Time Use**: Tokens marked as 'used' after password reset
+- **Transaction-Safe Updates**: Password update + token invalidation wrapped in database transaction
+- **Generic Security Responses**: Doesn't leak user existence for enhanced security
+- **Email Notifications**: Branded password reset emails with button CTA and expiry warning
+
+**Technical Implementation:**
+- **Database Tables**: users (company info, personal details, billing address), user_sessions (session persistence), auth_tokens (password reset tokens)
+- **API Endpoints**: /api/auth/signup, /api/auth/login, /api/auth/logout, /api/auth/session, /api/auth/forgot-password, /api/auth/verify-reset-token, /api/auth/reset-password
+- **Frontend Pages**: signup.html, login.html, forgot-password.html, reset-password.html
+- **Connection Safety**: Proper database connection release in finally blocks prevents pool exhaustion
+- **Multi-Tenant Ready**: Each user's data (subscriptions, messages) linked via user_id foreign keys
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
