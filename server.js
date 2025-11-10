@@ -1590,8 +1590,14 @@ function parseOCRText(text) {
 
   const phoneRegex = /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}/g;
   const nameKeywords = ['name', 'customer', 'client'];
-  const deviceKeywords = ['device', 'model', 'equipment', 'product'];
-  const repairKeywords = ['issue', 'problem', 'repair', 'service', 'work'];
+  
+  const deviceModels = ['iphone', 'ipad', 'macbook', 'imac', 'samsung', 'galaxy', 'pixel', 
+    'oneplus', 'lg', 'motorola', 'huawei', 'xiaomi', 'oppo', 'hp', 'dell', 'lenovo', 'asus',
+    'acer', 'surface', 'thinkpad', 'chromebook', 'laptop', 'desktop', 'tablet', 'watch'];
+  
+  const repairIssues = ['screen', 'display', 'battery', 'charging', 'port', 'camera', 
+    'speaker', 'microphone', 'button', 'water damage', 'motherboard', 'logic board',
+    'cracked', 'broken', 'replacement', 'repair', 'glass', 'lcd', 'digitizer', 'back glass'];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -1620,17 +1626,19 @@ function parseOCRText(text) {
       }
     }
 
-    if (!device && deviceKeywords.some(keyword => lowerLine.includes(keyword))) {
-      const nextLine = lines[i + 1];
-      if (nextLine && nextLine.length > 2 && nextLine.length < 100) {
-        device = nextLine;
-      }
+    if (!device && deviceModels.some(model => lowerLine.includes(model))) {
+      device = line;
     }
 
-    if (!repair && repairKeywords.some(keyword => lowerLine.includes(keyword))) {
-      const nextLine = lines[i + 1];
-      if (nextLine && nextLine.length > 3 && nextLine.length < 150) {
-        repair = nextLine;
+    if (!repair) {
+      for (const issue of repairIssues) {
+        if (lowerLine.includes(issue)) {
+          const issueMatch = line.match(new RegExp(`\\b[\\w\\s]*(${issue})[\\w\\s]*\\b`, 'i'));
+          if (issueMatch) {
+            repair = issueMatch[0].trim();
+            break;
+          }
+        }
       }
     }
   }
@@ -1646,6 +1654,20 @@ function parseOCRText(text) {
           name = line;
           break;
         }
+      }
+    }
+  }
+
+  if (!device) {
+    const fullText = text.toLowerCase();
+    for (const model of deviceModels) {
+      const modelRegex = new RegExp(`\\b(${model}[\\s\\w\\d-]*(?:pro|max|plus|ultra|mini|air|se)?(?:\\s*\\d+)?(?:\\s*pro|max|plus)?(?:\\s*max)?)\\b`, 'i');
+      const match = fullText.match(modelRegex);
+      if (match) {
+        const startIndex = fullText.indexOf(match[0]);
+        const endIndex = startIndex + match[0].length;
+        device = text.substring(startIndex, endIndex).trim();
+        break;
       }
     }
   }
