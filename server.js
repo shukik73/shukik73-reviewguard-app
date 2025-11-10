@@ -12,7 +12,7 @@ import Stripe from 'stripe';
 import bcrypt from 'bcrypt';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
-import { sendWelcomeEmail, sendQuotaWarningEmail, sendPaymentFailedEmail } from './lib/resend.js';
+import { sendWelcomeEmail, sendQuotaWarningEmail, sendPaymentFailedEmail, sendPasswordResetEmail } from './lib/resend.js';
 
 const { Pool } = pg;
 
@@ -486,6 +486,207 @@ app.get('/api/auth/session', (req, res) => {
     });
   } else {
     res.json({ authenticated: false });
+  }
+});
+
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email is required'
+      });
+    }
+
+    const userResult = await pool.query(
+      'SELECT id, company_name, company_email, is_active FROM users WHERE company_email = $1',
+      [email.toLowerCase()]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.json({
+        success: true,
+        message: 'If an account exists with that email, a password reset link has been sent.'
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    if (!user.is_active) {
+      return res.json({
+        success: true,
+        message: 'If an account exists with that email, a password reset link has been sent.'
+      });
+    }
+
+    await pool.query(
+      'DELETE FROM auth_tokens WHERE user_id = $1 AND token_type = $2',
+      [user.id, 'password_reset']
+    );
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 3600000);
+
+    await pool.query(
+      'INSERT INTO auth_tokens (user_id, token, token_type, expires_at) VALUES ($1, $2, $3, $4)',
+      [user.id, resetToken, 'password_reset', expiresAt]
+    );
+
+    await sendPasswordResetEmail(user.company_email, resetToken, user.company_name);
+
+    res.json({
+      success: true,
+      message: 'If an account exists with that email, a password reset link has been sent.'
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process password reset request. Please try again.'
+    });
+  }
+});
+
+app.get('/api/auth/verify-reset-token', async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Token is required'
+      });
+    }
+
+    const tokenResult = await pool.query(
+      `SELECT t.id, t.user_id, t.expires_at, t.used, u.company_email, u.company_name 
+       FROM auth_tokens t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.token = $1 AND t.token_type = $2`,
+      [token, 'password_reset']
+    );
+
+    if (tokenResult.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid password reset token'
+      });
+    }
+
+    const tokenData = tokenResult.rows[0];
+
+    if (tokenData.used) {
+      return res.status(400).json({
+        success: false,
+        error: 'This password reset link has already been used'
+      });
+    }
+
+    if (new Date() > new Date(tokenData.expires_at)) {
+      return res.status(400).json({
+        success: false,
+        error: 'This password reset link has expired'
+      });
+    }
+
+    res.json({
+      success: true,
+      email: tokenData.company_email,
+      companyName: tokenData.company_name
+    });
+  } catch (error) {
+    console.error('Verify reset token error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to verify reset token'
+    });
+  }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Token and new password are required'
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password must be at least 8 characters long'
+      });
+    }
+
+    const tokenResult = await pool.query(
+      `SELECT t.id, t.user_id, t.expires_at, t.used 
+       FROM auth_tokens t
+       WHERE t.token = $1 AND t.token_type = $2`,
+      [token, 'password_reset']
+    );
+
+    if (tokenResult.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid password reset token'
+      });
+    }
+
+    const tokenData = tokenResult.rows[0];
+
+    if (tokenData.used) {
+      return res.status(400).json({
+        success: false,
+        error: 'This password reset link has already been used'
+      });
+    }
+
+    if (new Date() > new Date(tokenData.expires_at)) {
+      return res.status(400).json({
+        success: false,
+        error: 'This password reset link has expired'
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      await client.query(
+        'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [passwordHash, tokenData.user_id]
+      );
+
+      await client.query(
+        'UPDATE auth_tokens SET used = TRUE WHERE id = $1',
+        [tokenData.id]
+      );
+
+      await client.query('COMMIT');
+    } catch (dbError) {
+      await client.query('ROLLBACK');
+      throw dbError;
+    } finally {
+      client.release();
+    }
+
+    res.json({
+      success: true,
+      message: 'Password has been reset successfully. You can now log in with your new password.'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reset password. Please try again.'
+    });
   }
 });
 
