@@ -549,8 +549,9 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📱 Techy Miramar SMS Manager</h1>
+            <h1>📱 <span id="companyName">Loading...</span> SMS Manager</h1>
             <p>Review requests, pickup notifications & customer management</p>
+            <button id="logoutBtn" style="position: absolute; top: 40px; right: 40px; padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">Logout</button>
         </div>
 
         <div class="tabs">
@@ -837,6 +838,40 @@
     </div>
 
     <script>
+        (async function checkAuthentication() {
+            try {
+                const response = await fetch('/api/auth/session', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    window.location.href = '/signup.html';
+                    return;
+                }
+                
+                document.getElementById('companyName').textContent = data.user.companyName;
+                window.currentUser = data.user;
+            } catch (error) {
+                console.error('Authentication check failed:', error);
+                window.location.href = '/signup.html';
+            }
+        })();
+
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    await fetch('/api/auth/logout', {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    window.location.href = '/login.html';
+                } catch (error) {
+                    console.error('Logout failed:', error);
+                }
+            }
+        });
+
         const form = document.getElementById('reviewForm');
         const alertBox = document.getElementById('alertBox');
         const submitBtn = document.getElementById('submitBtn');
