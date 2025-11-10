@@ -912,7 +912,7 @@
         updateFormForMessageType();
 
         function parseTextForCustomerInfo(text) {
-            const lines = text.split('\n').map(line => line.trim());
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
             let name = '';
             let phone = '';
             let device = '';
@@ -933,79 +933,95 @@
                 }
             }
 
+            const commonWords = new Set([
+                'customer', 'information', 'service', 'repair', 'device', 'store', 'mobile',
+                'credits', 'edit', 'phone', 'email', 'address', 'name', 'contact', 'total',
+                'estimates', 'inquiries', 'added', 'by', 'date', 'time', 'invoice', 'receipt',
+                'order', 'number', 'status', 'payment', 'amount', 'tax', 'subtotal', 'notes',
+                'issue', 'problem', 'description', 'details', 'city', 'state', 'zip', 'country',
+                'street', 'avenue', 'road', 'lane', 'drive', 'court', 'place', 'way', 'tech',
+                'technician', 'repairman', 'manager', 'owner', 'staff', 'employee'
+            ]);
+
+            const namePatterns = [];
+            
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 
-                if (line.match(/customer\s+#\d+/i)) {
-                    for (let j = i + 1; j < Math.min(i + 8, lines.length); j++) {
-                        const nextLine = lines[j];
-                        if (!nextLine || nextLine.length < 3) continue;
-                        if (nextLine.match(/added|store|credits|notifications|email|alert|mobile/i)) continue;
-                        if (nextLine.match(/\d{3}/) || nextLine.match(/^\$/) || nextLine.match(/^[A-Z]{2}$/)) continue;
+                const cleaned = line.replace(/[|:;\+\-\(\)\.!@#$%^&*=\[\]{}]/g, ' ').trim();
+                
+                if (cleaned.length < 5 || cleaned.length > 60) continue;
+                
+                if (cleaned.match(/^\d+$/) || cleaned.match(/^[A-Z]{2,}$/)) continue;
+                
+                const words = cleaned.split(/\s+/).filter(w => w.length > 1);
+                
+                if (words.length >= 2 && words.length <= 4) {
+                    const firstWord = words[0].toLowerCase();
+                    
+                    if (firstWord.match(/^(full|first|last|mr|mrs|ms|dr)$/)) {
+                        continue;
+                    }
+                    
+                    const allLetters = words.every(w => w.match(/^[a-zA-Z]+$/));
+                    
+                    if (allLetters) {
+                        const hasCommonWord = words.some(w => commonWords.has(w.toLowerCase()));
                         
-                        const cleaned = nextLine.replace(/[|:;\+\-\(\)\.]/g, ' ').trim();
-                        const words = cleaned.split(/\s+/).filter(w => w.length > 1);
-                        
-                        if (words.length >= 2 && words.length <= 4) {
-                            const allLetters = words.every(w => w.match(/^[a-zA-Z]+$/));
-                            if (allLetters) {
+                        if (!hasCommonWord) {
+                            const hasCapital = words.some(w => w.charAt(0) === w.charAt(0).toUpperCase());
+                            
+                            if (hasCapital || words.every(w => w === w.toUpperCase() || w === w.toLowerCase())) {
                                 const titleCase = words
                                     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                                     .join(' ');
-                                name = titleCase;
-                                break;
+                                
+                                namePatterns.push({
+                                    name: titleCase,
+                                    score: 0,
+                                    index: i
+                                });
                             }
                         }
                     }
+                }
+            }
+
+            for (const pattern of namePatterns) {
+                if (lines[pattern.index - 1] && lines[pattern.index - 1].match(/name|customer|client/i)) {
+                    pattern.score += 50;
                 }
                 
-                if (line.match(/customer\s+information/i)) {
-                    for (let j = i + 1; j < Math.min(i + 15, lines.length); j++) {
-                        const nextLine = lines[j];
-                        if (!nextLine || nextLine.match(/mobile|store|credits|edit|phone|email/i)) continue;
-                        
-                        const cleaned = nextLine.replace(/[|:;\+\-\(\)\.]/g, ' ').trim();
-                        
-                        if (cleaned.length < 5 || cleaned.length > 50) continue;
-                        
-                        const words = cleaned.split(/\s+/).filter(w => w.length > 1);
-                        
-                        if (words.length === 2 || words.length === 3) {
-                            const allLetters = words.every(w => w.match(/^[a-zA-Z]+$/));
-                            
-                            if (allLetters && !words.some(w => w.match(/^(customer|information|mobile|store|credits|edit|by|fg|te)$/i))) {
-                                const titleCase = words
-                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                                    .join(' ');
-                                name = titleCase;
-                                break;
-                            }
-                        }
-                    }
+                if (pattern.index < 15) {
+                    pattern.score += (15 - pattern.index) * 2;
                 }
-
-                if (!name && line.length > 3 && line.length < 50 && line.match(/^[A-Z][A-Za-z\s]+$/)) {
-                    const words = line.split(/\s+/);
-                    if (words.length >= 2 && words.length <= 5 && !line.match(/CUSTOMER|INFORMATION|SERVICE|REPAIR|DEVICE|STORE|MOBILE|CREDITS|ESTIMATES|INQUIRIES|TOTAL/i)) {
-                        name = line;
-                    }
+                
+                const words = pattern.name.split(' ');
+                if (words.length === 2 || words.length === 3) {
+                    pattern.score += 10;
                 }
+                
+                if (pattern.name.match(/^[A-Z][a-z]+ [A-Z][a-z]+$/)) {
+                    pattern.score += 15;
+                }
+            }
 
+            if (namePatterns.length > 0) {
+                namePatterns.sort((a, b) => b.score - a.score);
+                name = namePatterns[0].name;
+            }
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
                 if (line.match(/service\s+information/i)) {
                     for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
                         const nextLine = lines[j];
                         
-                        if (nextLine.match(/(computer|cellphone|laptop|tablet|pc)\s+repairs\s*-/i)) {
-                            const deviceMatch = nextLine.match(/repairs\s*-\s*(.+)/i);
+                        if (nextLine.match(/(computer|cellphone|laptop|tablet|pc|iphone|ipad|macbook|samsung|hp|dell|lenovo|asus)\s+repairs?\s*-?/i)) {
+                            const deviceMatch = nextLine.match(/(?:repairs?\s*-?\s*)?(.+)/i);
                             if (deviceMatch) {
-                                const parts = deviceMatch[1].trim().split(/\s*-\s*/);
-                                let rawDevice = parts.length > 1 ? parts.slice(1).join(' - ') : parts[0];
-                                
-                                rawDevice = rawDevice.split(/\s+/).filter(word => {
-                                    return word.match(/^[a-zA-Z0-9]+$/) && word.length > 1;
-                                }).join(' ');
-                                
-                                device = rawDevice.trim();
+                                device = deviceMatch[1].trim().split(/\s*-\s*/)[0];
                             }
                         }
                         
@@ -1015,6 +1031,20 @@
                                 repair = issueMatch[1].trim();
                             }
                         }
+                    }
+                }
+                
+                if (!device && line.match(/device|product|item/i)) {
+                    const nextLine = lines[i + 1];
+                    if (nextLine && nextLine.match(/laptop|computer|phone|tablet|iphone|ipad|macbook|pc/i)) {
+                        device = nextLine.trim();
+                    }
+                }
+                
+                if (!repair && line.match(/issue|problem|repair/i)) {
+                    const nextLine = lines[i + 1];
+                    if (nextLine && nextLine.length > 5 && nextLine.length < 100) {
+                        repair = nextLine.trim();
                     }
                 }
             }
