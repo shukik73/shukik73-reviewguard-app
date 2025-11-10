@@ -30,6 +30,7 @@ async function initializeDatabase() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
+      company_name VARCHAR(255) NOT NULL,
       first_name VARCHAR(255) NOT NULL,
       last_name VARCHAR(255) NOT NULL,
       company_email VARCHAR(255) UNIQUE NOT NULL,
@@ -216,6 +217,253 @@ app.use(session({
 
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
+
+function requireAuth(req, res, next) {
+  if (!req.session || !req.session.userId) {
+    return res.status(401).json({ 
+      success: false, 
+      error: 'Authentication required',
+      code: 'AUTH_REQUIRED'
+    });
+  }
+  next();
+}
+
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const {
+      companyName,
+      firstName,
+      lastName,
+      email,
+      password,
+      billingStreet,
+      billingCity,
+      billingState,
+      billingZip,
+      billingCountry,
+      subscriptionOption
+    } = req.body;
+
+    if (!companyName || !firstName || !lastName || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Company name, first name, last name, email, and password are required'
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password must be at least 8 characters long'
+      });
+    }
+
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE company_email = $1',
+      [email.toLowerCase()]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'An account with this email already exists'
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const userResult = await pool.query(
+      `INSERT INTO users (
+        company_name, first_name, last_name, company_email, password_hash,
+        billing_address_street, billing_address_city, billing_address_state,
+        billing_address_zip, billing_address_country
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING id, company_name, first_name, last_name, company_email`,
+      [
+        companyName, firstName, lastName, email.toLowerCase(), passwordHash,
+        billingStreet || null, billingCity || null, billingState || null,
+        billingZip || null, billingCountry || 'USA'
+      ]
+    );
+
+    const user = userResult.rows[0];
+
+    let subscriptionStatus = 'trial';
+    let plan = 'free';
+    let smsQuota = 50;
+    let stripeCustomerId = null;
+    let stripeSubscriptionId = null;
+
+    if (subscriptionOption && subscriptionOption !== 'trial') {
+      try {
+        const customer = await stripe.customers.create({
+          email: email.toLowerCase(),
+          name: `${firstName} ${lastName}`,
+          metadata: {
+            user_id: user.id,
+            company_name: companyName
+          },
+          address: {
+            line1: billingStreet || '',
+            city: billingCity || '',
+            state: billingState || '',
+            postal_code: billingZip || '',
+            country: billingCountry || 'US'
+          }
+        });
+
+        stripeCustomerId = customer.id;
+
+        const priceId = subscriptionOption === 'starter' 
+          ? process.env.STRIPE_PRICE_ID_STARTER 
+          : process.env.STRIPE_PRICE_ID_PRO;
+
+        const subscription = await stripe.subscriptions.create({
+          customer: customer.id,
+          items: [{ price: priceId }],
+          payment_behavior: 'default_incomplete',
+          expand: ['latest_invoice.payment_intent']
+        });
+
+        stripeSubscriptionId = subscription.id;
+        subscriptionStatus = subscription.status;
+        plan = subscriptionOption;
+        smsQuota = subscriptionOption === 'starter' ? 500 : 2000;
+      } catch (stripeError) {
+        console.error('Stripe error during signup:', stripeError);
+      }
+    }
+
+    await pool.query(
+      `INSERT INTO subscriptions (
+        user_id, email, stripe_customer_id, stripe_subscription_id,
+        subscription_status, plan, sms_quota, sms_sent
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 0)`,
+      [user.id, email.toLowerCase(), stripeCustomerId, stripeSubscriptionId, subscriptionStatus, plan, smsQuota]
+    );
+
+    if (subscriptionStatus !== 'trial') {
+      try {
+        await sendWelcomeEmail(email, firstName, plan);
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+      }
+    }
+
+    req.session.userId = user.id;
+    req.session.userEmail = user.company_email;
+    req.session.companyName = user.company_name;
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        companyName: user.company_name,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.company_email
+      }
+    });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create account. Please try again.'
+    });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email and password are required'
+      });
+    }
+
+    const userResult = await pool.query(
+      'SELECT id, company_name, first_name, last_name, company_email, password_hash, is_active FROM users WHERE company_email = $1',
+      [email.toLowerCase()]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid email or password'
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    if (!user.is_active) {
+      return res.status(403).json({
+        success: false,
+        error: 'This account has been deactivated'
+      });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid email or password'
+      });
+    }
+
+    req.session.userId = user.id;
+    req.session.userEmail = user.company_email;
+    req.session.companyName = user.company_name;
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        companyName: user.company_name,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.company_email
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Login failed. Please try again.'
+    });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        error: 'Logout failed'
+      });
+    }
+    res.json({ success: true });
+  });
+});
+
+app.get('/api/auth/session', (req, res) => {
+  if (req.session && req.session.userId) {
+    res.json({
+      authenticated: true,
+      user: {
+        id: req.session.userId,
+        email: req.session.userEmail,
+        companyName: req.session.companyName
+      }
+    });
+  } else {
+    res.json({ authenticated: false });
+  }
+});
 
 let connectionSettings;
 
