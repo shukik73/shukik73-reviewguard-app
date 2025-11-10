@@ -9,6 +9,7 @@ import fs from 'fs';
 import pg from 'pg';
 import crypto from 'crypto';
 import Stripe from 'stripe';
+import { sendWelcomeEmail, sendQuotaWarningEmail, sendPaymentFailedEmail } from './lib/resend.js';
 
 const { Pool } = pg;
 
@@ -827,6 +828,10 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
           VALUES ($1, $2, $3, $4)
         `, ['checkout_completed', event.data.object, email, 'success']);
         
+        sendWelcomeEmail(email, planId).catch(err => 
+          console.error('Failed to send welcome email:', err)
+        );
+        
         console.log(`✅ Subscription activated for ${email} - Plan: ${planId}, Quota: ${smsQuota}`);
         break;
       }
@@ -865,6 +870,18 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
           INSERT INTO event_logs (event_type, event_data, status)
           VALUES ($1, $2, $3)
         `, [event.type, event.data.object, 'success']);
+
+        if (event.type === 'invoice.payment_failed') {
+          const subscriptionData = await pool.query(
+            'SELECT email FROM subscriptions WHERE stripe_subscription_id = $1',
+            [subscriptionId]
+          );
+          if (subscriptionData.rows.length > 0) {
+            sendPaymentFailedEmail(subscriptionData.rows[0].email).catch(err => 
+              console.error('Failed to send payment failed email:', err)
+            );
+          }
+        }
         
         console.log(`✅ Subscription deactivated: ${subscriptionId} - Reason: ${event.type}`);
         break;

@@ -745,9 +745,24 @@
             <h2 style="margin-bottom: 20px; color: #333;">💳 Subscription & Billing</h2>
             
             <div id="subscriptionStatus" style="margin-bottom: 30px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <h3 style="margin-bottom: 15px;">Current Plan</h3>
+                <h3 style="margin-bottom: 15px;">Current Plan & Usage</h3>
                 <div id="currentPlanInfo" style="color: #666;">
                     <p>Loading subscription status...</p>
+                </div>
+                <div id="usageMeter" style="margin-top: 20px; display: none;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-weight: 600; color: #333;">SMS Usage</span>
+                        <span id="usageText" style="color: #666;"></span>
+                    </div>
+                    <div style="width: 100%; height: 30px; background: #e9ecef; border-radius: 15px; overflow: hidden;">
+                        <div id="usageBar" style="height: 100%; background: linear-gradient(90deg, #28a745 0%, #ffc107 70%, #dc3545 90%); width: 0%; transition: width 0.5s ease;"></div>
+                    </div>
+                    <div id="usageWarning" style="margin-top: 10px; padding: 10px; border-radius: 8px; display: none;"></div>
+                </div>
+                <div id="portalButtonContainer" style="margin-top: 20px; display: none;">
+                    <button onclick="openCustomerPortal()" class="btn" style="background: #667eea;">
+                        🔧 Manage Subscription
+                    </button>
                 </div>
             </div>
 
@@ -1583,6 +1598,8 @@
             
             if (!email || !email.includes('@')) {
                 document.getElementById('currentPlanInfo').innerHTML = '<p style="color: #999;">Enter your email to check subscription status</p>';
+                document.getElementById('usageMeter').style.display = 'none';
+                document.getElementById('portalButtonContainer').style.display = 'none';
                 return;
             }
 
@@ -1598,17 +1615,17 @@
                         <div style="padding: 15px; background: #d4edda; border-left: 4px solid #28a745; border-radius: 5px;">
                             <p style="margin: 0 0 10px 0; color: #155724; font-weight: bold;">✅ Active Subscription</p>
                             <p style="margin: 0; color: #155724;"><strong>Plan:</strong> ${data.plan.toUpperCase()}</p>
-                            <p style="margin: 5px 0 0 0; color: #155724;"><strong>SMS Usage:</strong> ${data.sms_sent} / ${data.sms_quota} messages</p>
                         </div>
                     `;
+                    document.getElementById('portalButtonContainer').style.display = 'block';
                 } else if (data.subscription_status === 'trial') {
                     statusHTML = `
                         <div style="padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px;">
                             <p style="margin: 0 0 10px 0; color: #856404; font-weight: bold;">🎁 Trial Account</p>
-                            <p style="margin: 0; color: #856404;"><strong>SMS Usage:</strong> ${data.sms_sent} / ${data.sms_quota} messages</p>
                             <p style="margin: 5px 0 0 0; color: #856404; font-size: 14px;">Subscribe below to get more SMS credits!</p>
                         </div>
                     `;
+                    document.getElementById('portalButtonContainer').style.display = 'none';
                 } else {
                     statusHTML = `
                         <div style="padding: 15px; background: #f8d7da; border-left: 4px solid #dc3545; border-radius: 5px;">
@@ -1616,12 +1633,64 @@
                             <p style="margin: 5px 0 0 0; color: #721c24; font-size: 14px;">Subscribe below to start sending SMS messages!</p>
                         </div>
                     `;
+                    document.getElementById('portalButtonContainer').style.display = 'none';
                 }
                 
                 document.getElementById('currentPlanInfo').innerHTML = statusHTML;
+                
+                if (data.subscription_status !== 'none') {
+                    const usagePercentage = data.usage_percentage || 0;
+                    document.getElementById('usageMeter').style.display = 'block';
+                    document.getElementById('usageText').textContent = `${data.sms_sent} / ${data.sms_quota} (${usagePercentage}%)`;
+                    document.getElementById('usageBar').style.width = `${usagePercentage}%`;
+                    
+                    const warningDiv = document.getElementById('usageWarning');
+                    if (data.warning_level === 'critical') {
+                        warningDiv.style.display = 'block';
+                        warningDiv.style.background = '#f8d7da';
+                        warningDiv.style.color = '#721c24';
+                        warningDiv.innerHTML = `<strong>⚠️ Critical:</strong> You've used ${usagePercentage}% of your quota. Only ${data.remaining} messages left! Consider upgrading.`;
+                    } else if (data.warning_level === 'high') {
+                        warningDiv.style.display = 'block';
+                        warningDiv.style.background = '#fff3cd';
+                        warningDiv.style.color = '#856404';
+                        warningDiv.innerHTML = `<strong>⚠️ Warning:</strong> You've used ${usagePercentage}% of your quota. ${data.remaining} messages remaining.`;
+                    } else {
+                        warningDiv.style.display = 'none';
+                    }
+                } else {
+                    document.getElementById('usageMeter').style.display = 'none';
+                }
             } catch (error) {
                 console.error('Subscription status error:', error);
                 document.getElementById('currentPlanInfo').innerHTML = '<p style="color: #dc3545;">Error loading subscription status</p>';
+            }
+        }
+
+        async function openCustomerPortal() {
+            const email = localStorage.getItem('userEmail');
+            if (!email) {
+                showAlert('❌ Please enter your email first', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/create-portal-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+                
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    showAlert('❌ ' + (data.error || 'Failed to open billing portal'), 'error');
+                }
+            } catch (error) {
+                console.error('Portal error:', error);
+                showAlert('❌ Failed to open billing portal', 'error');
             }
         }
 
