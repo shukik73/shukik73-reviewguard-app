@@ -12,6 +12,8 @@ import Stripe from 'stripe';
 import bcrypt from 'bcrypt';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
+import sharp from 'sharp';
+import axios from 'axios';
 import { sendWelcomeEmail, sendQuotaWarningEmail, sendPaymentFailedEmail, sendPasswordResetEmail } from './lib/resend.js';
 
 const { Pool } = pg;
@@ -195,6 +197,22 @@ const upload = multer({
       return cb(null, true);
     } else {
       cb(new Error('Only images (JPEG, PNG, GIF) and PDFs are allowed'));
+    }
+  }
+});
+
+const ocrUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = /jpeg|jpg|png|gif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files (JPEG, PNG, GIF) are allowed for OCR'));
     }
   }
 });
@@ -1492,6 +1510,153 @@ app.get('/api/subscription-status', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+app.post('/api/ocr/process', ocrUpload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No image file provided'
+      });
+    }
+
+    const apiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({
+        success: false,
+        error: 'OCR service not configured'
+      });
+    }
+
+    const processedImageBuffer = await sharp(req.file.buffer)
+      .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
+      .normalize()
+      .sharpen()
+      .grayscale()
+      .toBuffer();
+
+    const base64Image = processedImageBuffer.toString('base64');
+
+    const response = await axios.post(
+      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
+      {
+        requests: [
+          {
+            image: {
+              content: base64Image
+            },
+            features: [
+              {
+                type: 'DOCUMENT_TEXT_DETECTION',
+                maxResults: 1
+              }
+            ]
+          }
+        ]
+      }
+    );
+
+    if (response.data.responses[0].error) {
+      throw new Error(response.data.responses[0].error.message);
+    }
+
+    const fullText = response.data.responses[0].fullTextAnnotation?.text || '';
+    
+    const extractedData = parseOCRText(fullText);
+
+    res.json({
+      success: true,
+      data: extractedData,
+      rawText: fullText
+    });
+
+  } catch (error) {
+    console.error('OCR processing error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process image',
+      details: error.message
+    });
+  }
+});
+
+function parseOCRText(text) {
+  const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+  
+  let name = '';
+  let phone = '';
+  let device = '';
+  let repair = '';
+
+  const phoneRegex = /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}/g;
+  const nameKeywords = ['name', 'customer', 'client'];
+  const deviceKeywords = ['device', 'model', 'equipment', 'product'];
+  const repairKeywords = ['issue', 'problem', 'repair', 'service', 'work'];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lowerLine = line.toLowerCase();
+
+    const phoneMatches = line.match(phoneRegex);
+    if (!phone && phoneMatches && phoneMatches.length > 0) {
+      let foundPhone = phoneMatches[0].replace(/[^\d]/g, '');
+      if (foundPhone.length === 10) {
+        phone = '+1' + foundPhone;
+      } else if (foundPhone.length === 11 && foundPhone.startsWith('1')) {
+        phone = '+' + foundPhone;
+      }
+    }
+
+    if (!name && nameKeywords.some(keyword => lowerLine.includes(keyword))) {
+      const nextLine = lines[i + 1];
+      if (nextLine && nextLine.length > 2 && nextLine.length < 100) {
+        const words = nextLine.split(/\s+/);
+        if (words.length >= 2 && words.length <= 5) {
+          const hasUpperCase = words.some(word => /[A-Z]/.test(word));
+          if (hasUpperCase) {
+            name = nextLine;
+          }
+        }
+      }
+    }
+
+    if (!device && deviceKeywords.some(keyword => lowerLine.includes(keyword))) {
+      const nextLine = lines[i + 1];
+      if (nextLine && nextLine.length > 2 && nextLine.length < 100) {
+        device = nextLine;
+      }
+    }
+
+    if (!repair && repairKeywords.some(keyword => lowerLine.includes(keyword))) {
+      const nextLine = lines[i + 1];
+      if (nextLine && nextLine.length > 3 && nextLine.length < 150) {
+        repair = nextLine;
+      }
+    }
+  }
+
+  if (!name) {
+    for (const line of lines) {
+      const words = line.split(/\s+/);
+      if (words.length >= 2 && words.length <= 4) {
+        const allWordsCapitalized = words.every(word => 
+          word.length > 1 && /^[A-Z]/.test(word) && /^[A-Za-z\-']+$/.test(word)
+        );
+        if (allWordsCapitalized && !phoneRegex.test(line)) {
+          name = line;
+          break;
+        }
+      }
+    }
+  }
+
+  return {
+    name: name.trim(),
+    phone: phone.trim(),
+    device: device.trim(),
+    repair: repair.trim()
+  };
+}
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });

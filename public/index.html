@@ -1091,16 +1091,27 @@
                 ocrPreview.classList.add('active');
 
                 try {
-                    const worker = await Tesseract.createWorker('eng');
-                    const { data: { text } } = await worker.recognize(e.target.result);
-                    await worker.terminate();
+                    const formData = new FormData();
+                    formData.append('image', file);
 
-                    console.log('Extracted text:', text);
+                    const response = await fetch('/api/ocr/process', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (!result.success) {
+                        throw new Error(result.error || 'OCR processing failed');
+                    }
+
+                    console.log('OCR Result:', result.data);
+                    console.log('Raw Text:', result.rawText);
 
                     document.getElementById('templateSection').classList.remove('active');
                     document.getElementById('templateSuggestions').innerHTML = '';
 
-                    const customerInfo = parseTextForCustomerInfo(text);
+                    const customerInfo = result.data;
                     
                     extractedName.textContent = customerInfo.name || 'Not found';
                     extractedPhone.textContent = customerInfo.phone || 'Not found';
@@ -1128,7 +1139,7 @@
                     }
                 } catch (error) {
                     console.error('OCR Error:', error);
-                    ocrStatus.textContent = '❌ Error processing image. Please enter information manually.';
+                    ocrStatus.textContent = '❌ Error processing image: ' + error.message;
                 }
 
                 labelElement.classList.remove('processing');
