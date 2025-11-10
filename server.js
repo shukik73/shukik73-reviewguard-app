@@ -552,6 +552,11 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       [user.id, resetToken, 'password_reset', expiresAt]
     );
 
+    const resetUrl = `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/reset-password.html?token=${resetToken}`;
+    console.log(`\n🔑 PASSWORD RESET LINK FOR ${user.company_email}:`);
+    console.log(`${resetUrl}`);
+    console.log(`This link expires in 1 hour.\n`);
+
     await sendPasswordResetEmail(user.company_email, resetToken, user.company_name);
 
     res.json({
