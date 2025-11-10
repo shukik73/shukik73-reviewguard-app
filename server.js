@@ -1603,24 +1603,31 @@ function parseOCRText(text) {
     const line = lines[i];
     const lowerLine = line.toLowerCase();
 
-    if (!phone && (lowerLine.includes('mobile') || lowerLine.includes('phone') || lowerLine.includes('tel'))) {
-      let phoneSearchText = line;
-      if (i + 1 < lines.length) {
-        phoneSearchText = line + ' ' + lines[i + 1];
-      }
+    if (!phone && (lowerLine.includes('mobile') || lowerLine.includes('phone') || lowerLine.includes('tel')) && !lowerLine.includes('imei')) {
+      const digits = line.replace(/[^\d]/g, '');
       
-      const phoneMatches = phoneSearchText.match(phoneRegex);
-      if (phoneMatches && phoneMatches.length > 0) {
-        let foundPhone = phoneMatches[0].replace(/[^\d]/g, '');
-        if (foundPhone.length === 10) {
-          phone = '+1' + foundPhone;
-        } else if (foundPhone.length === 11 && foundPhone.startsWith('1')) {
-          phone = '+' + foundPhone;
-        } else if (foundPhone.length > 11) {
-          foundPhone = foundPhone.substring(0, 11);
-          if (foundPhone.startsWith('1')) {
-            phone = '+' + foundPhone;
+      if (digits.length >= 6) {
+        let phoneNumber = digits;
+        
+        if (digits.length < 10) {
+          for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
+            const nextLine = lines[j];
+            if (nextLine.toLowerCase().includes('imei')) continue;
+            
+            const nextDigits = nextLine.replace(/[^\d]/g, '');
+            if (nextDigits.length > 0 && nextDigits.length <= 4) {
+              phoneNumber += nextDigits;
+              if (phoneNumber.length >= 10) break;
+            }
           }
+        }
+        
+        if (phoneNumber.length === 10) {
+          phone = '+1' + phoneNumber;
+        } else if (phoneNumber.length === 11 && phoneNumber.startsWith('1')) {
+          phone = '+' + phoneNumber;
+        } else if (phoneNumber.length > 11 && phoneNumber.startsWith('1')) {
+          phone = '+' + phoneNumber.substring(0, 11);
         }
       }
     }
