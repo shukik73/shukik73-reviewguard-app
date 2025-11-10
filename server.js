@@ -293,7 +293,19 @@ app.post('/api/auth/signup', async (req, res) => {
     if (existingUser.rows.length > 0) {
       return res.status(400).json({
         success: false,
-        error: 'An account with this email already exists'
+        error: 'An account with this email already exists. Please try logging in instead.'
+      });
+    }
+
+    const existingSubscription = await pool.query(
+      'SELECT email FROM subscriptions WHERE email = $1',
+      [email.toLowerCase()]
+    );
+
+    if (existingSubscription.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'This email is already registered. Please try logging in or use a different email address.'
       });
     }
 
@@ -409,9 +421,24 @@ app.post('/api/auth/signup', async (req, res) => {
     });
   } catch (error) {
     console.error('Signup error:', error);
+    
+    let errorMessage = 'Failed to create account. Please try again.';
+    
+    if (error.code === '23505') {
+      if (error.constraint === 'users_company_email_key' || error.constraint === 'subscriptions_email_key') {
+        errorMessage = 'This email is already registered. Please try logging in or use a different email address.';
+      } else {
+        errorMessage = 'A record with this information already exists.';
+      }
+    } else if (error.message && error.message.includes('password')) {
+      errorMessage = 'Password requirements not met. Please use at least 8 characters.';
+    } else if (error.message) {
+      errorMessage = `Signup failed: ${error.message}`;
+    }
+    
     res.status(500).json({
       success: false,
-      error: 'Failed to create account. Please try again.'
+      error: errorMessage
     });
   }
 });
