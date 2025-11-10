@@ -4,6 +4,30 @@ This Node.js web application functions as a comprehensive SMS Manager tailored f
 
 # Recent Changes (November 2025)
 
+## Google Cloud Vision OCR Integration
+Replaced unreliable client-side Tesseract.js with professional Google Cloud Vision API for accurate text extraction from phone camera photos:
+
+**Core Features:**
+- **Backend OCR Processing**: New /api/ocr/process endpoint handles image processing server-side
+- **Image Preprocessing**: Sharp library optimizes images before OCR (resize 2000x2000, normalize, sharpen, grayscale)
+- **Google Cloud Vision API**: DOCUMENT_TEXT_DETECTION provides high-accuracy text recognition
+- **Smart Field Extraction**: Keyword-based parsing extracts customer name, phone, device type, and repair issue
+- **Fallback Name Detection**: Capitalization pattern matching when keywords not found
+- **Free Tier**: 1,000 OCR requests/month included free from Google Cloud
+
+**Technical Implementation:**
+- **Memory Storage**: Separate multer instance (ocrUpload) uses memoryStorage for in-memory processing
+- **Image Preprocessing**: Sharp pipeline (resize, normalize, sharpen, grayscale) enhances OCR accuracy
+- **Google Vision API**: Axios POST to vision.googleapis.com/v1/images:annotate with base64-encoded image
+- **Smart Parsing**: parseOCRText extracts structured fields using keyword detection and regex patterns
+- **Phone Formatting**: Auto-converts to E.164 format (+1XXXXXXXXXX for US numbers)
+- **Frontend Integration**: FormData upload to backend, real-time status updates, editable extracted fields
+
+**Benefits:**
+- Reliably extracts customer data from poor quality phone photos
+- Handles skewed, low-contrast, and complex document layouts
+- Reduces manual data entry errors and saves time
+
 ## Stripe Subscription Billing with Transaction-Based Quota Enforcement
 Implemented production-ready subscription billing with race-condition-free SMS quota management:
 
@@ -102,11 +126,11 @@ Twilio SMS/MMS integration facilitates sending Google Review requests or Device 
 
 ## OCR Text Extraction
 
-Tesseract.js (client-side via CDN) automatically extracts customer information from repair order photos. This browser-based processing includes:
+**Google Cloud Vision API Integration** - Professional-grade OCR service for reliable text extraction from phone camera photos of repair orders.
 
 **Extracted Data:**
-- Customer name from "Customer Information" section
-- Phone number with international format support
+- Customer name (keyword-based detection + capitalization patterns)
+- Phone number with E.164 international format support
 - **Device type** from "Service Information" section (e.g., "HP Laptop", "iPhone 14")
 - **Repair issue** from "Device Issue" line (e.g., "Motherboard Replacement", "Battery Replacement")
 
@@ -117,10 +141,12 @@ When both device and repair are detected, the app automatically suggests context
 - One-click "Use This" button to apply template to message
 
 **Processing:**
-- Scans for "Customer Information" and "Service Information" sections
-- Brand-agnostic device extraction (handles "HP", "Apple", "Samsung", etc.)
-- Regex-based phone number detection
-- Template section only appears when device + repair are found
+- **Backend OCR Endpoint**: POST /api/ocr/process with in-memory image processing
+- **Image Preprocessing**: Sharp library (resize 2000x2000, normalize, sharpen, grayscale)
+- **Google Cloud Vision**: DOCUMENT_TEXT_DETECTION for high-accuracy OCR
+- **Smart Parsing**: Keyword-based extraction (name, customer, device, issue, repair, etc.)
+- **Fallback Detection**: Capitalized name patterns when keywords not found
+- **Free Tier**: 1,000 OCR requests/month free from Google Cloud
 - All extracted data is editable with graceful fallback if OCR fails
 
 ## Frontend Architecture
@@ -143,6 +169,7 @@ The UI offers real-time validation, notifications, responsiveness, dynamic adapt
 ## APIs and Services
 
 - **Twilio Communications API**: Used for SMS and MMS messaging, integrated via Replit Connector.
+- **Google Cloud Vision API**: Professional OCR service for accurate text extraction from repair order photos (1,000 free requests/month).
 
 ## Runtime Dependencies
 
@@ -152,7 +179,8 @@ The UI offers real-time validation, notifications, responsiveness, dynamic adapt
 - **twilio**: Twilio SDK for SMS/MMS.
 - **pg**: PostgreSQL client for Node.js.
 - **multer**: Multipart form data and file uploads.
-- **tesseract.js**: Client-side OCR for text extraction from images.
+- **sharp**: Image preprocessing for OCR (resize, normalize, sharpen).
+- **axios**: HTTP client for Google Cloud Vision API calls.
 
 ## Database Layer
 
