@@ -64,6 +64,20 @@ async function initializeDatabase() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS event_logs (
+      id SERIAL PRIMARY KEY,
+      event_type VARCHAR(100) NOT NULL,
+      event_data JSONB,
+      email VARCHAR(255),
+      status VARCHAR(50),
+      error_message TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_event_logs_email ON event_logs(email);
+    CREATE INDEX IF NOT EXISTS idx_event_logs_type ON event_logs(event_type);
+    CREATE INDEX IF NOT EXISTS idx_event_logs_created ON event_logs(created_at DESC);
   `);
 
   await pool.query(`
@@ -697,6 +711,37 @@ app.post('/api/create-checkout-session', async (req, res) => {
   }
 });
 
+app.post('/api/create-portal-session', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const subscription = await pool.query(
+      'SELECT stripe_customer_id FROM subscriptions WHERE email = $1',
+      [email]
+    );
+
+    if (subscription.rows.length === 0 || !subscription.rows[0].stripe_customer_id) {
+      return res.status(404).json({ 
+        error: 'No subscription found. Please subscribe first.' 
+      });
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: subscription.rows[0].stripe_customer_id,
+      return_url: `${req.protocol}://${req.get('host')}/`,
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error('Stripe portal error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/pricing', (req, res) => {
   const plans = {
     starter: {
@@ -776,6 +821,11 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
             sms_quota = $5,
             updated_at = CURRENT_TIMESTAMP
         `, [email, stripeCustomerId, stripeSubscriptionId, planId, smsQuota]);
+
+        await pool.query(`
+          INSERT INTO event_logs (event_type, event_data, email, status)
+          VALUES ($1, $2, $3, $4)
+        `, ['checkout_completed', event.data.object, email, 'success']);
         
         console.log(`✅ Subscription activated for ${email} - Plan: ${planId}, Quota: ${smsQuota}`);
         break;
@@ -790,6 +840,11 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
           SET subscription_status = $1, updated_at = CURRENT_TIMESTAMP
           WHERE stripe_subscription_id = $2
         `, [status, subscription.id]);
+
+        await pool.query(`
+          INSERT INTO event_logs (event_type, event_data, status)
+          VALUES ($1, $2, $3)
+        `, ['subscription_updated', event.data.object, 'success']);
         
         console.log(`✅ Subscription updated: ${subscription.id} -> ${status}`);
         break;
@@ -805,15 +860,33 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
           SET subscription_status = 'inactive', updated_at = CURRENT_TIMESTAMP
           WHERE stripe_subscription_id = $1
         `, [subscriptionId]);
+
+        await pool.query(`
+          INSERT INTO event_logs (event_type, event_data, status)
+          VALUES ($1, $2, $3)
+        `, [event.type, event.data.object, 'success']);
         
-        console.log(`✅ Subscription deactivated: ${subscriptionId}`);
+        console.log(`✅ Subscription deactivated: ${subscriptionId} - Reason: ${event.type}`);
         break;
       }
+
+      default:
+        await pool.query(`
+          INSERT INTO event_logs (event_type, event_data, status)
+          VALUES ($1, $2, $3)
+        `, [event.type, event.data.object, 'unhandled']);
+        console.log(`⚠️ Unhandled webhook event: ${event.type}`);
     }
 
     res.json({ received: true });
   } catch (error) {
-    console.error('Webhook processing error:', error);
+    console.error('❌ Webhook processing error:', error);
+    
+    await pool.query(`
+      INSERT INTO event_logs (event_type, event_data, status, error_message)
+      VALUES ($1, $2, $3, $4)
+    `, [event.type, event.data?.object || {}, 'error', error.message]);
+    
     res.status(500).json({ error: error.message });
   }
 });
@@ -836,11 +909,33 @@ app.get('/api/subscription-status', async (req, res) => {
         subscription_status: 'none',
         plan: 'free',
         sms_quota: 50,
-        sms_sent: 0
+        sms_sent: 0,
+        usage_percentage: 0,
+        warning_level: 'none'
       });
     }
 
-    res.json(result.rows[0]);
+    const { subscription_status, plan, sms_quota, sms_sent } = result.rows[0];
+    const usagePercentage = (sms_sent / sms_quota) * 100;
+    
+    let warningLevel = 'none';
+    if (usagePercentage >= 90) {
+      warningLevel = 'critical';
+    } else if (usagePercentage >= 80) {
+      warningLevel = 'high';
+    } else if (usagePercentage >= 60) {
+      warningLevel = 'medium';
+    }
+
+    res.json({
+      subscription_status,
+      plan,
+      sms_quota,
+      sms_sent,
+      usage_percentage: Math.round(usagePercentage),
+      warning_level: warningLevel,
+      remaining: sms_quota - sms_sent
+    });
   } catch (error) {
     console.error('Error fetching subscription status:', error);
     res.status(500).json({ error: error.message });
