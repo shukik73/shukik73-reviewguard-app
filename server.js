@@ -9,6 +9,9 @@ import fs from 'fs';
 import pg from 'pg';
 import crypto from 'crypto';
 import Stripe from 'stripe';
+import bcrypt from 'bcrypt';
+import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
 import { sendWelcomeEmail, sendQuotaWarningEmail, sendPaymentFailedEmail } from './lib/resend.js';
 
 const { Pool } = pg;
@@ -25,6 +28,23 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 async function initializeDatabase() {
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      first_name VARCHAR(255) NOT NULL,
+      last_name VARCHAR(255) NOT NULL,
+      company_email VARCHAR(255) UNIQUE NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      billing_address_street VARCHAR(500),
+      billing_address_city VARCHAR(100),
+      billing_address_state VARCHAR(100),
+      billing_address_zip VARCHAR(20),
+      billing_address_country VARCHAR(100) DEFAULT 'USA',
+      email_verified BOOLEAN DEFAULT FALSE,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS customers (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
@@ -47,6 +67,19 @@ async function initializeDatabase() {
       twilio_sid VARCHAR(100)
     );
 
+    CREATE TABLE IF NOT EXISTS auth_tokens (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      token VARCHAR(255) UNIQUE NOT NULL,
+      token_type VARCHAR(50) NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      used BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(company_email);
+    CREATE INDEX IF NOT EXISTS idx_auth_tokens_token ON auth_tokens(token);
+    CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON auth_tokens(user_id);
     CREATE INDEX IF NOT EXISTS idx_messages_sent_at ON messages(sent_at DESC);
     CREATE INDEX IF NOT EXISTS idx_messages_customer_id ON messages(customer_id);
     CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
@@ -111,6 +144,14 @@ async function initializeDatabase() {
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='follow_up_message_id') THEN
         ALTER TABLE messages ADD COLUMN follow_up_message_id INTEGER REFERENCES messages(id) ON DELETE SET NULL;
       END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subscriptions' AND column_name='user_id') THEN
+        ALTER TABLE subscriptions ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='user_id') THEN
+        ALTER TABLE messages ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+      END IF;
     END $$;
   `);
   
@@ -150,9 +191,29 @@ const upload = multer({
   }
 });
 
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+const PgSession = connectPgSimple(session);
+app.use(session({
+  store: new PgSession({
+    pool: pool,
+    tableName: 'user_sessions'
+  }),
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 30 * 24 * 60 * 60 * 1000
+  }
+}));
+
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
