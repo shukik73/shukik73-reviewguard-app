@@ -110,9 +110,16 @@ async function initializeDatabase() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS user_sessions (
+      sid VARCHAR PRIMARY KEY,
+      sess JSON NOT NULL,
+      expire TIMESTAMP NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_event_logs_email ON event_logs(email);
     CREATE INDEX IF NOT EXISTS idx_event_logs_type ON event_logs(event_type);
     CREATE INDEX IF NOT EXISTS idx_event_logs_created ON event_logs(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_user_sessions_expire ON user_sessions(expire);
   `);
 
   await pool.query(`
@@ -211,6 +218,7 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
+    sameSite: 'strict',
     maxAge: 30 * 24 * 60 * 60 * 1000
   }
 }));
@@ -273,22 +281,6 @@ app.post('/api/auth/signup', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const userResult = await pool.query(
-      `INSERT INTO users (
-        company_name, first_name, last_name, company_email, password_hash,
-        billing_address_street, billing_address_city, billing_address_state,
-        billing_address_zip, billing_address_country
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      RETURNING id, company_name, first_name, last_name, company_email`,
-      [
-        companyName, firstName, lastName, email.toLowerCase(), passwordHash,
-        billingStreet || null, billingCity || null, billingState || null,
-        billingZip || null, billingCountry || 'USA'
-      ]
-    );
-
-    const user = userResult.rows[0];
-
     let subscriptionStatus = 'trial';
     let plan = 'free';
     let smsQuota = 50;
@@ -301,7 +293,6 @@ app.post('/api/auth/signup', async (req, res) => {
           email: email.toLowerCase(),
           name: `${firstName} ${lastName}`,
           metadata: {
-            user_id: user.id,
             company_name: companyName
           },
           address: {
@@ -332,16 +323,49 @@ app.post('/api/auth/signup', async (req, res) => {
         smsQuota = subscriptionOption === 'starter' ? 500 : 2000;
       } catch (stripeError) {
         console.error('Stripe error during signup:', stripeError);
+        return res.status(500).json({
+          success: false,
+          error: 'Payment setup failed. Please try again or select the free trial option.'
+        });
       }
     }
 
-    await pool.query(
-      `INSERT INTO subscriptions (
-        user_id, email, stripe_customer_id, stripe_subscription_id,
-        subscription_status, plan, sms_quota, sms_sent
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 0)`,
-      [user.id, email.toLowerCase(), stripeCustomerId, stripeSubscriptionId, subscriptionStatus, plan, smsQuota]
-    );
+    const client = await pool.connect();
+    let user;
+    try {
+      await client.query('BEGIN');
+
+      const userResult = await client.query(
+        `INSERT INTO users (
+          company_name, first_name, last_name, company_email, password_hash,
+          billing_address_street, billing_address_city, billing_address_state,
+          billing_address_zip, billing_address_country
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING id, company_name, first_name, last_name, company_email`,
+        [
+          companyName, firstName, lastName, email.toLowerCase(), passwordHash,
+          billingStreet || null, billingCity || null, billingState || null,
+          billingZip || null, billingCountry || 'USA'
+        ]
+      );
+
+      user = userResult.rows[0];
+
+      await client.query(
+        `INSERT INTO subscriptions (
+          user_id, email, stripe_customer_id, stripe_subscription_id,
+          subscription_status, plan, sms_quota, sms_sent
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 0)`,
+        [user.id, email.toLowerCase(), stripeCustomerId, stripeSubscriptionId, subscriptionStatus, plan, smsQuota]
+      );
+
+      await client.query('COMMIT');
+    } catch (dbError) {
+      await client.query('ROLLBACK');
+      throw dbError;
+    } finally {
+      client.release();
+    }
 
     if (subscriptionStatus !== 'trial') {
       try {
