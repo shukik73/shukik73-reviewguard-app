@@ -1603,13 +1603,37 @@ function parseOCRText(text) {
     const line = lines[i];
     const lowerLine = line.toLowerCase();
 
-    const phoneMatches = line.match(phoneRegex);
-    if (!phone && phoneMatches && phoneMatches.length > 0) {
-      let foundPhone = phoneMatches[0].replace(/[^\d]/g, '');
-      if (foundPhone.length === 10) {
-        phone = '+1' + foundPhone;
-      } else if (foundPhone.length === 11 && foundPhone.startsWith('1')) {
-        phone = '+' + foundPhone;
+    if (!phone && (lowerLine.includes('mobile') || lowerLine.includes('phone') || lowerLine.includes('tel'))) {
+      let phoneSearchText = line;
+      if (i + 1 < lines.length) {
+        phoneSearchText = line + ' ' + lines[i + 1];
+      }
+      
+      const phoneMatches = phoneSearchText.match(phoneRegex);
+      if (phoneMatches && phoneMatches.length > 0) {
+        let foundPhone = phoneMatches[0].replace(/[^\d]/g, '');
+        if (foundPhone.length === 10) {
+          phone = '+1' + foundPhone;
+        } else if (foundPhone.length === 11 && foundPhone.startsWith('1')) {
+          phone = '+' + foundPhone;
+        } else if (foundPhone.length > 11) {
+          foundPhone = foundPhone.substring(0, 11);
+          if (foundPhone.startsWith('1')) {
+            phone = '+' + foundPhone;
+          }
+        }
+      }
+    }
+    
+    if (!phone) {
+      const phoneMatches = line.match(phoneRegex);
+      if (phoneMatches && phoneMatches.length > 0) {
+        let foundPhone = phoneMatches[0].replace(/[^\d]/g, '');
+        if (foundPhone.length === 10) {
+          phone = '+1' + foundPhone;
+        } else if (foundPhone.length === 11 && foundPhone.startsWith('1')) {
+          phone = '+' + foundPhone;
+        }
       }
     }
 
