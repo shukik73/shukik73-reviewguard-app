@@ -918,8 +918,23 @@
             let device = '';
             let repair = '';
 
-            const phoneRegex = /[\+\(]?[1-9]\d{0,2}[\s\-\.]?\(?\d{2,3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{4}/g;
-            const phoneMatches = text.match(phoneRegex);
+            let allDigits = text.replace(/[^\d]/g, '');
+            
+            const phonePatterns = [
+                /\+?\d{1,3}[\s\-\.]?\(?\d{3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{4}/g,
+                /\(?\d{3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{4}/g,
+                /\d{3}[\s\-\.]\d{3}[\s\-\.]\d{4}/g,
+                /\d{10,11}/g
+            ];
+            
+            let phoneMatches = null;
+            for (const pattern of phonePatterns) {
+                phoneMatches = text.match(pattern);
+                if (phoneMatches && phoneMatches.length > 0) {
+                    break;
+                }
+            }
+            
             if (phoneMatches && phoneMatches.length > 0) {
                 phone = phoneMatches[0].replace(/[\s\-\(\)\.]/g, '');
                 if (!phone.startsWith('+')) {
@@ -927,7 +942,17 @@
                         phone = '+1' + phone;
                     } else if (phone.length === 11 && phone.startsWith('1')) {
                         phone = '+' + phone;
-                    } else {
+                    } else if (phone.length > 10) {
+                        phone = '+' + phone;
+                    }
+                }
+            } else if (allDigits.length >= 10) {
+                const sequences = allDigits.match(/\d{10,11}/g);
+                if (sequences && sequences.length > 0) {
+                    phone = sequences[0];
+                    if (phone.length === 10) {
+                        phone = '+1' + phone;
+                    } else if (phone.length === 11 && phone.startsWith('1')) {
                         phone = '+' + phone;
                     }
                 }
@@ -1094,10 +1119,12 @@
                         generateTemplateSuggestions(customerInfo.device, customerInfo.repair, customerInfo.name);
                     }
 
-                    if (customerInfo.name || customerInfo.phone) {
+                    if (customerInfo.name && customerInfo.phone) {
                         ocrStatus.textContent = '✅ Customer information extracted! You can edit the fields below if needed.';
+                    } else if (customerInfo.name || customerInfo.phone) {
+                        ocrStatus.textContent = `✅ Found ${customerInfo.name ? 'name' : 'phone'}. Please enter the ${customerInfo.name ? 'phone number' : 'name'} manually.`;
                     } else {
-                        ocrStatus.textContent = '⚠️ Could not extract customer info. Please enter manually below.';
+                        ocrStatus.textContent = '⚠️ Could not extract customer info. Try taking a clearer photo or enter manually below.';
                     }
                 } catch (error) {
                     console.error('OCR Error:', error);
