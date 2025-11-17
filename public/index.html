@@ -566,9 +566,11 @@
 
         <div id="sendTab" class="tab-content active">
 
+        <h2 style="color: #333; margin-bottom: 20px; font-size: 20px;">Step 1 – Get customer details</h2>
+        
         <div class="ocr-section">
             <h3>📸 Quick Fill from Repair Order (Optional)</h3>
-            <p style="font-size: 14px; margin-bottom: 15px; opacity: 0.9;">Upload a photo of your repair order to automatically extract customer information</p>
+            <p style="font-size: 14px; margin-bottom: 15px; opacity: 0.9;">Upload or take a photo of your repair order to automatically extract customer information</p>
             
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <input 
@@ -620,12 +622,16 @@
             <div id="templateSuggestions"></div>
         </div>
 
+        <h2 style="color: #333; margin: 30px 0 20px 0; font-size: 20px;">Step 2 – Compose & send SMS</h2>
+
         <form id="reviewForm">
             <div class="form-group">
                 <label for="messageType">Message Type *</label>
                 <select id="messageType" name="messageType" required>
-                    <option value="review">🌟 Google Review Request</option>
-                    <option value="ready">✅ Device Ready for Pickup</option>
+                    <option value="review">⭐ Google Review Request</option>
+                    <option value="ready">🔔 Device Ready for Pickup</option>
+                    <option value="follow_up">🔁 Follow-Up / Check-In</option>
+                    <option value="custom">💬 Custom Message</option>
                 </select>
             </div>
 
@@ -694,9 +700,24 @@
                 </div>
             </div>
 
+            <div class="message-preview-section" id="messagePreviewSection" style="margin-top: 30px; padding: 20px; background: #f0f4ff; border-radius: 10px; border-left: 4px solid #667eea;">
+                <h4 style="margin-bottom: 15px; color: #333; display: flex; align-items: center; gap: 8px;">
+                    📲 Message Preview
+                </h4>
+                <div id="messagePreview" style="background: white; padding: 15px; border-radius: 8px; color: #333; line-height: 1.6; white-space: pre-wrap; min-height: 60px; font-size: 14px;">
+                    <em style="color: #999;">Fill in customer details to see message preview...</em>
+                </div>
+                <div id="previewRecipient" style="margin-top: 10px; font-size: 13px; color: #666;">
+                    
+                </div>
+            </div>
+
             <button type="submit" class="btn" id="submitBtn">
                 Send Review Request
             </button>
+            <div id="sendButtonDescription" style="text-align: center; margin-top: 10px; font-size: 13px; color: #666;">
+                
+            </div>
         </form>
         </div>
 
@@ -894,19 +915,101 @@
         const customerNameInput = document.getElementById('customerName');
         const customerPhoneInput = document.getElementById('customerPhone');
 
+        const messageTemplates = {
+            review: {
+                base: 'Thank you for choosing Techy Miramar! If you were happy with your repair, we\'d love if you could leave us a quick review.',
+                buttonText: 'Send Review Request',
+                helperText: 'Personalize with repair details',
+                showReviewLink: true
+            },
+            ready: {
+                base: 'Good news! Your device is ready for pickup at Techy Miramar.',
+                buttonText: 'Send Pickup Notification',
+                helperText: 'Add pickup instructions or hours',
+                showReviewLink: false
+            },
+            follow_up: {
+                base: 'Hi! Just checking in to see how your device is working after the repair. Is everything running smoothly?',
+                buttonText: 'Send Follow-Up Message',
+                helperText: 'Add specific questions or offer support',
+                showReviewLink: false
+            },
+            custom: {
+                base: '',
+                buttonText: 'Send Custom Message',
+                helperText: 'Write your custom message',
+                showReviewLink: false
+            }
+        };
+
         function updateFormForMessageType() {
             const messageType = messageTypeSelect.value;
-            if (messageType === 'review') {
-                reviewLinkGroup.style.display = 'block';
-                submitBtn.textContent = 'Send Review Request';
-                additionalInfoHelper.textContent = 'Personalize the message with repair details';
-            } else {
-                reviewLinkGroup.style.display = 'none';
-                submitBtn.textContent = 'Send Pickup Notification';
-                additionalInfoHelper.textContent = 'Add pickup instructions or location details';
+            const template = messageTemplates[messageType];
+            
+            if (template) {
+                reviewLinkGroup.style.display = template.showReviewLink ? 'block' : 'none';
+                submitBtn.textContent = template.buttonText;
+                additionalInfoHelper.textContent = template.helperText;
+                
+                // Auto-populate the additional message field with the template if it's empty
+                const additionalInfo = document.getElementById('additionalInfo');
+                if (!additionalInfo.value || Object.values(messageTemplates).some(t => additionalInfo.value === t.base)) {
+                    additionalInfo.value = template.base;
+                }
             }
+            
+            updateMessagePreview();
         }
 
+        function updateMessagePreview() {
+            const messageType = messageTypeSelect.value;
+            const customerName = customerNameInput.value.trim();
+            const customerPhone = customerPhoneInput.value.trim();
+            const additionalInfo = document.getElementById('additionalInfo').value.trim();
+            const reviewLink = document.getElementById('googleReviewLink').value.trim();
+            
+            const previewDiv = document.getElementById('messagePreview');
+            const recipientDiv = document.getElementById('previewRecipient');
+            const descriptionDiv = document.getElementById('sendButtonDescription');
+            
+            // Build the message preview
+            let message = '';
+            
+            if (additionalInfo) {
+                message = additionalInfo;
+                
+                // Add review link if message type is review
+                if (messageType === 'review' && reviewLink) {
+                    message += `\n\n${reviewLink}`;
+                }
+            } else {
+                message = '<em style="color: #999;">Fill in customer details to see message preview...</em>';
+            }
+            
+            // Update preview
+            previewDiv.innerHTML = message;
+            
+            // Update recipient info
+            if (customerName || customerPhone) {
+                recipientDiv.innerHTML = `<strong>To:</strong> ${customerName || '(Name not provided)'} ${customerPhone ? `• ${customerPhone}` : ''}`;
+            } else {
+                recipientDiv.innerHTML = '';
+            }
+            
+            // Update send button description
+            if (customerPhone) {
+                descriptionDiv.textContent = `This will send 1 SMS to ${customerPhone} using your Twilio number.`;
+            } else {
+                descriptionDiv.textContent = '';
+            }
+        }
+        
+        // Add event listeners to all form fields to update preview
+        customerNameInput.addEventListener('input', updateMessagePreview);
+        customerPhoneInput.addEventListener('input', updateMessagePreview);
+        document.getElementById('additionalInfo').addEventListener('input', updateMessagePreview);
+        document.getElementById('googleReviewLink').addEventListener('input', updateMessagePreview);
+        
         messageTypeSelect.addEventListener('change', updateFormForMessageType);
 
         updateFormForMessageType();

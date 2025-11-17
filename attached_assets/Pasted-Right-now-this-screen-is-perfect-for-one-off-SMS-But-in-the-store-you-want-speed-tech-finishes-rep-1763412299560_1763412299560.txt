@@ -1,0 +1,134 @@
+Right now this screen is perfect for one-off SMS…
+But in the store you want speed: tech finishes repair → 2 clicks → SMS sent.
+
+A. Add “Common Templates” under Message Type
+
+Instead of only a dropdown with “Google Review Request”, add more options:
+
+⭐ Google Review Request
+
+🔔 Device Ready for Pickup
+
+🔁 Follow-Up / Check-In
+
+💬 Custom Message
+
+When the user changes message type:
+
+Auto-change the default SMS body behind the scenes
+
+Show a live preview panel at the bottom (before Send)
+
+B. Make “Google Review Link” a setting, not a per-send field
+
+You’ll almost never change the review URL.
+
+Change:
+
+Move the Google Review Link out of this form into a Settings or Billing / Account tab.
+
+On this screen, just use it automatically in the preview.
+
+This makes the form mentally lighter:
+Name, phone, optional notes, photo → Send.
+
+C. Reduce typing with “Recent Customers” dropdown
+
+Because RepairDesk already has all the repair data, you don’t want staff retyping names & phones.
+
+Even without full integration yet, you can:
+
+Add a small “Recent customers” dropdown or search box above the form:
+
+type “ya…” → show “Yanni – iPhone 13 – (954) …”
+
+when selected → auto-fill name + phone.
+
+Later you can hook this to:
+
+a simple SQLite table in your app, or
+
+RepairDesk export/API.
+
+2️⃣ UI tweaks on this screen (keeping your style)
+✅ Keep (it’s already great)
+
+The gradient header card “Quick Fill from Repair Order (Optional)” – looks premium.
+
+The tabs (Send SMS / Dashboard / History / Customers / Billing).
+
+Overall spacing, rounded inputs, and copy tone.
+
+🔧 Improvements
+1. Turn the screen into clear “Step 1 / Step 2”
+
+Above the “Quick Fill” card:
+
+Step 1 – Get customer details
+(Upload repair order or type manually)
+
+Then below it:
+
+Step 2 – Compose & send SMS
+
+This matches how your staff thinks and reduces confusion.
+
+2. Make upload area more action-y
+
+Inside the pink card:
+
+Left button:
+
+Label: “Upload repair order photo”
+
+Subtitle: “We’ll read the name + phone automatically”
+
+Right button:
+
+Label: “Take photo with camera”
+
+Below the card, after upload, show a mini-summary:
+
+Detected:
+Name: John Smith
+Phone: +1 954…
+[Use these] [Edit]
+
+That makes the AI/OCR feature feel magical and avoids wrong data.
+
+3. Emphasize required fields visually
+
+Right now Customer Name + Phone are marked with * only.
+
+Add subtle hints:
+
+If empty, show red border on blur.
+
+Show small text under the phone field when invalid:
+
+“Please enter a valid mobile number with country code.”
+
+This avoids Twilio errors later.
+
+4. Add a live “Message Preview” card before Send
+
+Under “Attach Photo of Repair” area, add a simple preview box:
+
+📲 Preview
+“Hi John, thank you for choosing Techy Miramar.
+If you were happy with your repair, could you leave us a quick review?
+[Google Review Link]”
+
+Dynamically replace {{name}} + add Additional Message.
+
+This gives confidence to your staff and lets you keep templates locked but still slightly editable.
+
+5. Make the primary button very clear
+
+At the bottom (out of screenshot) your main button should be:
+
+Send SMS via Twilio
+
+Below it, a tiny secondary text:
+
+“This will send 1 SMS to +1 954… using your Twilio number.”

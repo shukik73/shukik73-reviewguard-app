@@ -851,24 +851,12 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
     const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
     const trackedReviewLink = reviewToken && googleReviewLink ? `${appHost}/r/${reviewToken}` : googleReviewLink;
 
-    let message;
+    // Use the additionalInfo as the message body (frontend provides templates)
+    let message = additionalInfo || '';
     
-    if (messageType === 'ready') {
-      message = `Hi ${customerName}! Great news - your device is ready for pickup at Techy Miramar! 🎉`;
-      
-      if (additionalInfo) {
-        message += ` ${additionalInfo}`;
-      }
-      
-      message += ` We're open and ready to see you. Thank you for choosing us!`;
-    } else {
-      message = `Hi ${customerName}! Thank you for choosing Techy Miramar for your repair. We hope you're satisfied with the work we did.`;
-      
-      if (additionalInfo) {
-        message += ` ${additionalInfo}`;
-      }
-      
-      message += ` Could you take a moment to leave us a Google review? ${trackedReviewLink || 'Your feedback means a lot to us!'} Thank you! 🙏`;
+    // Add review link for review messages
+    if (messageType === 'review' && trackedReviewLink) {
+      message += `\n\n${trackedReviewLink}`;
     }
 
     const messageOptions = {
