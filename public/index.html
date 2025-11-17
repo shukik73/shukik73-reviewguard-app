@@ -222,6 +222,27 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+        input.error, textarea.error, select.error {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
+        input.error:focus, textarea.error:focus, select.error:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+        }
+
+        .error-message {
+            font-size: 12px;
+            color: #dc3545;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
         textarea {
             resize: vertical;
             min-height: 100px;
@@ -635,6 +656,19 @@
                 </select>
             </div>
 
+            <div class="form-group" style="position: relative;">
+                <label for="recentCustomerSearch">Recent Customers (Quick Select)</label>
+                <input 
+                    type="text" 
+                    id="recentCustomerSearch" 
+                    placeholder="🔍 Type name or phone to search recent customers..."
+                    autocomplete="off"
+                />
+                <div id="recentCustomerDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 8px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; margin-top: 5px;">
+                </div>
+                <div class="helper-text">Select a recent customer to auto-fill name and phone</div>
+            </div>
+
             <div class="form-group">
                 <label for="customerName">Customer Name *</label>
                 <input 
@@ -655,6 +689,7 @@
                     placeholder="e.g., +1234567890 or +44 20 7123 4567" 
                     required
                 />
+                <div class="error-message" id="phoneError">Please enter a valid mobile number with country code (e.g., +1 for US)</div>
                 <div class="helper-text">Include country code (e.g., +1 for US, +44 for UK). Spaces and dashes OK.</div>
             </div>
 
@@ -914,6 +949,92 @@
         const extractedPhone = document.getElementById('extractedPhone');
         const customerNameInput = document.getElementById('customerName');
         const customerPhoneInput = document.getElementById('customerPhone');
+        const recentCustomerSearch = document.getElementById('recentCustomerSearch');
+        const recentCustomerDropdown = document.getElementById('recentCustomerDropdown');
+
+        let allCustomers = [];
+
+        // Load all customers for quick search
+        async function loadRecentCustomers() {
+            try {
+                const response = await fetch('/api/customers');
+                const data = await response.json();
+                if (data.success) {
+                    allCustomers = data.customers.slice(0, 50); // Keep last 50 customers
+                }
+            } catch (error) {
+                console.error('Failed to load customers:', error);
+            }
+        }
+
+        // Filter and display matching customers
+        function filterRecentCustomers() {
+            const searchTerm = recentCustomerSearch.value.trim().toLowerCase();
+            
+            if (searchTerm.length === 0) {
+                recentCustomerDropdown.style.display = 'none';
+                return;
+            }
+
+            const matches = allCustomers.filter(customer => 
+                customer.name.toLowerCase().includes(searchTerm) || 
+                customer.phone.includes(searchTerm)
+            ).slice(0, 10); // Show max 10 matches
+
+            if (matches.length === 0) {
+                recentCustomerDropdown.style.display = 'none';
+                return;
+            }
+
+            recentCustomerDropdown.innerHTML = matches.map(customer => `
+                <div class="customer-dropdown-item" data-name="${customer.name}" data-phone="${customer.phone}" style="padding: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600; color: #333;">${customer.name}</div>
+                        <div style="font-size: 12px; color: #666; font-family: monospace;">${customer.phone}</div>
+                    </div>
+                    <div style="font-size: 11px; color: #999;">${customer.message_count || 0} msgs</div>
+                </div>
+            `).join('');
+
+            recentCustomerDropdown.style.display = 'block';
+
+            // Add click handlers to dropdown items
+            document.querySelectorAll('.customer-dropdown-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    customerNameInput.value = item.dataset.name;
+                    customerPhoneInput.value = item.dataset.phone;
+                    recentCustomerSearch.value = `${item.dataset.name} - ${item.dataset.phone}`;
+                    recentCustomerDropdown.style.display = 'none';
+                    updateMessagePreview();
+                });
+
+                item.addEventListener('mouseenter', () => {
+                    item.style.background = '#f8f9ff';
+                });
+
+                item.addEventListener('mouseleave', () => {
+                    item.style.background = 'white';
+                });
+            });
+        }
+
+        // Event listeners for recent customer search
+        recentCustomerSearch.addEventListener('input', filterRecentCustomers);
+        recentCustomerSearch.addEventListener('focus', () => {
+            if (recentCustomerSearch.value.trim().length > 0) {
+                filterRecentCustomers();
+            }
+        });
+
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!recentCustomerSearch.contains(e.target) && !recentCustomerDropdown.contains(e.target)) {
+                recentCustomerDropdown.style.display = 'none';
+            }
+        });
+
+        // Load customers on page load
+        loadRecentCustomers();
 
         const messageTemplates = {
             review: {
@@ -1004,6 +1125,45 @@
             }
         }
         
+        // Phone number validation
+        function validatePhoneNumber(phone) {
+            if (!phone) return false;
+            
+            // Remove all non-digit characters
+            const digitsOnly = phone.replace(/[^\d]/g, '');
+            
+            // Must have at least 10 digits
+            if (digitsOnly.length < 10) return false;
+            
+            // Must start with + or have enough digits for country code
+            const hasPlus = phone.trim().startsWith('+');
+            const hasCountryCode = hasPlus || digitsOnly.length >= 10;
+            
+            return hasCountryCode;
+        }
+
+        function showPhoneError() {
+            const phone = customerPhoneInput.value.trim();
+            const phoneError = document.getElementById('phoneError');
+            
+            if (phone && !validatePhoneNumber(phone)) {
+                customerPhoneInput.classList.add('error');
+                phoneError.classList.add('show');
+            } else {
+                customerPhoneInput.classList.remove('error');
+                phoneError.classList.remove('show');
+            }
+        }
+
+        // Add validation on blur
+        customerPhoneInput.addEventListener('blur', showPhoneError);
+        
+        // Remove error on focus
+        customerPhoneInput.addEventListener('focus', () => {
+            customerPhoneInput.classList.remove('error');
+            document.getElementById('phoneError').classList.remove('show');
+        });
+
         // Add event listeners to all form fields to update preview
         customerNameInput.addEventListener('input', updateMessagePreview);
         customerPhoneInput.addEventListener('input', updateMessagePreview);
