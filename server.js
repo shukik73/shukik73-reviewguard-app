@@ -98,6 +98,7 @@ async function initializeDatabase() {
       plan VARCHAR(50) DEFAULT 'free',
       sms_quota INTEGER DEFAULT 50,
       sms_sent INTEGER DEFAULT 0,
+      google_review_link TEXT DEFAULT 'https://g.page/r/CXmh-C0UxHgqEBM/review',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -161,6 +162,10 @@ async function initializeDatabase() {
       
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='user_id') THEN
         ALTER TABLE messages ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subscriptions' AND column_name='google_review_link') THEN
+        ALTER TABLE subscriptions ADD COLUMN google_review_link TEXT DEFAULT 'https://g.page/r/CXmh-C0UxHgqEBM/review';
       END IF;
     END $$;
   `);
@@ -809,9 +814,10 @@ function validateAndFormatPhone(phone) {
   throw new Error('Invalid phone number format. Please use international format with country code (e.g., +1234567890 or 1234567890 for US)');
 }
 
-app.post('/api/send-review-request', upload.single('photo'), async (req, res) => {
+app.post('/api/send-review-request', requireAuth, upload.single('photo'), async (req, res) => {
   try {
-    const { customerName, customerPhone, messageType, googleReviewLink, additionalInfo, userEmail } = req.body;
+    const { customerName, customerPhone, messageType, additionalInfo } = req.body;
+    const userEmail = req.session.userEmail;
 
     if (!customerName || !customerPhone) {
       return res.status(400).json({ 
@@ -820,10 +826,10 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
       });
     }
 
-    if (!userEmail || !userEmail.includes('@')) {
-      return res.status(400).json({
+    if (!userEmail) {
+      return res.status(401).json({
         success: false,
-        error: 'A valid email address is required to send SMS. Please enter your email in the Billing tab.',
+        error: 'Authentication required. Please log in again.',
         code: 'EMAIL_REQUIRED'
       });
     }
@@ -843,6 +849,14 @@ app.post('/api/send-review-request', upload.single('photo'), async (req, res) =>
       VALUES ($1, 'trial', 'free', 50, 0)
       ON CONFLICT (email) DO NOTHING
     `, [userEmail]);
+
+    // Fetch the saved Google Review Link from settings
+    const settingsResult = await pool.query(
+      'SELECT google_review_link FROM subscriptions WHERE email = $1',
+      [userEmail]
+    );
+    
+    const googleReviewLink = settingsResult.rows[0]?.google_review_link || 'https://g.page/r/CXmh-C0UxHgqEBM/review';
 
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
@@ -1528,6 +1542,75 @@ app.get('/api/subscription-status', async (req, res) => {
   } catch (error) {
     console.error('Error fetching subscription status:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// GET Settings (Protected)
+app.get('/api/settings', requireAuth, async (req, res) => {
+  try {
+    const userEmail = req.session.userEmail;
+
+    if (!userEmail) {
+      return res.status(400).json({ success: false, error: 'User email not found in session' });
+    }
+
+    const result = await pool.query(
+      'SELECT google_review_link FROM subscriptions WHERE email = $1',
+      [userEmail]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ 
+        success: true,
+        settings: {
+          google_review_link: 'https://g.page/r/CXmh-C0UxHgqEBM/review'
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      settings: {
+        google_review_link: result.rows[0].google_review_link || 'https://g.page/r/CXmh-C0UxHgqEBM/review'
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST Settings (Protected)
+app.post('/api/settings', requireAuth, async (req, res) => {
+  try {
+    const userEmail = req.session.userEmail;
+    const { google_review_link } = req.body;
+
+    if (!userEmail) {
+      return res.status(400).json({ success: false, error: 'User email not found in session' });
+    }
+
+    const result = await pool.query(`
+      UPDATE subscriptions 
+      SET google_review_link = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE email = $2
+      RETURNING *
+    `, [google_review_link || 'https://g.page/r/CXmh-C0UxHgqEBM/review', userEmail]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Subscription not found. Please set up your subscription first.'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Settings saved successfully'
+    });
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
