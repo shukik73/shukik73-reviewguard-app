@@ -41,11 +41,26 @@
       transform: none;
     }
     
-    /* Mobile: ensure cards stack */
-    @media (max-width: 768px) {
-      .lg\:grid-cols-3 {
-        grid-template-columns: 1fr;
-      }
+    /* Secondary button style */
+    .btn-secondary {
+      background: white;
+      color: #4b5563;
+      font-weight: 500;
+      border-radius: 8px;
+      padding: 8px 14px;
+      border: 1px solid #e5e7eb;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.15s ease;
+    }
+    
+    .btn-secondary:hover {
+      background: #f9fafb;
+    }
+    
+    /* Subtle text shadow for headings on gradient */
+    h1 {
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
   </style>
 </head>
@@ -75,9 +90,7 @@
           <span class="hidden sm:inline text-sm text-slate-600">
             Logged in as <span class="font-medium">Shuki</span>
           </span>
-          <button
-            class="text-sm px-3 py-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50"
-          >
+          <button class="btn-secondary text-sm">
             Logout
           </button>
         </div>
@@ -133,7 +146,7 @@
 
       <!-- SEND SMS SECTION (default visible) -->
       <section id="send-sms" class="section">
-        <h1 class="text-xl font-semibold text-white mb-3">
+        <h1 class="text-xl font-semibold text-slate-100 mb-3">
           Send SMS
         </h1>
 
@@ -164,9 +177,7 @@
               </label>
 
               <!-- Take photo -->
-              <button
-                class="w-full inline-flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
-              >
+              <button class="btn-secondary w-full text-xs">
                 <span>📷</span> Take Photo
               </button>
 
@@ -327,7 +338,7 @@
 
       <!-- DASHBOARD SECTION -->
       <section id="dashboard" class="section hidden">
-        <h1 class="text-xl font-semibold text-white mb-3">
+        <h1 class="text-xl font-semibold text-slate-100 mb-3">
           Dashboard
         </h1>
 
@@ -363,10 +374,10 @@
       <!-- HISTORY SECTION -->
       <section id="history" class="section hidden">
         <div class="flex items-center justify-between mb-3">
-          <h1 class="text-xl font-semibold text-white">
+          <h1 class="text-xl font-semibold text-slate-100">
             Message History
           </h1>
-          <button class="btn-primary text-sm">
+          <button class="btn-secondary text-sm">
             📥 Export CSV
           </button>
         </div>
@@ -389,10 +400,10 @@
       <!-- CUSTOMERS SECTION -->
       <section id="customers" class="section hidden">
         <div class="flex items-center justify-between mb-3">
-          <h1 class="text-xl font-semibold text-white">
+          <h1 class="text-xl font-semibold text-slate-100">
             Customers
           </h1>
-          <button class="btn-primary text-sm">
+          <button class="btn-secondary text-sm">
             📥 Export CSV
           </button>
         </div>
@@ -414,7 +425,7 @@
 
       <!-- BILLING SECTION -->
       <section id="billing" class="section hidden">
-        <h1 class="text-xl font-semibold text-white mb-3">
+        <h1 class="text-xl font-semibold text-slate-100 mb-3">
           Billing & Subscription
         </h1>
 
@@ -481,7 +492,7 @@
 
       <!-- SETTINGS SECTION -->
       <section id="settings" class="section hidden">
-        <h1 class="text-xl font-semibold text-white mb-3">
+        <h1 class="text-xl font-semibold text-slate-100 mb-3">
           Settings
         </h1>
 
@@ -545,6 +556,7 @@
     const deviceInput = document.getElementById('device');
     const repairInput = document.getElementById('repair');
     const customMessageInput = document.getElementById('custom-message');
+    const reviewLinkInput = document.getElementById('review-link');
     const messagePreview = document.getElementById('message-preview');
     const charCount = document.getElementById('char-count');
 
@@ -554,24 +566,32 @@
       const device = deviceInput.value || 'device';
       const repair = repairInput.value || 'repair';
       const custom = customMessageInput.value;
+      const reviewLink = reviewLinkInput.value || '[Google Review Link]';
 
       let message = '';
 
       if (type === 'review') {
-        message = `Hi ${name}! Thank you for choosing Techy Miramar for your ${device} ${repair}. We'd love to hear about your experience! Please leave us a review: [Google Review Link]`;
+        message = `Hi ${name}! Thank you for choosing Techy Miramar for your ${device} ${repair}. We'd love to hear about your experience! Please leave us a review: ${reviewLink}`;
       } else if (type === 'ready') {
         message = `Hi ${name}! Great news - your ${device} is ready for pickup! We've completed the ${repair}. Stop by anytime during business hours. See you soon!`;
       } else if (type === 'follow_up') {
         message = `Hi ${name}! Just checking in on your ${device}. Is everything working well after the ${repair}? Let us know if you need anything!`;
       } else {
-        message = custom || 'Type your custom message...';
+        // For custom message type, show only the custom text (no placeholder)
+        message = custom || '';
       }
 
+      // Append custom text to other message types
       if (custom && type !== 'custom') {
         message += '\n\n' + custom;
       }
 
-      messagePreview.textContent = message;
+      // For custom type, allow empty preview. For others, show placeholder
+      if (type === 'custom') {
+        messagePreview.textContent = message;
+      } else {
+        messagePreview.textContent = message || 'Your message will appear here...';
+      }
       charCount.textContent = message.length;
     }
 
@@ -580,6 +600,7 @@
     deviceInput.addEventListener('input', updatePreview);
     repairInput.addEventListener('input', updatePreview);
     customMessageInput.addEventListener('input', updatePreview);
+    reviewLinkInput.addEventListener('input', updatePreview);
 
     // Initialize preview
     updatePreview();
