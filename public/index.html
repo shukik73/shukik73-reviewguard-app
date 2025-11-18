@@ -1139,14 +1139,6 @@
       ? "This will send a check-in message"
       : "Custom message";
 }
-
-            // Update send button description
-            if (customerPhone) {
-                descriptionDiv.textContent = `This will send 1 SMS to ${customerPhone} using your Twilio number.`;
-            } else {
-                descriptionDiv.textContent = '';
-            }
-        }
         
         // Phone number validation
         function validatePhoneNumber(phone) {
