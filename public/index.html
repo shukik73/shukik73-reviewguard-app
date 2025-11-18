@@ -164,11 +164,11 @@
             <!-- Two-column layout: buttons left, detected info right -->
             <div class="grid grid-cols-2 gap-3 mb-3">
               <!-- Left: Two compact square upload/photo buttons -->
-              <div class="flex gap-2">
+              <div class="flex gap-2 h-full">
                 <!-- Upload button (compact square) -->
                 <label class="flex-1">
                   <div
-                    class="aspect-square flex flex-col items-center justify-center gap-1 border-2 border-dashed border-slate-300 rounded-lg text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all"
+                    class="h-full flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-slate-300 rounded-lg text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all py-3"
                   >
                     <span class="text-2xl">📄</span>
                     <span class="text-[10px] text-slate-600 font-medium px-1">
@@ -179,7 +179,7 @@
                 </label>
 
                 <!-- Take photo button (compact square) -->
-                <button class="flex-1 aspect-square flex flex-col items-center justify-center gap-1 border-2 border-slate-300 rounded-lg text-center hover:bg-slate-50 hover:border-indigo-300 transition-all">
+                <button class="flex-1 h-full flex flex-col items-center justify-center gap-1.5 border-2 border-slate-300 rounded-lg text-center hover:bg-slate-50 hover:border-indigo-300 transition-all py-3">
                   <span class="text-2xl">📷</span>
                   <span class="text-[10px] text-slate-600 font-medium">
                     Camera
@@ -187,12 +187,12 @@
                 </button>
               </div>
 
-              <!-- Right: Detected info preview (compact) -->
-              <div class="rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 px-3 py-2.5 text-[11px]">
-                <div class="font-semibold mb-1.5 text-slate-700 text-xs">
+              <!-- Right: Detected info preview (same height) -->
+              <div class="rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 px-3 py-3 text-[11px] h-full flex flex-col">
+                <div class="font-semibold mb-2 text-slate-700 text-xs">
                   Detected Info
                 </div>
-                <div class="space-y-1 text-slate-600">
+                <div class="space-y-1.5 text-slate-600 flex-1">
                   <div class="flex justify-between">
                     <span class="font-medium">Name:</span> 
                     <span class="text-slate-400" id="ocr-name">-</span>
