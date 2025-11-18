@@ -1089,39 +1089,57 @@
         }
 
         function updateMessagePreview() {
-            const messageType = messageTypeSelect.value;
-            const customerName = customerNameInput.value.trim();
-            const customerPhone = customerPhoneInput.value.trim();
-            const additionalInfo = document.getElementById('additionalInfo').value.trim();
-            
-            const previewDiv = document.getElementById('messagePreview');
-            const recipientDiv = document.getElementById('previewRecipient');
-            const descriptionDiv = document.getElementById('sendButtonDescription');
-            
-            // Build the message preview
-            let message = '';
-            
-            if (additionalInfo) {
-                message = additionalInfo;
-                
-                // Add review link if message type is review
-                if (messageType === 'review') {
-                    message += `\n\n[Your Google Review Link]`;
-                }
-            } else {
-                message = '<em style="color: #999;">Fill in customer details to see message preview...</em>';
-            }
-            
-            // Update preview
-            previewDiv.innerHTML = message;
-            
-            // Update recipient info
-            if (customerName || customerPhone) {
-                recipientDiv.innerHTML = `<strong>To:</strong> ${customerName || '(Name not provided)'} ${customerPhone ? `• ${customerPhone}` : ''}`;
-            } else {
-                recipientDiv.innerHTML = '';
-            }
-            
+  const messageType = messageTypeSelect.value;
+
+  const name = customerNameInput.value.trim();
+  const phone = customerPhoneInput.value.trim();
+  const additionalInfo = document.getElementById('additionalInfo').value.trim();
+  const reviewLink = document.getElementById('reviewLink')?.value?.trim() || '';
+  
+  const previewDiv = document.getElementById('messagePreview');
+  const recipientDiv = document.getElementById('previewRecipient');
+  const descriptionDiv = document.getElementById('sendButtonDescription');
+
+  let finalMessage = "";
+  let friendlyName = name ? `Hi ${name},\n\n` : "";
+
+  const templates = {
+    review: () => 
+      `${friendlyName}Thank you again for choosing Techy Miramar! If you were happy with the service, could you leave us a quick Google review?\n\n${reviewLink}`,
+
+    ready: () =>
+      `${friendlyName}Good news! Your device is ready for pickup at Techy Miramar.\n\nWe're open today until 7 PM. Let us know if you have any questions!`,
+
+    follow_up: () =>
+      `${friendlyName}Just checking in! Is your device working well after the repair? If you need anything, we're here to help.`,
+
+    custom: () =>
+      `${friendlyName}${additionalInfo || "Type your custom message above..."}`,
+  };
+
+  if (templates[messageType]) {
+    finalMessage = templates[messageType]();
+  } else {
+    finalMessage = "<em style='color:#777;'>Select a message type…</em>";
+  }
+
+  previewDiv.textContent = finalMessage;
+
+  recipientDiv.textContent = 
+    name || phone 
+      ? `Message will be sent to: ${name ? name : ""} ${phone ? "(" + phone + ")" : ""}`
+      : "Fill in customer details to update preview";
+
+  descriptionDiv.textContent = 
+    messageType === 'review'
+      ? "This will send a Google review request via SMS"
+      : messageType === 'ready'
+      ? "This will send a pickup notification via SMS"
+      : messageType === 'follow_up'
+      ? "This will send a check-in message"
+      : "Custom message";
+}
+
             // Update send button description
             if (customerPhone) {
                 descriptionDiv.textContent = `This will send 1 SMS to ${customerPhone} using your Twilio number.`;
