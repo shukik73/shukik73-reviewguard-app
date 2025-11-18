@@ -151,9 +151,9 @@
         </h1>
 
         <!-- Step 1 & Step 2 cards -->
-        <div class="grid gap-4 lg:grid-cols-[35%_65%]">
-          <!-- Step 1 – Customer details (left, ~35% width) -->
-          <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-5" id="step-1-card">
+        <div class="space-y-4">
+          <!-- Step 1 – Customer details (full width on top) -->
+          <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-5 max-w-md" id="step-1-card">
             <h2 class="text-sm font-semibold text-slate-900 mb-1">
               Step 1 – Get customer details
             </h2>
@@ -223,8 +223,8 @@
             </button>
           </div>
 
-          <!-- Step 2 – Compose & preview (right, ~65% width) -->
-          <div class="space-y-4">
+          <!-- Step 2 – Compose & preview (full width below) -->
+          <div class="space-y-4" id="step-2-container">
             <!-- Form card -->
             <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-5">
               <h2 class="text-sm font-semibold text-slate-900 mb-4">
@@ -634,9 +634,9 @@
 
     // Function to scroll to Step 2 when confirm button is clicked
     function scrollToStep2() {
-      const step2Card = document.querySelector('#send-sms .space-y-4');
-      if (step2Card) {
-        step2Card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const step2Container = document.getElementById('step-2-container');
+      if (step2Container) {
+        step2Container.scrollIntoView({ behavior: 'smooth', block: 'start' });
         // Optional: Focus on first input in Step 2
         setTimeout(() => {
           const firstInput = document.getElementById('customer-name');
