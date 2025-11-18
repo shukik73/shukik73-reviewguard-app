@@ -153,7 +153,7 @@
         <!-- Step 1 & Step 2 cards -->
         <div class="grid gap-4 lg:grid-cols-[35%_65%]">
           <!-- Step 1 – Customer details (left, ~35% width) -->
-          <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-5">
+          <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-5" id="step-1-card">
             <h2 class="text-sm font-semibold text-slate-900 mb-1">
               Step 1 – Get customer details
             </h2>
@@ -161,32 +161,38 @@
               Upload or take a photo of your repair order to auto-fill name & phone.
             </p>
 
-            <div class="space-y-3">
-              <!-- Upload button -->
-              <label class="block">
-                <span class="text-xs font-medium text-slate-700">Repair order photo</span>
-                <div
-                  class="mt-1.5 flex flex-col items-center justify-center gap-2 border border-dashed border-slate-300 rounded-lg px-3 py-4 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/40 transition"
-                >
-                  <span class="text-2xl">📄</span>
+            <!-- Two-column layout: buttons left, detected info right -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <!-- Left: Two square upload/photo buttons -->
+              <div class="space-y-3">
+                <!-- Upload button (square) -->
+                <label class="block">
+                  <div
+                    class="aspect-square flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-300 rounded-lg text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/40 transition"
+                  >
+                    <span class="text-3xl">📄</span>
+                    <span class="text-xs text-slate-600 px-2">
+                      Upload Photo
+                    </span>
+                    <input type="file" class="hidden" id="ocr-upload" accept="image/*" />
+                  </div>
+                </label>
+
+                <!-- Take photo button (square) -->
+                <button class="aspect-square flex flex-col items-center justify-center gap-2 border-2 border-slate-300 rounded-lg text-center hover:bg-slate-50 transition w-full">
+                  <span class="text-3xl">📷</span>
                   <span class="text-xs text-slate-600">
-                    Click to upload repair order photo
+                    Take Photo
                   </span>
-                  <input type="file" class="hidden" id="ocr-upload" accept="image/*" />
-                </div>
-              </label>
+                </button>
+              </div>
 
-              <!-- Take photo -->
-              <button class="btn-secondary w-full text-xs">
-                <span>📷</span> Take Photo
-              </button>
-
-              <!-- Detected info preview -->
-              <div class="mt-3 rounded-md bg-slate-50 border border-slate-200 px-3 py-2.5 text-xs">
-                <div class="font-semibold mb-1.5 text-slate-700">
-                  Detected from repair order
+              <!-- Right: Detected info preview -->
+              <div class="rounded-md bg-slate-50 border border-slate-200 px-3 py-3 text-xs h-full">
+                <div class="font-semibold mb-2 text-slate-700">
+                  Detected Info
                 </div>
-                <div class="space-y-1 text-slate-600">
+                <div class="space-y-1.5 text-slate-600">
                   <p><span class="font-medium">Name:</span> <span class="text-slate-400" id="ocr-name">-</span></p>
                   <p><span class="font-medium">Phone:</span> <span class="text-slate-400" id="ocr-phone">-</span></p>
                   <p><span class="font-medium">Device:</span> <span class="text-slate-400" id="ocr-device">-</span></p>
@@ -194,6 +200,15 @@
                 </div>
               </div>
             </div>
+
+            <!-- Confirm button to advance to Step 2 -->
+            <button 
+              id="confirm-step-1-btn"
+              class="btn-primary w-full text-sm"
+              onclick="scrollToStep2()"
+            >
+              ✓ Confirm & Continue to Step 2
+            </button>
           </div>
 
           <!-- Step 2 – Compose & preview (right, ~65% width) -->
@@ -604,6 +619,21 @@
 
     // Initialize preview
     updatePreview();
+
+    // Function to scroll to Step 2 when confirm button is clicked
+    function scrollToStep2() {
+      const step2Card = document.querySelector('#send-sms .space-y-4');
+      if (step2Card) {
+        step2Card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Optional: Focus on first input in Step 2
+        setTimeout(() => {
+          const firstInput = document.getElementById('customer-name');
+          if (firstInput) {
+            firstInput.focus();
+          }
+        }, 500);
+      }
+    }
   </script>
 
 </body>
