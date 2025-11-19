@@ -61,11 +61,13 @@ export const processOCR = (pool) => async (req, res) => {
     if (textAnnotations.length === 0) {
       return res.json({
         success: true,
-        customerName: '',
-        customerPhone: '',
-        device: '',
-        repair: '',
-        rawText: ''
+        data: {
+          customerName: '',
+          customerPhone: '',
+          device: '',
+          repair: '',
+          rawText: ''
+        }
       });
     }
 
@@ -138,11 +140,13 @@ export const processOCR = (pool) => async (req, res) => {
 
     res.json({
       success: true,
-      customerName,
-      customerPhone,
-      device,
-      repair,
-      rawText
+      data: {
+        customerName,
+        customerPhone,
+        device,
+        repair,
+        rawText
+      }
     });
   } catch (error) {
     console.error('OCR processing error:', error);
