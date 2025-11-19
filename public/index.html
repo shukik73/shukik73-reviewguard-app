@@ -584,6 +584,111 @@
     const tabs = document.querySelectorAll('.nav-tab');
     const sections = document.querySelectorAll('.section');
 
+    async function loadDashboard() {
+      try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        
+        if (data.success) {
+          document.getElementById('stat-total-messages').textContent = data.totalMessages || 0;
+          document.getElementById('stat-total-customers').textContent = data.totalCustomers || 0;
+          document.getElementById('stat-today').textContent = data.todayMessages || 0;
+          document.getElementById('stat-this-week').textContent = data.thisWeekMessages || 0;
+          
+          const recentContainer = document.getElementById('recent-messages');
+          if (data.recentMessages && data.recentMessages.length > 0) {
+            recentContainer.innerHTML = data.recentMessages.map(msg => `
+              <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="font-medium text-sm text-slate-900">${msg.customer_name}</span>
+                    <span class="text-xs px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">${msg.message_type}</span>
+                  </div>
+                  <p class="text-xs text-slate-600">${msg.customer_phone}</p>
+                  <p class="text-[11px] text-slate-500 mt-1">${new Date(msg.sent_at).toLocaleString()}</p>
+                </div>
+              </div>
+            `).join('');
+          } else {
+            recentContainer.innerHTML = '<p class="text-sm text-slate-500 text-center py-8">No messages yet</p>';
+          }
+        }
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+      }
+    }
+    
+    async function loadHistory() {
+      try {
+        const response = await fetch('/api/messages');
+        const data = await response.json();
+        
+        const container = document.getElementById('history-list');
+        if (data.success && data.messages && data.messages.length > 0) {
+          container.innerHTML = data.messages.map(msg => `
+            <div class="bg-white border border-slate-200 rounded-lg p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="font-medium text-sm text-slate-900">${msg.customer_name}</span>
+                    <span class="text-xs px-2 py-1 rounded-full bg-indigo-100 text-indigo-700">${msg.message_type}</span>
+                  </div>
+                  <p class="text-xs text-slate-600 mb-1">${msg.customer_phone}</p>
+                  ${msg.additional_info ? `<p class="text-xs text-slate-700 mt-2">${msg.additional_info.substring(0, 100)}${msg.additional_info.length > 100 ? '...' : ''}</p>` : ''}
+                </div>
+                <div class="text-right">
+                  <p class="text-[11px] text-slate-500">${new Date(msg.sent_at).toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<p class="text-sm text-slate-500 text-center py-8">No messages in history</p>';
+        }
+      } catch (error) {
+        console.error('Error loading history:', error);
+      }
+    }
+    
+    async function loadCustomers() {
+      try {
+        const response = await fetch('/api/customers');
+        const data = await response.json();
+        
+        const container = document.getElementById('customers-list');
+        if (data.success && data.customers && data.customers.length > 0) {
+          container.innerHTML = data.customers.map(customer => `
+            <div class="bg-white border border-slate-200 rounded-lg p-4">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <h3 class="font-medium text-sm text-slate-900 mb-1">${customer.name}</h3>
+                  <p class="text-xs text-slate-600">${customer.phone}</p>
+                  <p class="text-[11px] text-slate-500 mt-2">Messages: ${customer.message_count || 0}</p>
+                </div>
+                <button 
+                  onclick="loadCustomerData('${customer.name}', '${customer.phone}')"
+                  class="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                >
+                  Load
+                </button>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<p class="text-sm text-slate-500 text-center py-8">No customers yet</p>';
+        }
+      } catch (error) {
+        console.error('Error loading customers:', error);
+      }
+    }
+    
+    function loadCustomerData(name, phone) {
+      document.getElementById('customer-name').value = name;
+      document.getElementById('customer-phone').value = phone;
+      showSection('send-sms');
+      showNotification('Customer data loaded!', 'success');
+    }
+
     function showSection(id) {
       sections.forEach(sec => {
         sec.classList.toggle('hidden', sec.id !== id);
@@ -599,6 +704,10 @@
           btn.classList.add('text-slate-600', 'hover:bg-slate-50');
         }
       });
+      
+      if (id === 'dashboard') loadDashboard();
+      if (id === 'history') loadHistory();
+      if (id === 'customers') loadCustomers();
     }
 
     tabs.forEach(btn => {

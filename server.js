@@ -288,6 +288,8 @@ const ocrUpload = multer({
 const app = express();
 const PORT = 5000;
 
+app.set('trust proxy', 1);
+
 const PgSession = connectPgSimple(session);
 
 app.use(helmet({
