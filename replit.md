@@ -4,6 +4,38 @@ This Node.js web application functions as a comprehensive SMS Manager tailored f
 
 # Recent Changes (November 2025)
 
+## Feedback Collection Before Review Link Sending
+Implemented a smart feedback collection system that only sends Google review links to satisfied customers:
+
+**Core Features:**
+- **Pre-Send Feedback Modal**: Beautiful 1-5 star rating interface appears before sending Google review requests
+- **Conditional Review Link Sending**: Only sends review link if customer gives 4-5 stars
+- **Low Rating Handling**: For 1-3 star ratings, sends a follow-up message instead of review link
+- **Database Tracking**: Stores feedback_rating and feedback_collected_at for all review requests
+- **Internal Follow-up System**: Low ratings are logged for personal follow-up to address concerns
+
+**How It Works:**
+1. User clicks "Send SMS" for a Google Review Request
+2. Feedback modal appears asking "How was your experience?" with 1-5 stars
+3. Customer taps a star (1 = Poor, 5 = Excellent)
+4. If 4-5 stars: Sends original message + Google review link via SMS
+5. If 1-3 stars: Sends thank-you message, logs feedback for follow-up, NO review link sent
+
+**Technical Implementation:**
+- **Frontend**: Feedback modal (hidden by default) with star rating buttons using Tailwind CSS
+- **JavaScript Logic**: Event handlers for send button, star selection, and modal cancellation
+- **Conditional SMS Logic**: Checks feedbackScore >= 4 before appending review link
+- **Database Schema**: Added feedback_rating (INTEGER 1-5) and feedback_collected_at (TIMESTAMP) columns
+- **Server Endpoint**: Updated /api/send-review-request to accept feedbackRating parameter
+- **Smart Messaging**: Low-rated customers receive empathetic follow-up message instead of review link
+
+**Benefits:**
+- Prevents negative reviews from appearing on Google (only satisfied customers get the link)
+- Gives business opportunity to resolve issues before they become public reviews
+- Improves overall star rating by filtering out dissatisfied customers
+- Maintains complete feedback history for quality improvement
+- Provides better customer experience with personalized follow-up for concerns
+
 ## Google Cloud Vision OCR Integration
 Replaced unreliable client-side Tesseract.js with professional Google Cloud Vision API for accurate text extraction from phone camera photos:
 

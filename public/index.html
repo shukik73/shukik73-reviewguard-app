@@ -549,6 +549,28 @@
 
   </div>
 
+  <!-- Feedback Modal (hidden by default) -->
+  <div id="feedback-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
+      <h2 class="text-2xl font-bold text-slate-900 mb-2 text-center">Quick Feedback</h2>
+      <p class="text-sm text-slate-600 mb-6 text-center">How was your experience with us?</p>
+      
+      <!-- Star Rating -->
+      <div class="flex justify-center gap-3 mb-6">
+        <button class="star-btn text-5xl transition-transform hover:scale-110" data-rating="1">⭐</button>
+        <button class="star-btn text-5xl transition-transform hover:scale-110" data-rating="2">⭐</button>
+        <button class="star-btn text-5xl transition-transform hover:scale-110" data-rating="3">⭐</button>
+        <button class="star-btn text-5xl transition-transform hover:scale-110" data-rating="4">⭐</button>
+        <button class="star-btn text-5xl transition-transform hover:scale-110" data-rating="5">⭐</button>
+      </div>
+      
+      <p class="text-xs text-slate-500 text-center mb-4">Tap a star to rate (1 = Poor, 5 = Excellent)</p>
+      
+      <!-- Cancel Button -->
+      <button id="cancel-feedback-btn" class="btn-secondary w-full">Cancel</button>
+    </div>
+  </div>
+
   <!-- Tab switching script -->
   <script>
     const tabs = document.querySelectorAll('.nav-tab');
@@ -644,6 +666,122 @@
             firstInput.focus();
           }
         }, 500);
+      }
+    }
+
+    // Feedback Modal Logic
+    const feedbackModal = document.getElementById('feedback-modal');
+    const sendSmsBtn = document.getElementById('send-sms-btn');
+    const cancelFeedbackBtn = document.getElementById('cancel-feedback-btn');
+    const starBtns = document.querySelectorAll('.star-btn');
+
+    // Handle Send SMS button click
+    sendSmsBtn.addEventListener('click', async () => {
+      const messageType = messageTypeSelect.value;
+      
+      // If it's a Google Review Request, show feedback modal first
+      if (messageType === 'review') {
+        feedbackModal.classList.remove('hidden');
+      } else {
+        // For other message types, send directly without feedback
+        await sendSMS(null);
+      }
+    });
+
+    // Handle Cancel button in feedback modal
+    cancelFeedbackBtn.addEventListener('click', () => {
+      feedbackModal.classList.add('hidden');
+    });
+
+    // Handle star rating selection
+    starBtns.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const rating = parseInt(btn.getAttribute('data-rating'));
+        feedbackModal.classList.add('hidden');
+        
+        // Send SMS with feedback rating
+        await sendSMS(rating);
+      });
+    });
+
+    // Main function to send SMS
+    async function sendSMS(feedbackRating) {
+      const customerName = customerNameInput.value;
+      const customerPhone = document.getElementById('customer-phone').value;
+      const messageType = messageTypeSelect.value;
+      const device = deviceInput.value;
+      const repair = repairInput.value;
+      const customMessage = customMessageInput.value;
+
+      // Validate required fields
+      if (!customerName || !customerPhone) {
+        alert('Please enter customer name and phone number');
+        return;
+      }
+
+      // Build the message based on type
+      let additionalInfo = '';
+      if (messageType === 'review') {
+        additionalInfo = `Hi ${customerName}! Thank you for choosing Techy Miramar for your ${device} ${repair}. We'd love to hear about your experience! Please leave us a review:`;
+      } else if (messageType === 'ready') {
+        additionalInfo = `Hi ${customerName}! Great news - your ${device} is ready for pickup! We've completed the ${repair}. Stop by anytime during business hours. See you soon!`;
+      } else if (messageType === 'follow_up') {
+        additionalInfo = `Hi ${customerName}! Just checking in on your ${device}. Is everything working well after the ${repair}? Let us know if you need anything!`;
+      } else if (messageType === 'custom') {
+        additionalInfo = customMessage;
+      }
+
+      // Append custom message if provided (for non-custom types)
+      if (customMessage && messageType !== 'custom') {
+        additionalInfo += '\n\n' + customMessage;
+      }
+
+      // Disable button and show loading
+      sendSmsBtn.disabled = true;
+      sendSmsBtn.textContent = '📤 Sending...';
+
+      try {
+        const formData = new FormData();
+        formData.append('customerName', customerName);
+        formData.append('customerPhone', customerPhone);
+        formData.append('messageType', messageType);
+        formData.append('additionalInfo', additionalInfo);
+        
+        // Add feedback rating if provided
+        if (feedbackRating !== null) {
+          formData.append('feedbackRating', feedbackRating);
+        }
+
+        const response = await fetch('/api/send-review-request', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          if (feedbackRating !== null && feedbackRating < 4) {
+            alert(`✓ Thank you for your feedback! We've noted your ${feedbackRating}-star rating and will follow up personally to address any concerns. No review link was sent.`);
+          } else {
+            alert('✓ SMS sent successfully!');
+          }
+          
+          // Clear form
+          customerNameInput.value = '';
+          document.getElementById('customer-phone').value = '';
+          deviceInput.value = '';
+          repairInput.value = '';
+          customMessageInput.value = '';
+          updatePreview();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (error) {
+        console.error('Error sending SMS:', error);
+        alert('Failed to send SMS. Please try again.');
+      } finally {
+        sendSmsBtn.disabled = false;
+        sendSmsBtn.textContent = '📤 Send SMS';
       }
     }
   </script>

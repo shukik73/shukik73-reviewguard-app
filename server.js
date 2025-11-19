@@ -156,6 +156,14 @@ async function initializeDatabase() {
         ALTER TABLE messages ADD COLUMN follow_up_message_id INTEGER REFERENCES messages(id) ON DELETE SET NULL;
       END IF;
       
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='feedback_rating') THEN
+        ALTER TABLE messages ADD COLUMN feedback_rating SMALLINT CHECK (feedback_rating >= 1 AND feedback_rating <= 5);
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='feedback_collected_at') THEN
+        ALTER TABLE messages ADD COLUMN feedback_collected_at TIMESTAMP;
+      END IF;
+      
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subscriptions' AND column_name='user_id') THEN
         ALTER TABLE subscriptions ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
       END IF;
@@ -816,8 +824,9 @@ function validateAndFormatPhone(phone) {
 
 app.post('/api/send-review-request', requireAuth, upload.single('photo'), async (req, res) => {
   try {
-    const { customerName, customerPhone, messageType, additionalInfo } = req.body;
+    const { customerName, customerPhone, messageType, additionalInfo, feedbackRating } = req.body;
     const userEmail = req.session.userEmail;
+    const feedbackScore = feedbackRating ? parseInt(feedbackRating) : null;
 
     if (!customerName || !customerPhone) {
       return res.status(400).json({ 
@@ -868,9 +877,18 @@ app.post('/api/send-review-request', requireAuth, upload.single('photo'), async 
     // Use the additionalInfo as the message body (frontend provides templates)
     let message = additionalInfo || '';
     
-    // Add review link for review messages
-    if (messageType === 'review' && trackedReviewLink) {
+    // Add review link for review messages ONLY if:
+    // 1. No feedback rating provided (backward compatibility), OR
+    // 2. Feedback rating is 4 or 5 stars (positive feedback)
+    const shouldSendReviewLink = messageType === 'review' && trackedReviewLink && 
+                                  (feedbackScore === null || feedbackScore >= 4);
+    
+    if (shouldSendReviewLink) {
       message += `\n\n${trackedReviewLink}`;
+    } else if (messageType === 'review' && feedbackScore !== null && feedbackScore < 4) {
+      // For low ratings (1-3 stars), don't send review link
+      // Just send a thank you message
+      message = `Hi! Thank you for your feedback. We appreciate you letting us know about your experience. We'll be in touch soon to make things right.`;
     }
 
     const messageOptions = {
@@ -973,7 +991,7 @@ app.post('/api/send-review-request', requireAuth, upload.single('photo'), async 
       const followUpDueAt = messageType === 'review' ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) : null;
 
       await pool.query(
-        'INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid, review_link_token, follow_up_due_at, review_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+        'INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid, review_link_token, follow_up_due_at, review_status, feedback_rating, feedback_collected_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
         [
           customerId,
           customerName,
@@ -985,7 +1003,9 @@ app.post('/api/send-review-request', requireAuth, upload.single('photo'), async 
           result.sid,
           reviewToken,
           followUpDueAt,
-          messageType === 'review' ? 'pending' : null
+          messageType === 'review' ? 'pending' : null,
+          feedbackScore,
+          feedbackScore !== null ? new Date() : null
         ]
       );
       
