@@ -1,0 +1,236 @@
+🧰 REPLIT AGENT — FOLLOW THESE RULES FOR ARCHITECTURE FIXES
+
+Before modifying anything:
+
+Do NOT rewrite large files.
+
+Do NOT refactor existing logic unless I approve.
+
+Do NOT move Stripe or Twilio code.
+
+Do NOT modify HTML/CSS/UI.
+
+Ask before creating each new file.
+
+Show the lines you want to extract before you extract them.
+
+Make changes in small, atomic steps only.
+
+🔥 PHASE 2 FIX LIST — SAFE ARCHITECTURE IMPROVEMENTS
+
+This is the cleanest and safest upgrade path.
+
+✅ 1. Create a /routes folder
+
+We will slowly migrate big parts of server.js into modular route files.
+
+Files to be created:
+/routes/auth.js
+/routes/sms.js
+/routes/ocr.js
+/routes/customers.js
+/routes/feedback.js
+/routes/billing.js
+
+
+⚠️ IMPORTANT:
+Do NOT move logic yet — only create empty files.
+
+✅ 2. Extract AUTH routes from server.js → routes/auth.js
+
+This includes:
+
+/signup
+
+/login
+
+/logout
+
+/reset-password
+
+/forgot-password
+
+Safe procedure:
+
+Show me the auth-related code in server.js
+
+Copy it into routes/auth.js
+
+Use this structure:
+
+import { Router } from "express";
+const router = Router();
+
+// signup route here…
+
+export default router;
+
+
+After copy, import the new route into server.js:
+
+import authRoutes from './routes/auth.js';
+app.use(authRoutes);
+
+
+DO NOT delete the old code yet — only comment it out after testing.
+
+✅ 3. Extract SMS routes → routes/sms.js
+
+These include:
+
+/send-sms
+
+any internal SMS functions
+
+Same process:
+
+Agent must show SMS code
+
+Copy into routes/sms.js
+
+Import in server.js:
+app.use('/sms', smsRoutes);
+
+Test
+
+Comment out old code ONLY after testing
+
+✅ 4. Extract OCR logic → routes/ocr.js
+
+Include:
+
+/api/extract-text
+
+HEIC conversion
+
+Google Vision OCR call
+
+name/phone/device parsing
+
+Follow same move–test–comment-out pattern.
+
+✅ 5. Extract FEEDBACK routes → routes/feedback.js
+
+Routes:
+
+/feedback
+
+/review-status
+
+anything related to responses
+
+✅ 6. Extract CUSTOMER routes → routes/customers.js
+
+Routes:
+
+/customers
+
+/customer/create
+
+/customer/update
+
+/customer/:id
+
+✅ 7. Extract BILLING routes → routes/billing.js
+
+Routes:
+
+/billing/subscribe
+
+/billing/portal
+
+/billing/webhook
+
+/billing/status
+
+Stripe is sensitive—Agent must not modify any logic.
+
+🧹 8. Create a /middleware folder
+
+Create:
+
+/middleware/requireLogin.js
+/middleware/rateLimit.js
+/middleware/errorHandler.js
+
+requireLogin.js:
+export default function requireLogin(req, res, next) {
+  if (!req.session.userId) return res.redirect('/login.html');
+  next();
+}
+
+rateLimit.js (simple version):
+const lastSMSSent = new Map();
+
+export function smsLimiter(req, res, next) {
+  const userId = req.session.userId;
+  if (!userId) return next();
+
+  const last = lastSMSSent.get(userId);
+  if (last && Date.now() - last < 3000) {
+    return res.status(429).json({ error: "Wait 3 seconds before sending another SMS" });
+  }
+
+  lastSMSSent.set(userId, Date.now());
+  next();
+}
+
+errorHandler.js:
+export default function errorHandler(err, req, res, next) {
+  console.error("Server error:", err);
+  res.status(500).json({ error: "Unexpected server error" });
+}
+
+🔌 9. Update server.js to use structure
+
+After routes are extracted, add:
+
+import authRoutes from './routes/auth.js';
+import smsRoutes from './routes/sms.js';
+import ocrRoutes from './routes/ocr.js';
+import customerRoutes from './routes/customers.js';
+import feedbackRoutes from './routes/feedback.js';
+import billingRoutes from './routes/billing.js';
+
+import requireLogin from './middleware/requireLogin.js';
+import { smsLimiter } from './middleware/rateLimit.js';
+import errorHandler from './middleware/errorHandler.js';
+
+app.use(authRoutes);
+app.use('/sms', smsLimiter, smsRoutes);
+app.use('/ocr', ocrRoutes);
+app.use('/customers', requireLogin, customerRoutes);
+app.use('/feedback', feedbackRoutes);
+app.use('/billing', requireLogin, billingRoutes);
+
+app.use(errorHandler);
+
+⚠️ 10. Only after ALL routes work — clean up server.js
+
+Agent should:
+
+Ask permission first
+
+Then remove old commented code
+
+Keep the initialization + global config
+
+🚀 WHAT THIS PHASE 2 ACHIEVES
+Your app becomes:
+
+✔ Modular
+✔ Maintainable
+✔ Safer
+✔ Cleaner
+✔ Easier to extend
+✔ Easier for multiple devs
+✔ More scalable
+
+WITHOUT:
+
+❌ rewriting the whole app
+❌ breaking working features
+❌ messing with Stripe or Twilio
+❌ touching UI
+❌ losing logic
+❌ needing React or TypeScript
