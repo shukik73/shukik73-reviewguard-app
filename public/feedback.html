@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rate Your Experience - Techy Miramar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .star-button {
+      transition: transform 0.2s, filter 0.2s;
+    }
+    .star-button:hover {
+      transform: scale(1.15);
+      filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+    }
+    .star-button:active {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-indigo-100 min-h-screen flex items-center justify-center p-4">
+  
+  <div id="rating-container" class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+    <!-- Logo/Header -->
+    <div class="text-center mb-6">
+      <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+        <span class="text-3xl font-bold text-white">TM</span>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900">Techy Miramar</h1>
+      <p class="text-sm text-gray-600 mt-1">How was your experience?</p>
+    </div>
+
+    <!-- Star Rating -->
+    <div class="flex justify-center gap-4 mb-8">
+      <button class="star-button text-6xl" data-rating="1">⭐</button>
+      <button class="star-button text-6xl" data-rating="2">⭐</button>
+      <button class="star-button text-6xl" data-rating="3">⭐</button>
+      <button class="star-button text-6xl" data-rating="4">⭐</button>
+      <button class="star-button text-6xl" data-rating="5">⭐</button>
+    </div>
+
+    <p class="text-center text-xs text-gray-500 mb-2">Tap a star to rate</p>
+    <p class="text-center text-xs text-gray-400">1 = Poor • 5 = Excellent</p>
+  </div>
+
+  <!-- Thank You Message (hidden by default) -->
+  <div id="thank-you-container" class="hidden bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+    <div class="text-6xl mb-4">✅</div>
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">Thank You!</h2>
+    <p id="thank-you-message" class="text-gray-600 mb-4"></p>
+    <p class="text-xs text-gray-400">You can close this window now.</p>
+  </div>
+
+  <script>
+    // Get token from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+      document.getElementById('rating-container').innerHTML = `
+        <div class="text-center">
+          <div class="text-6xl mb-4">❌</div>
+          <h2 class="text-xl font-bold text-gray-900 mb-2">Invalid Link</h2>
+          <p class="text-gray-600">This feedback link is not valid.</p>
+        </div>
+      `;
+    }
+
+    // Handle star rating clicks
+    const starButtons = document.querySelectorAll('.star-button');
+    starButtons.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const rating = parseInt(btn.getAttribute('data-rating'));
+        await submitRating(rating);
+      });
+    });
+
+    async function submitRating(rating) {
+      try {
+        const response = await fetch('/api/feedback/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            token: token,
+            rating: rating
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Hide rating container, show thank you message
+          document.getElementById('rating-container').classList.add('hidden');
+          document.getElementById('thank-you-container').classList.remove('hidden');
+          
+          const thankYouMessage = document.getElementById('thank-you-message');
+          
+          if (rating >= 4) {
+            thankYouMessage.textContent = "We're so glad you had a great experience! We just sent you a text message with a link to leave us a Google review. Thank you!";
+          } else {
+            thankYouMessage.textContent = "We appreciate your honest feedback. We'll be in touch soon to make things right!";
+          }
+        } else {
+          alert('Error: ' + (data.error || 'Failed to submit rating'));
+        }
+      } catch (error) {
+        console.error('Error submitting rating:', error);
+        alert('Failed to submit rating. Please try again.');
+      }
+    }
+  </script>
+</body>
+</html>

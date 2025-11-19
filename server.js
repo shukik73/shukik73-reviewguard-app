@@ -165,6 +165,14 @@ async function initializeDatabase() {
         ALTER TABLE messages ADD COLUMN feedback_collected_at TIMESTAMP;
       END IF;
       
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='feedback_token') THEN
+        ALTER TABLE messages ADD COLUMN feedback_token VARCHAR(255);
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='user_email') THEN
+        ALTER TABLE messages ADD COLUMN user_email VARCHAR(255);
+      END IF;
+      
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='subscriptions' AND column_name='user_id') THEN
         ALTER TABLE subscriptions ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
       END IF;
@@ -893,25 +901,17 @@ app.post('/api/send-review-request', requireAuth, upload.single('photo'), async 
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
     
-    const reviewToken = messageType === 'review' ? crypto.randomBytes(3).toString('hex') : null;
+    // Generate feedback token for review requests
+    const feedbackToken = messageType === 'review' ? crypto.randomBytes(8).toString('hex') : null;
     const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
-    const trackedReviewLink = reviewToken && googleReviewLink ? `${appHost}/r/${reviewToken}` : googleReviewLink;
-
+    
     // Use the additionalInfo as the message body (frontend provides templates)
     let message = additionalInfo || '';
     
-    // Add review link for review messages ONLY if:
-    // 1. No feedback rating provided (backward compatibility), OR
-    // 2. Feedback rating is 4 or 5 stars (positive feedback)
-    const shouldSendReviewLink = messageType === 'review' && trackedReviewLink && 
-                                  (feedbackScore === null || feedbackScore >= 4);
-    
-    if (shouldSendReviewLink) {
-      message += `\n\n${trackedReviewLink}`;
-    } else if (messageType === 'review' && feedbackScore !== null && feedbackScore < 4) {
-      // For low ratings (1-3 stars), don't send review link
-      // Just send a thank you message
-      message = `Hi! Thank you for your feedback. We appreciate you letting us know about your experience. We'll be in touch soon to make things right.`;
+    // For review requests, append the feedback link instead of review link
+    if (messageType === 'review' && feedbackToken) {
+      const feedbackLink = `${appHost}/feedback.html?token=${feedbackToken}`;
+      message += `\n\n${feedbackLink}`;
     }
 
     const messageOptions = {
@@ -1013,8 +1013,11 @@ app.post('/api/send-review-request', requireAuth, upload.single('photo'), async 
 
       const followUpDueAt = messageType === 'review' ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) : null;
 
+      // Store the message with user email for quota tracking
       await pool.query(
-        'INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid, review_link_token, follow_up_due_at, review_status, feedback_rating, feedback_collected_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
+        `INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid, feedback_token, follow_up_due_at, review_status, user_email) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         ON CONFLICT DO NOTHING`,
         [
           customerId,
           customerName,
@@ -1024,11 +1027,10 @@ app.post('/api/send-review-request', requireAuth, upload.single('photo'), async 
           additionalInfo || null,
           req.file ? req.file.filename : null,
           result.sid,
-          reviewToken,
+          feedbackToken, // Store feedback token in dedicated column
           followUpDueAt,
           messageType === 'review' ? 'pending' : null,
-          feedbackScore,
-          feedbackScore !== null ? new Date() : null
+          userEmail
         ]
       );
       
@@ -1050,6 +1052,172 @@ app.post('/api/send-review-request', requireAuth, upload.single('photo'), async 
     res.status(500).json({ 
       success: false, 
       error: error.message || 'Failed to send SMS' 
+    });
+  }
+});
+
+// Feedback submission endpoint - handles customer rating via SMS link
+app.post('/api/feedback/submit', async (req, res) => {
+  try {
+    const { token, rating } = req.body;
+
+    if (!token || !rating) {
+      return res.status(400).json({
+        success: false,
+        error: 'Token and rating are required'
+      });
+    }
+
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({
+        success: false,
+        error: 'Rating must be between 1 and 5'
+      });
+    }
+
+    // Find the message with this feedback token
+    const messageResult = await pool.query(
+      'SELECT * FROM messages WHERE feedback_token = $1 AND message_type = \'review\'',
+      [token]
+    );
+
+    if (messageResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invalid or expired feedback link'
+      });
+    }
+
+    const message = messageResult.rows[0];
+
+    // Check if feedback has already been collected (prevent replay attacks)
+    if (message.feedback_rating !== null) {
+      return res.status(400).json({
+        success: false,
+        error: 'Feedback has already been submitted for this request'
+      });
+    }
+
+    // Update the message with feedback rating and review tracking timestamps
+    await pool.query(
+      `UPDATE messages 
+       SET feedback_rating = $1, 
+           feedback_collected_at = CURRENT_TIMESTAMP,
+           review_link_clicked_at = CASE 
+             WHEN $1 >= 4 THEN CURRENT_TIMESTAMP
+             ELSE review_link_clicked_at
+           END,
+           review_status = CASE 
+             WHEN $1 >= 4 THEN 'link_clicked'
+             ELSE 'low_rating'
+           END
+       WHERE id = $2`,
+      [rating, message.id]
+    );
+
+    // If rating is 4-5 stars, send Google Review link via SMS
+    if (rating >= 4) {
+      // Use the user email stored in the message for quota tracking
+      const userEmail = message.user_email;
+      
+      if (!userEmail) {
+        console.error('❌ No user email found for message:', message.id);
+        return res.status(500).json({
+          success: true, // Still return success for the feedback submission
+          message: 'Thank you for your feedback! (Unable to send review link - contact support)'
+        });
+      }
+
+      // Check quota before sending
+      const pgClient = await pool.connect();
+      let twilioResult;
+      
+      try {
+        await pgClient.query('BEGIN');
+        
+        const quotaLock = await pgClient.query(`
+          SELECT subscription_status, sms_quota, sms_sent 
+          FROM subscriptions 
+          WHERE email = $1
+          FOR UPDATE
+        `, [userEmail]);
+
+        if (quotaLock.rows.length === 0) {
+          await pgClient.query('ROLLBACK');
+          console.error('❌ No subscription found for email:', userEmail);
+          throw new Error('Subscription not found');
+        }
+
+        const { subscription_status, sms_quota, sms_sent } = quotaLock.rows[0];
+
+        if (subscription_status !== 'active' && subscription_status !== 'trial') {
+          await pgClient.query('ROLLBACK');
+          console.error('❌ Inactive subscription for:', userEmail);
+          throw new Error('Subscription inactive');
+        }
+
+        if (sms_sent >= sms_quota) {
+          await pgClient.query('ROLLBACK');
+          console.error(`❌ Quota exceeded for ${userEmail}: ${sms_sent}/${sms_quota}`);
+          throw new Error('SMS quota exceeded');
+        }
+
+        // Increment quota counter
+        await pgClient.query(`
+          UPDATE subscriptions 
+          SET sms_sent = sms_sent + 1, updated_at = CURRENT_TIMESTAMP 
+          WHERE email = $1
+        `, [userEmail]);
+
+        // Send the review link SMS with tracked link
+        const client = await getTwilioClient();
+        const fromNumber = await getTwilioFromPhoneNumber();
+        
+        // Generate a review_link_token for tracking clicks
+        const reviewToken = crypto.randomBytes(3).toString('hex');
+        const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000';
+        const trackedReviewLink = `${appHost}/r/${reviewToken}`;
+        
+        const reviewMessage = `Thank you for your positive feedback! 🌟 We'd love if you could share your experience on Google: ${trackedReviewLink}`;
+
+        twilioResult = await client.messages.create({
+          body: reviewMessage,
+          from: fromNumber,
+          to: message.customer_phone
+        });
+
+        await pgClient.query('COMMIT');
+        
+        console.log(`✅ Google Review link sent to ${message.customer_name} (${message.customer_phone}) - Rating: ${rating} stars - SID: ${twilioResult.sid} | Quota: ${sms_sent + 1}/${sms_quota}`);
+
+        // Save the review link SMS to database with tracked token
+        await pool.query(
+          `INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, twilio_sid, review_link_token, user_email) 
+           VALUES ($1, $2, $3, 'review_link', $4, $5, $6, $7)`,
+          [message.customer_id, message.customer_name, message.customer_phone, message.review_link, twilioResult.sid, reviewToken, userEmail]
+        );
+
+      } catch (twilioError) {
+        await pgClient.query('ROLLBACK');
+        console.error('❌ Error sending review link SMS:', twilioError);
+        throw twilioError;
+      } finally {
+        pgClient.release();
+      }
+    } else {
+      console.log(`ℹ️ Low rating (${rating} stars) from ${message.customer_name} - No review link sent`);
+    }
+
+    res.json({
+      success: true,
+      message: rating >= 4 ? 'Thank you! We sent you a Google Review link.' : 'Thank you for your feedback!'
+    });
+
+  } catch (error) {
+    console.error('Error processing feedback:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process feedback'
     });
   }
 });
