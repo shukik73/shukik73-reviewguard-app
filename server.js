@@ -218,16 +218,35 @@ const ocrUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: function (req, file, cb) {
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    // Accept all common image MIME types
+    const imageMimeTypes = [
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'application/octet-stream' // Sometimes camera uploads use this
+    ];
     
-    // Accept if either extension OR mimetype matches (more lenient for camera uploads)
-    if (mimetype || extname) {
+    const allowedExtensions = /\.(jpeg|jpg|png|gif|webp)$/i;
+    
+    // Check MIME type first (most reliable for camera uploads)
+    if (imageMimeTypes.includes(file.mimetype)) {
       return cb(null, true);
-    } else {
-      cb(new Error('Only image files (JPEG, PNG, GIF) are allowed for OCR'));
     }
+    
+    // Check extension as fallback
+    if (allowedExtensions.test(file.originalname)) {
+      return cb(null, true);
+    }
+    
+    // Log rejected file for debugging
+    console.log('Rejected OCR file:', {
+      originalname: file.originalname,
+      mimetype: file.mimetype
+    });
+    
+    cb(new Error('Only image files (JPEG, PNG, GIF, WebP) are allowed for OCR'));
   }
 });
 
