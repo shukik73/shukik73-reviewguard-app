@@ -218,17 +218,19 @@ const ocrUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: function (req, file, cb) {
-    // Accept all common image MIME types
+    // Accept all common image MIME types (including iPhone HEIC format)
     const imageMimeTypes = [
       'image/jpeg',
       'image/jpg', 
       'image/png',
       'image/gif',
       'image/webp',
+      'image/heic',       // iPhone photos
+      'image/heif',       // HEIF variant
       'application/octet-stream' // Sometimes camera uploads use this
     ];
     
-    const allowedExtensions = /\.(jpeg|jpg|png|gif|webp)$/i;
+    const allowedExtensions = /\.(jpeg|jpg|png|gif|webp|heic|heif)$/i;
     
     // Check MIME type first (most reliable for camera uploads)
     if (imageMimeTypes.includes(file.mimetype)) {
@@ -246,7 +248,7 @@ const ocrUpload = multer({
       mimetype: file.mimetype
     });
     
-    cb(new Error('Only image files (JPEG, PNG, GIF, WebP) are allowed for OCR'));
+    cb(new Error('Only image files (JPEG, PNG, GIF, WebP, HEIC) are allowed for OCR'));
   }
 });
 
