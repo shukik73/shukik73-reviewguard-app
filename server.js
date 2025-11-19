@@ -14,6 +14,7 @@ import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import sharp from 'sharp';
 import axios from 'axios';
+import heicConvert from 'heic-convert';
 import { sendWelcomeEmail, sendQuotaWarningEmail, sendPaymentFailedEmail, sendPasswordResetEmail } from './lib/resend.js';
 
 const { Pool } = pg;
@@ -1673,27 +1674,34 @@ app.post('/api/ocr/process', ocrUpload.single('image'), async (req, res) => {
       });
     }
 
-    let base64Image;
+    let imageBuffer = req.file.buffer;
     
-    // Check if file is HEIC/HEIF (Sharp doesn't support these)
+    // Check if file is HEIC/HEIF and convert to JPEG
     const isHeic = req.file.mimetype === 'image/heic' || 
                    req.file.mimetype === 'image/heif' ||
                    /\.(heic|heif)$/i.test(req.file.originalname);
     
     if (isHeic) {
-      // Send HEIC files directly to Google Vision API (it supports them)
-      base64Image = req.file.buffer.toString('base64');
-    } else {
-      // Process other image formats with Sharp for better OCR results
-      const processedImageBuffer = await sharp(req.file.buffer)
-        .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
-        .normalize()
-        .sharpen()
-        .grayscale()
-        .toBuffer();
-      
-      base64Image = processedImageBuffer.toString('base64');
+      console.log('Converting HEIC to JPEG...');
+      // Convert HEIC to JPEG
+      const jpegBuffer = await heicConvert({
+        buffer: req.file.buffer,
+        format: 'JPEG',
+        quality: 0.95
+      });
+      imageBuffer = Buffer.from(jpegBuffer);
+      console.log('HEIC conversion completed');
     }
+    
+    // Process image with Sharp for better OCR results
+    const processedImageBuffer = await sharp(imageBuffer)
+      .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
+      .normalize()
+      .sharpen()
+      .grayscale()
+      .toBuffer();
+    
+    const base64Image = processedImageBuffer.toString('base64');
 
     const response = await axios.post(
       `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
