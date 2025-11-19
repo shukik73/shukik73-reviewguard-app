@@ -222,7 +222,8 @@ const ocrUpload = multer({
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     
-    if (mimetype && extname) {
+    // Accept if either extension OR mimetype matches (more lenient for camera uploads)
+    if (mimetype || extname) {
       return cb(null, true);
     } else {
       cb(new Error('Only image files (JPEG, PNG, GIF) are allowed for OCR'));

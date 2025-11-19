@@ -838,25 +838,25 @@
 
         const data = await response.json();
 
-        if (data.success) {
-          // Display detected info
-          ocrNameDisplay.textContent = data.customerName || '-';
-          ocrPhoneDisplay.textContent = data.customerPhone || '-';
-          ocrDeviceDisplay.textContent = data.device || '-';
-          ocrRepairDisplay.textContent = data.repair || '-';
+        if (data.success && data.data) {
+          // Display detected info (data is nested in data.data)
+          ocrNameDisplay.textContent = data.data.customerName || '-';
+          ocrPhoneDisplay.textContent = data.data.customerPhone || '-';
+          ocrDeviceDisplay.textContent = data.data.device || '-';
+          ocrRepairDisplay.textContent = data.data.repair || '-';
 
           // Auto-fill form fields
-          if (data.customerName) {
-            customerNameInput.value = data.customerName;
+          if (data.data.customerName) {
+            customerNameInput.value = data.data.customerName;
           }
-          if (data.customerPhone) {
-            document.getElementById('customer-phone').value = data.customerPhone;
+          if (data.data.customerPhone) {
+            document.getElementById('customer-phone').value = data.data.customerPhone;
           }
-          if (data.device) {
-            deviceInput.value = data.device;
+          if (data.data.device) {
+            deviceInput.value = data.data.device;
           }
-          if (data.repair) {
-            repairInput.value = data.repair;
+          if (data.data.repair) {
+            repairInput.value = data.data.repair;
           }
 
           // Update preview with new data
@@ -964,25 +964,25 @@
 
             const data = await response.json();
 
-            if (data.success) {
-              // Display detected info
-              ocrNameDisplay.textContent = data.customerName || '-';
-              ocrPhoneDisplay.textContent = data.customerPhone || '-';
-              ocrDeviceDisplay.textContent = data.device || '-';
-              ocrRepairDisplay.textContent = data.repair || '-';
+            if (data.success && data.data) {
+              // Display detected info (data is nested in data.data)
+              ocrNameDisplay.textContent = data.data.customerName || '-';
+              ocrPhoneDisplay.textContent = data.data.customerPhone || '-';
+              ocrDeviceDisplay.textContent = data.data.device || '-';
+              ocrRepairDisplay.textContent = data.data.repair || '-';
 
               // Auto-fill form fields
-              if (data.customerName) {
-                customerNameInput.value = data.customerName;
+              if (data.data.customerName) {
+                customerNameInput.value = data.data.customerName;
               }
-              if (data.customerPhone) {
-                document.getElementById('customer-phone').value = data.customerPhone;
+              if (data.data.customerPhone) {
+                document.getElementById('customer-phone').value = data.data.customerPhone;
               }
-              if (data.device) {
-                deviceInput.value = data.device;
+              if (data.data.device) {
+                deviceInput.value = data.data.device;
               }
-              if (data.repair) {
-                repairInput.value = data.repair;
+              if (data.data.repair) {
+                repairInput.value = data.data.repair;
               }
 
               // Update preview with new data
