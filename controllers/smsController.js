@@ -1,5 +1,13 @@
 import crypto from 'crypto';
 
+async function checkOptOut(pool, phone) {
+  const result = await pool.query(
+    'SELECT id FROM sms_optouts WHERE phone = $1',
+    [phone]
+  );
+  return result.rows.length > 0;
+}
+
 export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone, upload) => async (req, res) => {
   try {
     const { customerName, customerPhone, messageType, additionalInfo, feedbackRating } = req.body;
@@ -43,6 +51,15 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
     );
     
     const googleReviewLink = settingsResult.rows[0]?.google_review_link || 'https://g.page/r/CXmh-C0UxHgqEBM/review';
+
+    const isOptedOut = await checkOptOut(pool, formattedPhone);
+    if (isOptedOut) {
+      return res.status(400).json({
+        success: false,
+        error: 'This phone number has opted out of SMS messages.',
+        code: 'OPTED_OUT'
+      });
+    }
 
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
@@ -305,6 +322,15 @@ export const submitFeedback = (pool, getTwilioClient, getTwilioFromPhoneNumber) 
           WHERE email = $1
         `, [userEmail]);
 
+        const isOptedOut = await checkOptOut(pool, message.customer_phone);
+        if (isOptedOut) {
+          await pgClient.query('ROLLBACK');
+          return res.json({
+            success: true,
+            message: 'Thank you for your feedback! (Unable to send review link - customer has opted out)'
+          });
+        }
+
         const client = await getTwilioClient();
         const fromNumber = await getTwilioFromPhoneNumber();
         
@@ -449,6 +475,13 @@ export const sendFollowups = (pool, getTwilioClient, getTwilioFromPhoneNumber) =
         if (msgResult.rows.length === 0) continue;
         
         const { customer_name, customer_phone, review_link_token } = msgResult.rows[0];
+        
+        const isOptedOut = await checkOptOut(pool, customer_phone);
+        if (isOptedOut) {
+          errors.push({ messageId, error: 'Phone number has opted out' });
+          continue;
+        }
+        
         const trackedLink = `${appHost}/r/${review_link_token}`;
         
         const followUpMessage = `Hi ${customer_name}! Just a friendly reminder - we'd really appreciate your feedback on Google. Your review helps us serve you better! ${trackedLink} Thank you! 🙏\n\nReply STOP to opt out.`;
@@ -489,5 +522,60 @@ export const sendFollowups = (pool, getTwilioClient, getTwilioFromPhoneNumber) =
   } catch (error) {
     console.error('Error sending follow-ups:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const handleIncomingSMS = (pool, validateAndFormatPhone) => async (req, res) => {
+  try {
+    const { From, Body } = req.body;
+    
+    if (!From || !Body) {
+      return res.status(400).send('Invalid webhook data');
+    }
+
+    let formattedPhone;
+    try {
+      formattedPhone = validateAndFormatPhone(From);
+    } catch (error) {
+      console.error('Invalid phone number in webhook:', From);
+      return res.status(200).send('OK');
+    }
+
+    const messageBody = Body.trim().toUpperCase();
+    
+    if (messageBody === 'STOP' || messageBody === 'UNSUBSCRIBE' || messageBody === 'CANCEL' || messageBody === 'END' || messageBody === 'QUIT') {
+      await pool.query(
+        `INSERT INTO sms_optouts (phone, reason)
+         VALUES ($1, $2)
+         ON CONFLICT (phone) DO NOTHING`,
+        [formattedPhone, messageBody]
+      );
+      
+      console.log(`✓ Phone number ${formattedPhone} opted out with keyword: ${messageBody}`);
+      
+      return res.status(200).type('text/xml').send(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Message>You have been unsubscribed from SMS messages. Reply START to opt back in.</Message>
+</Response>`);
+    }
+    
+    if (messageBody === 'START' || messageBody === 'UNSTOP' || messageBody === 'YES') {
+      await pool.query(
+        'DELETE FROM sms_optouts WHERE phone = $1',
+        [formattedPhone]
+      );
+      
+      console.log(`✓ Phone number ${formattedPhone} opted back in with keyword: ${messageBody}`);
+      
+      return res.status(200).type('text/xml').send(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Message>You have been re-subscribed to SMS messages. Reply STOP to opt out.</Message>
+</Response>`);
+    }
+    
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Error handling incoming SMS:', error);
+    res.status(200).send('OK');
   }
 };

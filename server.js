@@ -1,6 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
+import helmet from 'helmet';
 import twilio from 'twilio';
 import multer from 'multer';
 import path from 'path';
@@ -17,6 +18,7 @@ import createOCRRoutes from './routes/ocrRoutes.js';
 import createBillingRoutes from './routes/billingRoutes.js';
 import createSettingsRoutes from './routes/settingsRoutes.js';
 import requireAuth from './middleware/requireAuth.js';
+import { smsLimiter, apiLimiter } from './middleware/rateLimiter.js';
 
 const { Pool } = pg;
 const __filename = fileURLToPath(import.meta.url);
@@ -118,10 +120,18 @@ async function initializeDatabase() {
       expire TIMESTAMP NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS sms_optouts (
+      id SERIAL PRIMARY KEY,
+      phone VARCHAR(50) NOT NULL UNIQUE,
+      opted_out_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      reason VARCHAR(100) DEFAULT 'STOP'
+    );
+
     CREATE INDEX IF NOT EXISTS idx_event_logs_email ON event_logs(email);
     CREATE INDEX IF NOT EXISTS idx_event_logs_type ON event_logs(event_type);
     CREATE INDEX IF NOT EXISTS idx_event_logs_created ON event_logs(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_user_sessions_expire ON user_sessions(expire);
+    CREATE INDEX IF NOT EXISTS idx_sms_optouts_phone ON sms_optouts(phone);
   `);
 
   await pool.query(`
@@ -280,6 +290,11 @@ const PORT = 5000;
 
 const PgSession = connectPgSimple(session);
 
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+
 app.use(session({
   store: new PgSession({
     pool: pool,
@@ -299,12 +314,15 @@ app.use(session({
 
 app.use('/api/stripe-webhook', express.raw({ type: 'application/json' }));
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use('/api', apiLimiter);
+
 app.use(createAuthRoutes(pool));
-app.use(createSMSRoutes(pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone, upload, requireAuth));
+app.use(createSMSRoutes(pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone, upload, requireAuth, smsLimiter));
 app.use(createDataRoutes(pool));
 app.use(createOCRRoutes(pool, ocrUpload));
 app.use(createBillingRoutes(pool));
