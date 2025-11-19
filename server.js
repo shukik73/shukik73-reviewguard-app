@@ -1934,8 +1934,8 @@ function parseOCRText(text) {
   }
 
   return {
-    name: name.trim(),
-    phone: phone.trim(),
+    customerName: name.trim(),
+    customerPhone: phone.trim(),
     device: device.trim(),
     repair: repair.trim()
   };
