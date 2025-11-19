@@ -1109,7 +1109,7 @@ app.post('/api/feedback/submit', async (req, res) => {
            END,
            review_status = CASE 
              WHEN $1 >= 4 THEN 'link_clicked'
-             ELSE 'low_rating'
+             ELSE 'reviewed'
            END
        WHERE id = $2`,
       [rating, message.id]
