@@ -1728,7 +1728,14 @@ app.post('/api/ocr/process', ocrUpload.single('image'), async (req, res) => {
 
     const fullText = response.data.responses[0].fullTextAnnotation?.text || '';
     
+    // Log the raw OCR text for debugging
+    console.log('=== OCR RAW TEXT ===');
+    console.log(fullText);
+    console.log('===================');
+    
     const extractedData = parseOCRText(fullText);
+    
+    console.log('Extracted Data:', extractedData);
 
     res.json({
       success: true,
@@ -1755,7 +1762,8 @@ function parseOCRText(text) {
   let repair = '';
 
   const phoneRegex = /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}/g;
-  const nameKeywords = ['name', 'customer', 'client'];
+  const nameKeywords = ['name', 'customer', 'client', 'cust'];
+  const phoneKeywords = ['phone', 'mobile', 'cell', 'tel', 'contact', 'number'];
   
   const deviceModels = ['iphone', 'ipad', 'macbook', 'imac', 'samsung', 'galaxy', 'pixel', 
     'oneplus', 'lg', 'motorola', 'huawei', 'xiaomi', 'oppo', 'hp', 'dell', 'lenovo', 'asus',
@@ -1765,40 +1773,14 @@ function parseOCRText(text) {
     'speaker', 'microphone', 'button', 'water damage', 'motherboard', 'logic board',
     'cracked', 'broken', 'replacement', 'repair', 'glass', 'lcd', 'digitizer', 'back glass'];
 
+  // First pass: Look for phone and name with keywords
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const lowerLine = line.toLowerCase();
 
-    if (!phone && (lowerLine.includes('mobile') || lowerLine.includes('phone') || lowerLine.includes('tel')) && !lowerLine.includes('imei')) {
-      const digits = line.replace(/[^\d]/g, '');
-      
-      if (digits.length >= 6) {
-        let phoneNumber = digits;
-        
-        if (digits.length < 10) {
-          for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
-            const nextLine = lines[j];
-            if (nextLine.toLowerCase().includes('imei')) continue;
-            
-            const nextDigits = nextLine.replace(/[^\d]/g, '');
-            if (nextDigits.length > 0 && nextDigits.length <= 4) {
-              phoneNumber += nextDigits;
-              if (phoneNumber.length >= 10) break;
-            }
-          }
-        }
-        
-        if (phoneNumber.length === 10) {
-          phone = '+1' + phoneNumber;
-        } else if (phoneNumber.length === 11 && phoneNumber.startsWith('1')) {
-          phone = '+' + phoneNumber;
-        } else if (phoneNumber.length > 11 && phoneNumber.startsWith('1')) {
-          phone = '+' + phoneNumber.substring(0, 11);
-        }
-      }
-    }
-    
-    if (!phone) {
+    // Phone extraction - look on same line and next lines
+    if (!phone && phoneKeywords.some(kw => lowerLine.includes(kw)) && !lowerLine.includes('imei')) {
+      // Check current line for phone number
       const phoneMatches = line.match(phoneRegex);
       if (phoneMatches && phoneMatches.length > 0) {
         let foundPhone = phoneMatches[0].replace(/[^\d]/g, '');
@@ -1808,16 +1790,48 @@ function parseOCRText(text) {
           phone = '+' + foundPhone;
         }
       }
+      
+      // If not found on same line, check next few lines
+      if (!phone) {
+        for (let j = i + 1; j < Math.min(i + 3, lines.length); j++) {
+          const nextLine = lines[j];
+          const nextMatches = nextLine.match(phoneRegex);
+          if (nextMatches && nextMatches.length > 0) {
+            let foundPhone = nextMatches[0].replace(/[^\d]/g, '');
+            if (foundPhone.length === 10) {
+              phone = '+1' + foundPhone;
+              break;
+            } else if (foundPhone.length === 11 && foundPhone.startsWith('1')) {
+              phone = '+' + foundPhone;
+              break;
+            }
+          }
+        }
+      }
     }
 
+    // Name extraction - look for keyword then get next line or same line after colon
     if (!name && nameKeywords.some(keyword => lowerLine.includes(keyword))) {
-      const nextLine = lines[i + 1];
-      if (nextLine && nextLine.length > 2 && nextLine.length < 100) {
-        const words = nextLine.split(/\s+/);
-        if (words.length >= 2 && words.length <= 5) {
-          const hasUpperCase = words.some(word => /[A-Z]/.test(word));
-          if (hasUpperCase) {
-            name = nextLine;
+      // Check if name is on same line after colon or hyphen
+      const sameLine = line.split(/[:\-]/);
+      if (sameLine.length > 1) {
+        const potential = sameLine[1].trim();
+        if (potential.length > 2 && potential.length < 50 && /[A-Z]/.test(potential)) {
+          name = potential;
+        }
+      }
+      
+      // If not found, check next line
+      if (!name) {
+        const nextLine = lines[i + 1];
+        if (nextLine && nextLine.length > 2 && nextLine.length < 100) {
+          const words = nextLine.split(/\s+/);
+          if (words.length >= 1 && words.length <= 5) {
+            const hasLetters = /[A-Za-z]/.test(nextLine);
+            const notAllNumbers = !/^\d+$/.test(nextLine);
+            if (hasLetters && notAllNumbers) {
+              name = nextLine;
+            }
           }
         }
       }
@@ -1840,17 +1854,48 @@ function parseOCRText(text) {
     }
   }
 
+  // Fallback: Look for ANY phone number in the entire text if not found with keywords
+  if (!phone) {
+    for (const line of lines) {
+      if (line.toLowerCase().includes('imei')) continue; // Skip IMEI lines
+      
+      const phoneMatches = line.match(phoneRegex);
+      if (phoneMatches && phoneMatches.length > 0) {
+        let foundPhone = phoneMatches[0].replace(/[^\d]/g, '');
+        if (foundPhone.length === 10) {
+          phone = '+1' + foundPhone;
+          break;
+        } else if (foundPhone.length === 11 && foundPhone.startsWith('1')) {
+          phone = '+' + foundPhone;
+          break;
+        }
+      }
+    }
+  }
+
+  // Fallback: Look for capitalized names (2-4 words) if not found with keywords
   if (!name) {
     for (const line of lines) {
+      // Skip lines that are likely not names
+      if (phoneRegex.test(line)) continue;
+      if (/^\d/.test(line)) continue; // Skip lines starting with numbers
+      if (line.toLowerCase().includes('iphone') || line.toLowerCase().includes('samsung')) continue; // Skip device lines
+      
       const words = line.split(/\s+/);
       if (words.length >= 2 && words.length <= 4) {
         const allWordsCapitalized = words.every(word => 
           word.length > 1 && /^[A-Z]/.test(word) && /^[A-Za-z\-']+$/.test(word)
         );
-        if (allWordsCapitalized && !phoneRegex.test(line)) {
+        if (allWordsCapitalized) {
           name = line;
           break;
         }
+      }
+      
+      // Also accept single capitalized word (first names only)
+      if (words.length === 1 && words[0].length > 2 && /^[A-Z]/.test(words[0]) && /^[A-Za-z]+$/.test(words[0])) {
+        name = line;
+        break;
       }
     }
   }
