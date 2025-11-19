@@ -90,7 +90,7 @@
           <span class="hidden sm:inline text-sm text-slate-600">
             Logged in as <span class="font-medium">Shuki</span>
           </span>
-          <button class="btn-secondary text-sm">
+          <button id="logout-btn" class="btn-secondary text-sm">
             Logout
           </button>
         </div>
@@ -602,6 +602,32 @@
 
     // Default section
     showSection('send-sms');
+
+    // Logout handler
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        try {
+          const response = await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            window.location.href = '/login.html';
+          } else {
+            alert('Logout failed. Please try again.');
+          }
+        } catch (error) {
+          console.error('Logout error:', error);
+          alert('Logout failed. Please try again.');
+        }
+      });
+    }
 
     // Message preview updater
     const messageTypeSelect = document.getElementById('message-type');
