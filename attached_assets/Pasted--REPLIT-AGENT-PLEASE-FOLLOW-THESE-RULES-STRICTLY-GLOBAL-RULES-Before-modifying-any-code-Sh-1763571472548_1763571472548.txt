@@ -1,0 +1,207 @@
+🧰 REPLIT AGENT — PLEASE FOLLOW THESE RULES STRICTLY
+📌 GLOBAL RULES
+
+Before modifying any code:
+
+Show me the file and the exact lines you plan to change.
+
+Do NOT refactor, rewrite, or reorganize large files.
+
+Modify ONLY the lines I approve.
+
+Do NOT delete functionality unless I confirm.
+
+Do NOT change UI/HTML layout unless I request.
+
+Do NOT touch Stripe or billing logic unless I instruct.
+
+After each change, restart the server and show logs.
+
+✅ TASK 1 — Add “Reply STOP to opt out” to all outgoing SMS
+Steps:
+
+Show me the Twilio send block in server.js.
+
+After I approve, append this text to every SMS body:
+
+Reply STOP to opt out.
+
+
+Do not change any logic except adding this sentence.
+
+✅ TASK 2 — Add login protection to backend routes
+Wrap these routes in requireLogin():
+
+/send-sms
+
+/api/extract-text
+
+/feedback
+
+/customer/*
+
+/billing/*
+
+Steps:
+
+Show me the code for each route.
+
+Add:
+
+function requireLogin(req, res, next) {
+  if (!req.session.userId) return res.redirect('/login.html');
+  next();
+}
+
+
+Wrap route handlers after approval.
+
+Do not change anything else.
+
+✅ TASK 3 — Add SMS rate limiting
+Requirements:
+
+1 SMS per 3 seconds per logged-in user
+
+Must NOT use IP-based blocking (repair shops share IPs)
+
+Must NOT block OCR or other endpoints
+
+Steps:
+
+Show /send-sms handler.
+
+Add a small in-memory limit:
+
+const lastSMSSent = new Map();
+
+if (lastSMSSent.has(userId) && Date.now() - lastSMSSent.get(userId) < 3000) {
+  return res.status(429).json({ error: "Please wait 3 seconds before sending another SMS." });
+}
+
+lastSMSSent.set(userId, Date.now());
+
+
+Do not modify any other SMS logic.
+
+✅ TASK 4 — Fix feedback flow
+Correct behavior:
+
+First SMS:
+“How was your experience? (1–5)”
+
+If 1–3 stars:
+
+Do NOT send Google Review link
+
+Save status as "reviewed"
+
+Send:
+"Thank you for your feedback. A team member will contact you shortly."
+
+If 4–5 stars:
+
+Save status "link_clicked"
+
+Send Google Review link
+
+Steps for agent:
+
+Show feedback handler before editing.
+
+Update only the status + response logic.
+
+Do NOT modify SMS templates or UI.
+
+✅ TASK 5 — Fix OCR structured JSON return
+Requirements:
+
+Modify /api/extract-text return to:
+
+{
+  "customerName": "John Doe",
+  "customerPhone": "9545551212",
+  "device": "iPhone 13 Pro",
+  "repair": "Screen Replacement",
+  "rawText": "Full OCR text here..."
+}
+
+Steps:
+
+Show the OCR endpoint before editing.
+
+Only update the returned JSON keys — nothing else.
+
+✅ TASK 6 — Fix Twilio SMS delivery (must log errors)
+Required additions:
+
+Add:
+
+console.log("Sending SMS:", messageBody);
+
+
+Add:
+
+.catch(err => {
+  console.error("Twilio error:", err);
+  return res.status(500).json({ error: "SMS failed", details: err.message });
+});
+
+Steps:
+
+Show Twilio block.
+
+Add error logging only.
+
+Don’t rewrite the whole send function.
+
+🚫 DO NOT TOUCH THESE (unless I say so):
+
+index.html layout
+
+Tailwind CSS
+
+Stripe billing routes
+
+Subscription logic
+
+Email templates
+
+Customer dashboard
+
+Database schema
+
+Camera / Upload UI
+
+OCR detection logic
+
+Review link handling
+
+🔄 AFTER EACH FIX
+
+Agent must:
+
+Restart server
+
+Run the app
+
+Trigger the feature
+
+Show logs
+
+Wait for confirmation before next task
+
+🎯 Final Result
+
+If the agent follows this list:
+
+✔ Legal compliance fixed
+✔ SMS abuse protected
+✔ Login protected
+✔ OCR output fixed
+✔ Feedback flow correct
+✔ Twilio reliability improved
+✔ No UI broken
+✔ No refactor chaos
+✔ No lost logic
+✔ Safe step-by-step improvements
