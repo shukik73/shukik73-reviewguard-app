@@ -1879,10 +1879,29 @@ function parseOCRText(text) {
       // Skip lines that are likely not names
       if (phoneRegex.test(line)) continue;
       if (/^\d/.test(line)) continue; // Skip lines starting with numbers
+      if (line.includes('(') || line.includes(')')) continue; // Skip lines with parentheses (dates, metadata)
       if (line.toLowerCase().includes('iphone') || line.toLowerCase().includes('samsung')) continue; // Skip device lines
+      if (line.toLowerCase().includes('customer #')) continue; // Skip customer ID lines
+      if (line.toLowerCase().includes('added on')) continue; // Skip date lines
+      if (line.toLowerCase().includes('store credit')) continue; // Skip store credit lines
+      if (line.length < 3 || line.length > 50) continue; // Skip very short or very long lines
+      if (line.match(/^\$|total|invoice|ticket|estimate/i)) continue; // Skip financial/system terms
       
       const words = line.split(/\s+/);
-      if (words.length >= 2 && words.length <= 4) {
+      
+      // Prioritize 2-word names (first + last name)
+      if (words.length === 2) {
+        const allWordsCapitalized = words.every(word => 
+          word.length > 1 && /^[A-Z]/.test(word) && /^[A-Za-z\-']+$/.test(word)
+        );
+        if (allWordsCapitalized) {
+          name = line;
+          break; // Found a good 2-word name, stop searching
+        }
+      }
+      
+      // Accept 3-4 word names (middle names, compound names)
+      if (words.length >= 3 && words.length <= 4) {
         const allWordsCapitalized = words.every(word => 
           word.length > 1 && /^[A-Z]/.test(word) && /^[A-Za-z\-']+$/.test(word)
         );
@@ -1892,10 +1911,10 @@ function parseOCRText(text) {
         }
       }
       
-      // Also accept single capitalized word (first names only)
-      if (words.length === 1 && words[0].length > 2 && /^[A-Z]/.test(words[0]) && /^[A-Za-z]+$/.test(words[0])) {
+      // Last resort: Accept single capitalized word (first name only)
+      if (!name && words.length === 1 && words[0].length > 2 && /^[A-Z]/.test(words[0]) && /^[A-Za-z]+$/.test(words[0])) {
         name = line;
-        break;
+        // Don't break - keep looking for a 2-word name
       }
     }
   }
