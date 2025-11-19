@@ -784,6 +784,76 @@
         sendSmsBtn.textContent = '📤 Send SMS';
       }
     }
+
+    // OCR Upload Handler
+    const ocrUploadInput = document.getElementById('ocr-upload');
+    const ocrNameDisplay = document.getElementById('ocr-name');
+    const ocrPhoneDisplay = document.getElementById('ocr-phone');
+    const ocrDeviceDisplay = document.getElementById('ocr-device');
+    const ocrRepairDisplay = document.getElementById('ocr-repair');
+
+    ocrUploadInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Show loading state
+      ocrNameDisplay.textContent = 'Processing...';
+      ocrPhoneDisplay.textContent = 'Processing...';
+      ocrDeviceDisplay.textContent = 'Processing...';
+      ocrRepairDisplay.textContent = 'Processing...';
+
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const response = await fetch('/api/ocr/process', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Display detected info
+          ocrNameDisplay.textContent = data.customerName || '-';
+          ocrPhoneDisplay.textContent = data.customerPhone || '-';
+          ocrDeviceDisplay.textContent = data.device || '-';
+          ocrRepairDisplay.textContent = data.repair || '-';
+
+          // Auto-fill form fields
+          if (data.customerName) {
+            customerNameInput.value = data.customerName;
+          }
+          if (data.customerPhone) {
+            document.getElementById('customer-phone').value = data.customerPhone;
+          }
+          if (data.device) {
+            deviceInput.value = data.device;
+          }
+          if (data.repair) {
+            repairInput.value = data.repair;
+          }
+
+          // Update preview with new data
+          updatePreview();
+
+          alert('✓ Information extracted successfully!');
+        } else {
+          ocrNameDisplay.textContent = '-';
+          ocrPhoneDisplay.textContent = '-';
+          ocrDeviceDisplay.textContent = '-';
+          ocrRepairDisplay.textContent = '-';
+          alert('Error: ' + (data.error || 'Failed to process image'));
+        }
+      } catch (error) {
+        console.error('OCR upload error:', error);
+        ocrNameDisplay.textContent = '-';
+        ocrPhoneDisplay.textContent = '-';
+        ocrDeviceDisplay.textContent = '-';
+        ocrRepairDisplay.textContent = '-';
+        alert('Failed to process image. Please try again.');
+      }
+    });
   </script>
 
 </body>
