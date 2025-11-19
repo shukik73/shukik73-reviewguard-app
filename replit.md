@@ -43,9 +43,15 @@ A production-ready user authentication system supports multi-tenancy with person
 
 Stripe Subscription Billing is integrated with transaction-based, race-condition-free SMS quota enforcement. This includes trial accounts (50 SMS), tiered subscription plans (Starter: 500 SMS, Pro: 2000 SMS) via Stripe Checkout, email-based tracking, and Stripe webhooks for subscription status updates. Quota enforcement uses PostgreSQL row-level locking to prevent concurrent quota bypass and ensures atomic quota reservation with rollback on failure.
 
+### Security Layer
+
+**Rate Limiting & Headers**: Production-ready security includes Helmet.js for security headers (XSS protection, HSTS, etc.) and express-rate-limit middleware. SMS sending endpoints are limited to 5 requests per hour per IP to prevent abuse and protect Twilio costs. General API endpoints have a 100 requests per 15 minutes limit. Both limiters return proper 429 status codes with informative error messages.
+
+**SMS Opt-Out Compliance**: Full TCPA/CAN-SPAM compliance with automatic STOP/START keyword handling via Twilio webhook. The system maintains an `sms_optouts` database table tracking opted-out phone numbers. All outbound SMS paths (initial send, feedback follow-up, review reminders) check opt-out status before sending. Customers can opt out by replying STOP, UNSUBSCRIBE, CANCEL, END, or QUIT, and opt back in with START, UNSTOP, or YES. The webhook endpoint (`/api/sms/webhook`) processes form-encoded Twilio payloads and automatically updates the database.
+
 ## Communication Layer
 
-Twilio SMS/MMS integration facilitates sending Google Review requests or Device Ready notifications, utilizing the Twilio SDK with secure Replit Connector integration. It supports both plain SMS and MMS with photo attachments, including E.164 validation and error handling.
+Twilio SMS/MMS integration facilitates sending Google Review requests or Device Ready notifications, utilizing the Twilio SDK with secure Replit Connector integration. It supports both plain SMS and MMS with photo attachments, including E.164 validation and error handling. All messages include "Reply STOP to opt out" footer for compliance.
 
 ## Frontend Architecture
 
