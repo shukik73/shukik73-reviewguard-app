@@ -1186,16 +1186,16 @@ app.post('/api/feedback/submit', async (req, res) => {
           to: message.customer_phone
         });
 
+        // Save the review link SMS to database with tracked token (inside transaction)
+        await pgClient.query(
+          `INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, twilio_sid, review_link_token, user_email, review_status, follow_up_due_at) 
+           VALUES ($1, $2, $3, 'review_link', $4, $5, $6, $7, 'pending', CURRENT_TIMESTAMP + INTERVAL '3 days')`,
+          [message.customer_id, message.customer_name, message.customer_phone, message.review_link, twilioResult.sid, reviewToken, userEmail]
+        );
+
         await pgClient.query('COMMIT');
         
         console.log(`✅ Google Review link sent to ${message.customer_name} (${message.customer_phone}) - Rating: ${rating} stars - SID: ${twilioResult.sid} | Quota: ${sms_sent + 1}/${sms_quota}`);
-
-        // Save the review link SMS to database with tracked token
-        await pool.query(
-          `INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, twilio_sid, review_link_token, user_email) 
-           VALUES ($1, $2, $3, 'review_link', $4, $5, $6, $7)`,
-          [message.customer_id, message.customer_name, message.customer_phone, message.review_link, twilioResult.sid, reviewToken, userEmail]
-        );
 
       } catch (twilioError) {
         await pgClient.query('ROLLBACK');
