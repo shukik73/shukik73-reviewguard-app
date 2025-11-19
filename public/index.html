@@ -144,6 +144,14 @@
     <!-- Main Content -->
     <main class="space-y-6">
 
+      <!-- Global Notification Container -->
+      <div id="notification-container" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full px-4">
+        <div id="notification-message" class="rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-white flex items-center gap-2">
+          <span id="notification-icon"></span>
+          <span id="notification-text"></span>
+        </div>
+      </div>
+
       <!-- SEND SMS SECTION (default visible) -->
       <section id="send-sms" class="section">
         <!-- Step 1 & Step 2 cards -->
@@ -603,6 +611,34 @@
     // Default section
     showSection('send-sms');
 
+    // Notification System
+    function showNotification(message, type = 'success') {
+      const container = document.getElementById('notification-container');
+      const messageDiv = document.getElementById('notification-message');
+      const iconSpan = document.getElementById('notification-icon');
+      const textSpan = document.getElementById('notification-text');
+      
+      // Set icon and color based on type
+      if (type === 'success') {
+        iconSpan.textContent = '✓';
+        messageDiv.className = 'rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-white flex items-center gap-2 bg-green-500';
+      } else if (type === 'error') {
+        iconSpan.textContent = '✕';
+        messageDiv.className = 'rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-white flex items-center gap-2 bg-red-500';
+      } else if (type === 'info') {
+        iconSpan.textContent = 'ℹ';
+        messageDiv.className = 'rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-white flex items-center gap-2 bg-blue-500';
+      }
+      
+      textSpan.textContent = message;
+      container.classList.remove('hidden');
+      
+      // Auto-hide after 4 seconds
+      setTimeout(() => {
+        container.classList.add('hidden');
+      }, 4000);
+    }
+
     // Logout handler
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
@@ -620,11 +656,11 @@
           if (data.success) {
             window.location.href = '/login.html';
           } else {
-            alert('Logout failed. Please try again.');
+            showNotification('Logout failed. Please try again.', 'error');
           }
         } catch (error) {
           console.error('Logout error:', error);
-          alert('Logout failed. Please try again.');
+          showNotification('Logout failed. Please try again.', 'error');
         }
       });
     }
@@ -717,7 +753,7 @@
 
       // Validate required fields
       if (!customerName || !customerPhone) {
-        alert('Please enter customer name and phone number');
+        showNotification('Please enter customer name and phone number', 'error');
         return;
       }
 
@@ -759,9 +795,9 @@
 
         if (data.success) {
           if (messageType === 'review') {
-            alert('✓ Feedback request sent! Customer will receive a link to rate their experience. If they rate 4-5 stars, they\'ll get a Google Review link.');
+            showNotification('Feedback request sent! Customer will receive a link to rate their experience. If they rate 4-5 stars, they\'ll get a Google Review link.', 'success');
           } else {
-            alert('✓ SMS sent successfully!');
+            showNotification('SMS sent successfully!', 'success');
           }
           
           // Clear form
@@ -772,11 +808,11 @@
           customMessageInput.value = '';
           updatePreview();
         } else {
-          alert('Error: ' + data.error);
+          showNotification('Error: ' + data.error, 'error');
         }
       } catch (error) {
         console.error('Error sending SMS:', error);
-        alert('Failed to send SMS. Please try again.');
+        showNotification('Failed to send SMS. Please try again.', 'error');
       } finally {
         sendSmsBtn.disabled = false;
         sendSmsBtn.textContent = '📤 Send SMS';
@@ -835,13 +871,13 @@
           // Update preview with new data
           updatePreview();
 
-          alert('✓ Information extracted successfully!');
+          showNotification('Information extracted successfully!', 'success');
         } else {
           ocrNameDisplay.textContent = '-';
           ocrPhoneDisplay.textContent = '-';
           ocrDeviceDisplay.textContent = '-';
           ocrRepairDisplay.textContent = '-';
-          alert('Error: ' + (data.error || 'Failed to process image'));
+          showNotification('Error: ' + (data.error || 'Failed to process image'), 'error');
         }
       } catch (error) {
         console.error('OCR upload error:', error);
@@ -849,7 +885,7 @@
         ocrPhoneDisplay.textContent = '-';
         ocrDeviceDisplay.textContent = '-';
         ocrRepairDisplay.textContent = '-';
-        alert('Failed to process image. Please try again.');
+        showNotification('Failed to process image. Please try again.', 'error');
       }
     });
 
@@ -868,7 +904,7 @@
       try {
         // Check if camera is supported
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          alert('Camera is not supported on this device. Please use the Upload button instead.');
+          showNotification('Camera is not supported on this device. Please use the Upload button instead.', 'error');
           return;
         }
 
@@ -884,11 +920,11 @@
       } catch (error) {
         console.error('Camera access error:', error);
         if (error.name === 'NotAllowedError') {
-          alert('Camera access denied. Please allow camera permissions and try again.');
+          showNotification('Camera access denied. Please allow camera permissions and try again.', 'error');
         } else if (error.name === 'NotFoundError') {
-          alert('No camera found on this device. Please use the Upload button instead.');
+          showNotification('No camera found on this device. Please use the Upload button instead.', 'error');
         } else {
-          alert('Failed to access camera. Please use the Upload button instead.');
+          showNotification('Failed to access camera. Please use the Upload button instead.', 'error');
         }
       }
     });
@@ -913,7 +949,7 @@
         // Convert canvas to blob
         cameraCanvas.toBlob(async (blob) => {
           if (!blob) {
-            alert('Failed to capture photo. Please try again.');
+            showNotification('Failed to capture photo. Please try again.', 'error');
             stopCamera();
             cameraModal.classList.add('hidden');
             return;
@@ -961,13 +997,13 @@
               // Update preview with new data
               updatePreview();
 
-              alert('✓ Information extracted successfully!');
+              showNotification('Information extracted successfully!', 'success');
             } else {
               ocrNameDisplay.textContent = '-';
               ocrPhoneDisplay.textContent = '-';
               ocrDeviceDisplay.textContent = '-';
               ocrRepairDisplay.textContent = '-';
-              alert('Error: ' + (data.error || 'Failed to process photo'));
+              showNotification('Error: ' + (data.error || 'Failed to process photo'), 'error');
             }
           } catch (error) {
             console.error('OCR processing error:', error);
@@ -975,7 +1011,7 @@
             ocrPhoneDisplay.textContent = '-';
             ocrDeviceDisplay.textContent = '-';
             ocrRepairDisplay.textContent = '-';
-            alert('Failed to process photo. Please try again.');
+            showNotification('Failed to process photo. Please try again.', 'error');
           } finally {
             // Always close camera modal and stop stream after processing
             stopCamera();
@@ -985,7 +1021,7 @@
         }, 'image/jpeg', 0.95);
       } catch (error) {
         console.error('Photo capture error:', error);
-        alert('Failed to capture photo. Please try again.');
+        showNotification('Failed to capture photo. Please try again.', 'error');
       }
     });
 
