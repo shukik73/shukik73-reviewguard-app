@@ -175,7 +175,7 @@
                 </label>
 
                 <!-- Take photo button (compact square) -->
-                <button class="flex-1 h-full flex flex-col items-center justify-center gap-1.5 border-2 border-slate-300 rounded-lg text-center hover:bg-slate-50 hover:border-indigo-300 transition-all py-3">
+                <button id="camera-btn" class="flex-1 h-full flex flex-col items-center justify-center gap-1.5 border-2 border-slate-300 rounded-lg text-center hover:bg-slate-50 hover:border-indigo-300 transition-all py-3">
                   <span class="text-2xl">📷</span>
                   <span class="text-[10px] text-slate-600 font-medium">
                     Camera
@@ -567,6 +567,31 @@
     </div>
   </div>
 
+  <!-- Camera Modal (hidden by default) -->
+  <div id="camera-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 text-center">Take Photo</h2>
+      
+      <!-- Video Preview -->
+      <div class="relative bg-black rounded-lg overflow-hidden mb-4">
+        <video id="camera-video" class="w-full" autoplay playsinline></video>
+        <canvas id="camera-canvas" class="hidden"></canvas>
+      </div>
+      
+      <!-- Camera Controls -->
+      <div class="flex gap-3">
+        <button id="capture-photo-btn" class="btn-primary flex-1">
+          📸 Capture Photo
+        </button>
+        <button id="close-camera-btn" class="btn-secondary flex-1">
+          Cancel
+        </button>
+      </div>
+      
+      <p id="camera-error" class="text-xs text-red-600 mt-3 text-center hidden"></p>
+    </div>
+  </div>
+
   <!-- Tab switching script -->
   <script>
     const tabs = document.querySelectorAll('.nav-tab');
@@ -854,6 +879,151 @@
         alert('Failed to process image. Please try again.');
       }
     });
+
+    // Camera functionality
+    const cameraBtn = document.getElementById('camera-btn');
+    const cameraModal = document.getElementById('camera-modal');
+    const cameraVideo = document.getElementById('camera-video');
+    const cameraCanvas = document.getElementById('camera-canvas');
+    const capturePhotoBtn = document.getElementById('capture-photo-btn');
+    const closeCameraBtn = document.getElementById('close-camera-btn');
+    const cameraError = document.getElementById('camera-error');
+    let cameraStream = null;
+
+    // Open camera modal
+    cameraBtn.addEventListener('click', async () => {
+      try {
+        // Check if camera is supported
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          alert('Camera is not supported on this device. Please use the Upload button instead.');
+          return;
+        }
+
+        // Request camera access
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }, // Use rear camera on mobile
+          audio: false
+        });
+
+        cameraVideo.srcObject = cameraStream;
+        cameraModal.classList.remove('hidden');
+        cameraError.classList.add('hidden');
+      } catch (error) {
+        console.error('Camera access error:', error);
+        if (error.name === 'NotAllowedError') {
+          alert('Camera access denied. Please allow camera permissions and try again.');
+        } else if (error.name === 'NotFoundError') {
+          alert('No camera found on this device. Please use the Upload button instead.');
+        } else {
+          alert('Failed to access camera. Please use the Upload button instead.');
+        }
+      }
+    });
+
+    // Close camera modal
+    closeCameraBtn.addEventListener('click', () => {
+      stopCamera();
+      cameraModal.classList.add('hidden');
+    });
+
+    // Capture photo
+    capturePhotoBtn.addEventListener('click', async () => {
+      try {
+        // Set canvas size to match video
+        cameraCanvas.width = cameraVideo.videoWidth;
+        cameraCanvas.height = cameraVideo.videoHeight;
+
+        // Draw video frame to canvas
+        const context = cameraCanvas.getContext('2d');
+        context.drawImage(cameraVideo, 0, 0);
+
+        // Convert canvas to blob
+        cameraCanvas.toBlob(async (blob) => {
+          if (!blob) {
+            alert('Failed to capture photo. Please try again.');
+            stopCamera();
+            cameraModal.classList.add('hidden');
+            return;
+          }
+
+          // Show processing state
+          ocrNameDisplay.textContent = 'Processing...';
+          ocrPhoneDisplay.textContent = 'Processing...';
+          ocrDeviceDisplay.textContent = 'Processing...';
+          ocrRepairDisplay.textContent = 'Processing...';
+
+          // Send to OCR endpoint
+          try {
+            const formData = new FormData();
+            formData.append('image', blob, 'camera-photo.jpg');
+
+            const response = await fetch('/api/ocr/process', {
+              method: 'POST',
+              body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              // Display detected info
+              ocrNameDisplay.textContent = data.customerName || '-';
+              ocrPhoneDisplay.textContent = data.customerPhone || '-';
+              ocrDeviceDisplay.textContent = data.device || '-';
+              ocrRepairDisplay.textContent = data.repair || '-';
+
+              // Auto-fill form fields
+              if (data.customerName) {
+                customerNameInput.value = data.customerName;
+              }
+              if (data.customerPhone) {
+                document.getElementById('customer-phone').value = data.customerPhone;
+              }
+              if (data.device) {
+                deviceInput.value = data.device;
+              }
+              if (data.repair) {
+                repairInput.value = data.repair;
+              }
+
+              // Update preview with new data
+              updatePreview();
+
+              alert('✓ Information extracted successfully!');
+            } else {
+              ocrNameDisplay.textContent = '-';
+              ocrPhoneDisplay.textContent = '-';
+              ocrDeviceDisplay.textContent = '-';
+              ocrRepairDisplay.textContent = '-';
+              alert('Error: ' + (data.error || 'Failed to process photo'));
+            }
+          } catch (error) {
+            console.error('OCR processing error:', error);
+            ocrNameDisplay.textContent = '-';
+            ocrPhoneDisplay.textContent = '-';
+            ocrDeviceDisplay.textContent = '-';
+            ocrRepairDisplay.textContent = '-';
+            alert('Failed to process photo. Please try again.');
+          } finally {
+            // Always close camera modal and stop stream after processing
+            stopCamera();
+            cameraModal.classList.add('hidden');
+            cameraError.classList.add('hidden');
+          }
+        }, 'image/jpeg', 0.95);
+      } catch (error) {
+        console.error('Photo capture error:', error);
+        alert('Failed to capture photo. Please try again.');
+      }
+    });
+
+    // Helper function to stop camera stream
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+        cameraVideo.srcObject = null;
+      }
+    }
   </script>
 
 </body>
