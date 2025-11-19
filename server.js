@@ -911,7 +911,9 @@ app.post('/api/send-review-request', requireAuth, upload.single('photo'), async 
     // For review requests, append the feedback link instead of review link
     if (messageType === 'review' && feedbackToken) {
       const feedbackLink = `${appHost}/feedback.html?token=${feedbackToken}`;
-      message += `\n\n${feedbackLink}`;
+      message += `\n\n${feedbackLink}\n\nReply STOP to opt out.`;
+    } else {
+      message += `\n\nReply STOP to opt out.`;
     }
 
     const messageOptions = {
@@ -1178,7 +1180,7 @@ app.post('/api/feedback/submit', async (req, res) => {
         const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000';
         const trackedReviewLink = `${appHost}/r/${reviewToken}`;
         
-        const reviewMessage = `Thank you for your positive feedback! 🌟 We'd love if you could share your experience on Google: ${trackedReviewLink}`;
+        const reviewMessage = `Thank you for your positive feedback! 🌟 We'd love if you could share your experience on Google: ${trackedReviewLink}\n\nReply STOP to opt out.`;
 
         twilioResult = await client.messages.create({
           body: reviewMessage,
@@ -1418,7 +1420,7 @@ app.post('/api/follow-ups/send', async (req, res) => {
         const { customer_name, customer_phone, review_link_token } = msgResult.rows[0];
         const trackedLink = `${appHost}/r/${review_link_token}`;
         
-        const followUpMessage = `Hi ${customer_name}! Just a friendly reminder - we'd really appreciate your feedback on Google. Your review helps us serve you better! ${trackedLink} Thank you! 🙏`;
+        const followUpMessage = `Hi ${customer_name}! Just a friendly reminder - we'd really appreciate your feedback on Google. Your review helps us serve you better! ${trackedLink} Thank you! 🙏\n\nReply STOP to opt out.`;
         
         const result = await client.messages.create({
           body: followUpMessage,
