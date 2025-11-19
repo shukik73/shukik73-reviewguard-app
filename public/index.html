@@ -146,10 +146,6 @@
 
       <!-- SEND SMS SECTION (default visible) -->
       <section id="send-sms" class="section">
-        <h1 class="text-xl font-semibold text-slate-100 mb-3">
-          Send SMS
-        </h1>
-
         <!-- Step 1 & Step 2 cards -->
         <div class="space-y-4">
           <!-- Step 1 – Customer details (full width on top) -->
@@ -582,10 +578,14 @@
       });
       tabs.forEach(btn => {
         const isActive = btn.getAttribute('data-section') === id;
-        btn.classList.toggle('bg-indigo-50', isActive);
-        btn.classList.toggle('text-indigo-600', isActive);
-        btn.classList.toggle('font-medium', isActive);
-        btn.classList.toggle('text-slate-600', !isActive);
+        
+        if (isActive) {
+          btn.classList.add('bg-gradient-to-r', 'from-indigo-500', 'to-purple-600', 'text-white', 'font-semibold', 'shadow-lg');
+          btn.classList.remove('bg-indigo-50', 'text-indigo-600', 'text-slate-600', 'hover:bg-slate-50');
+        } else {
+          btn.classList.remove('bg-gradient-to-r', 'from-indigo-500', 'to-purple-600', 'text-white', 'font-semibold', 'shadow-lg');
+          btn.classList.add('text-slate-600', 'hover:bg-slate-50');
+        }
       });
     }
 
