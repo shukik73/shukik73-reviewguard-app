@@ -875,7 +875,6 @@
     const deviceInput = document.getElementById('device');
     const repairInput = document.getElementById('repair');
     const customMessageInput = document.getElementById('custom-message');
-    const reviewLinkInput = document.getElementById('review-link');
     const messagePreview = document.getElementById('message-preview');
     const charCount = document.getElementById('char-count');
 
@@ -885,7 +884,6 @@
       const device = deviceInput.value || 'device';
       const repair = repairInput.value || 'repair';
       const custom = customMessageInput.value;
-      const reviewLink = reviewLinkInput.value || '[Google Review Link]';
 
       let message = '';
 
@@ -919,7 +917,6 @@
     deviceInput.addEventListener('input', updatePreview);
     repairInput.addEventListener('input', updatePreview);
     customMessageInput.addEventListener('input', updatePreview);
-    reviewLinkInput.addEventListener('input', updatePreview);
 
     // Phone number formatting
     const customerPhoneInput = document.getElementById('customer-phone');
