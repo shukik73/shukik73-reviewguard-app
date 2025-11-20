@@ -462,7 +462,7 @@
 
           <!-- Plans -->
           <div class="lg:col-span-2 grid gap-4 sm:grid-cols-2">
-            <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-5">
+            <div id="starter-plan-card" class="bg-white rounded-lg shadow-sm border border-slate-100 p-5 transition-all">
               <div class="text-xs font-semibold text-slate-500 uppercase mb-1">
                 Starter
               </div>
@@ -476,12 +476,12 @@
                 <li>✅ Customer database</li>
                 <li>✅ OCR text extraction</li>
               </ul>
-              <button class="btn-primary w-full mt-4 text-sm opacity-60">
-                Subscribe to Starter
+              <button id="subscribe-starter-btn" class="btn-primary w-full mt-4 text-sm">
+                Subscribe to Starter ($19/mo)
               </button>
             </div>
 
-            <div class="bg-white rounded-lg shadow-sm border border-indigo-200 p-5 relative">
+            <div id="pro-plan-card" class="bg-white rounded-lg shadow-sm border border-indigo-200 p-5 relative transition-all">
               <span class="absolute -top-2 right-3 text-[10px] font-semibold bg-indigo-600 text-white px-2 py-0.5 rounded-full">
                 POPULAR
               </span>
@@ -782,6 +782,7 @@
       if (id === 'history') loadHistory();
       if (id === 'customers') loadCustomers();
       if (id === 'settings') loadSettings();
+      if (id === 'billing') updateSubscriptionDisplay();
     }
 
     tabs.forEach(btn => {
@@ -1255,62 +1256,121 @@
       }
     }
 
+    // Helper function to create checkout session
+    async function createCheckout(planId, button, originalText) {
+      try {
+        button.disabled = true;
+        button.textContent = 'Creating checkout session...';
+
+        const authResponse = await fetch('/api/auth/session');
+        
+        if (!authResponse.ok) {
+          showNotification('Please log in to subscribe', 'error');
+          button.disabled = false;
+          button.textContent = originalText;
+          return;
+        }
+        
+        const authData = await authResponse.json();
+        
+        if (!authData.user?.email) {
+          showNotification('Please log in to subscribe', 'error');
+          button.disabled = false;
+          button.textContent = originalText;
+          return;
+        }
+        
+        const response = await fetch('/api/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: authData.user.email,
+            planId: planId
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error(data.error || 'Failed to create checkout session');
+        }
+      } catch (error) {
+        console.error('Checkout error:', error);
+        showNotification('Failed to start checkout. Please try again.', 'error');
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+
+    // Check subscription status and highlight active plan
+    async function updateSubscriptionDisplay() {
+      try {
+        const authResponse = await fetch('/api/auth/session');
+        if (!authResponse.ok) return;
+        
+        const authData = await authResponse.json();
+        if (!authData.user?.email) return;
+
+        const response = await fetch('/api/subscription-status');
+        if (!response.ok) return;
+
+        const data = await response.json();
+        
+        const starterCard = document.getElementById('starter-plan-card');
+        const proCard = document.getElementById('pro-plan-card');
+        const starterBtn = document.getElementById('subscribe-starter-btn');
+        const proBtn = document.getElementById('subscribe-pro-btn');
+
+        // Reset all cards
+        starterCard.classList.remove('border-green-500', 'border-2');
+        proCard.classList.remove('border-green-500', 'border-2');
+        starterCard.classList.add('border-slate-100');
+        proCard.classList.add('border-indigo-200');
+
+        if (data.subscription?.status === 'active') {
+          const planId = data.subscription.plan_id;
+          
+          if (planId === 'starter') {
+            starterCard.classList.remove('border-slate-100');
+            starterCard.classList.add('border-green-500', 'border-2');
+            starterBtn.textContent = '✓ Active Plan';
+            starterBtn.disabled = true;
+            starterBtn.classList.add('bg-green-600', 'hover:bg-green-600');
+          } else if (planId === 'pro') {
+            proCard.classList.remove('border-indigo-200');
+            proCard.classList.add('border-green-500', 'border-2');
+            proBtn.textContent = '✓ Active Plan';
+            proBtn.disabled = true;
+            proBtn.classList.add('bg-green-600', 'hover:bg-green-600');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch subscription status:', error);
+      }
+    }
+
+    // Billing - Subscribe to Starter button handler
+    const subscribeStarterBtn = document.getElementById('subscribe-starter-btn');
+    if (subscribeStarterBtn) {
+      subscribeStarterBtn.addEventListener('click', () => {
+        createCheckout('starter', subscribeStarterBtn, 'Subscribe to Starter ($19/mo)');
+      });
+    }
+
     // Billing - Upgrade to Pro button handler
     const subscribeProBtn = document.getElementById('subscribe-pro-btn');
     if (subscribeProBtn) {
-      subscribeProBtn.addEventListener('click', async () => {
-        try {
-          // Disable button and show loading state
-          subscribeProBtn.disabled = true;
-          subscribeProBtn.textContent = 'Creating checkout session...';
-
-          // Get user email from session
-          const authResponse = await fetch('/api/auth/session');
-          
-          if (!authResponse.ok) {
-            showNotification('Please log in to subscribe', 'error');
-            subscribeProBtn.disabled = false;
-            subscribeProBtn.textContent = 'Upgrade to Pro ($49/mo)';
-            return;
-          }
-          
-          const authData = await authResponse.json();
-          
-          if (!authData.user?.email) {
-            showNotification('Please log in to subscribe', 'error');
-            subscribeProBtn.disabled = false;
-            subscribeProBtn.textContent = 'Upgrade to Pro ($49/mo)';
-            return;
-          }
-          
-          // Call the backend to create checkout session
-          const response = await fetch('/api/create-checkout-session', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              email: authData.user.email,
-              planId: 'pro'
-            })
-          });
-
-          const data = await response.json();
-
-          if (data.url) {
-            // Redirect to Stripe Checkout
-            window.location.href = data.url;
-          } else {
-            throw new Error(data.error || 'Failed to create checkout session');
-          }
-        } catch (error) {
-          console.error('Checkout error:', error);
-          showNotification('Failed to start checkout. Please try again.', 'error');
-          subscribeProBtn.disabled = false;
-          subscribeProBtn.textContent = 'Upgrade to Pro ($49/mo)';
-        }
+      subscribeProBtn.addEventListener('click', () => {
+        createCheckout('pro', subscribeProBtn, 'Upgrade to Pro ($49/mo)');
       });
     }
+
+    // Update subscription display on page load
+    updateSubscriptionDisplay();
   </script>
 
 </body>
