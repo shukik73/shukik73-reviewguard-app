@@ -20,8 +20,9 @@ The application follows a clean **Model-View-Controller (MVC)** architecture wit
 - **/config/database.js**: Database connection pool and schema initialization logic. Exports `pool` and `initializeDatabase()`.
 - **/utils/twilio.js**: Twilio credential fetching, client initialization, and phone validation utilities. Exports `getCredentials()`, `getTwilioClient()`, `getTwilioFromPhoneNumber()`, and `validateAndFormatPhone()`.
 - **/utils/multerConfig.js**: Multer file upload configuration for both disk storage (photos) and memory storage (OCR).
-- **/controllers**: Business logic organized by domain (auth, SMS/reviews, data, OCR, billing, settings). Each controller exports factory functions that receive dependencies (pool, Twilio helpers) and return route handlers.
+- **/controllers**: Business logic organized by domain (auth, SMS/reviews, data, OCR, billing, settings, feedback). Each controller exports factory functions that receive dependencies (pool, Twilio helpers) and return route handlers.
 - **/routes**: Route definitions that import controllers and create Express routers. Each route file maps HTTP endpoints to controller functions.
+- **/controllers/feedbackController.js**: Handles customer feedback submission with two endpoints: `/api/feedback/internal` for 1-3 star ratings (stores in `internal_feedback` table and emails business owner) and `/api/feedback/public` for 4-5 star ratings (redirects to Google Review link).
 - **/middleware**: Shared middleware like `requireAuth.js` for authentication enforcement and `rateLimiter.js` for rate limiting.
 
 The refactored architecture reduces server.js from 2127 lines to 94 lines (96% reduction), with complete modularization of database, Twilio, and file upload logic. All business logic is domain-separated. **Security**: SESSION_SECRET has no fallback - the app performs startup validation and immediately exits with clear error messages if DATABASE_URL or SESSION_SECRET are missing. Phone numbers are normalized to E.164 format.
@@ -48,7 +49,7 @@ Stripe Subscription Billing is integrated with transaction-based, race-condition
 
 ### Security Layer
 
-**Rate Limiting & Headers**: Production-ready security includes Helmet.js for security headers (XSS protection, HSTS, etc.) and express-rate-limit middleware. SMS sending endpoints are limited to 5 requests per hour per IP to prevent abuse and protect Twilio costs. General API endpoints have a 100 requests per 15 minutes limit. Both limiters return proper 429 status codes with informative error messages.
+**Rate Limiting & Headers**: Production-ready security includes Helmet.js with a properly configured Content Security Policy (CSP) allowing necessary resources like Stripe.js, Tailwind CDN, and jQuery while blocking unsafe inline scripts by default. Express-rate-limit middleware protects endpoints: SMS sending endpoints are limited to 5 requests per hour per IP to prevent abuse and protect Twilio costs. General API endpoints have a 100 requests per 15 minutes limit. Both limiters return proper 429 status codes with informative error messages.
 
 **SMS Opt-Out Compliance**: Full TCPA/CAN-SPAM compliance with automatic STOP/START keyword handling via Twilio webhook. The system maintains an `sms_optouts` database table tracking opted-out phone numbers. All outbound SMS paths (initial send, feedback follow-up, review reminders) check opt-out status before sending. Customers can opt out by replying STOP, UNSUBSCRIBE, CANCEL, END, or QUIT, and opt back in with START, UNSTOP, or YES. The webhook endpoint (`/api/sms/webhook`) processes form-encoded Twilio payloads and automatically updates the database.
 
@@ -64,11 +65,15 @@ The static HTML/CSS/JavaScript frontend features a modern, purple gradient desig
 - **History:** Chronological log of all sent messages with type badges, customer info, timestamps, search/filter, and CSV export.
 - **Customers:** Lists all customers with contact info, message counts, last contact dates, search/filter, CSV export, and a "Load Customer" button to pre-fill the send form.
 
-**UI/UX Decisions:** The UI provides real-time validation, notifications, responsiveness, dynamic adaptation based on message type, one-click customer selection, automatic data refresh on tab switching, drag-and-drop file upload, smart template generation, searchable history/customers, and automatic form reset.
+**UI/UX Decisions:** The UI provides real-time validation, notifications, responsiveness, dynamic adaptation based on message type, one-click customer selection, automatic data refresh on tab switching, drag-and-drop file upload, smart template generation, searchable history/customers, automatic form reset, and a mandatory TCPA consent checkbox that enables/disables the send button.
+
+**Feedback Landing Page (`/feedback.html`)**: A mobile-optimized, standalone page where customers rate their experience with a 5-star interface. The page implements Google TOS-compliant routing: 4-5 star ratings show a celebration screen with a prominent "Leave a Google Review" button, while 1-3 star ratings display an internal feedback form with a text area for improvement suggestions and a secondary "Or post a public review" link for compliance.
 
 ## System Design Choices
 
-- **Feedback Collection Before Review Link Sending**: A pre-send feedback modal (1-5 stars) appears, sending a Google review link only if the customer rates 4-5 stars. Lower ratings trigger a follow-up message instead, and feedback is logged for internal follow-up.
+- **Google TOS-Compliant Feedback Routing**: Customer feedback collection uses a two-tier routing system to comply with Google's Terms of Service. When customers click the feedback link, they rate their experience 1-5 stars. High ratings (4-5 stars) are immediately directed to leave a Google Review. Low ratings (1-3 stars) are routed to an internal feedback form where they can provide improvement suggestions. Critically, the internal feedback screen includes an "Or post a public review" link to ensure compliance with Google's policy against incentivizing positive reviews. All feedback is stored in the `internal_feedback` table, and business owners receive email alerts for low ratings.
+
+- **TCPA Consent Protection**: Before sending any SMS, users must check a required consent checkbox confirming that the customer has consented to receive SMS updates. This checkbox is prominently displayed in an amber-highlighted box on the Send SMS form. The send button is disabled until the checkbox is checked. The consent status is tracked in the `sms_consent_confirmed` column of the `messages` table, providing an audit trail for regulatory compliance.
 
 # External Dependencies
 
@@ -96,8 +101,11 @@ The static HTML/CSS/JavaScript frontend features a modern, purple gradient desig
 ## Database Layer
 
 -   **PostgreSQL Database**: Replit-managed Neon instance, connected via `DATABASE_URL`.
--   **Schema**: Includes `customers`, `messages`, `subscriptions`, `users`, `user_sessions`, and `auth_tokens` tables with foreign key relationships and indexes.
--   **Features**: Auto-saves and updates customer data, maintains complete message history, tracks subscription quotas with transaction-based enforcement, and automatically initializes tables.
+-   **Schema**: Includes `customers`, `messages`, `subscriptions`, `users`, `user_sessions`, `auth_tokens`, `sms_optouts`, `user_settings`, and `internal_feedback` tables with foreign key relationships and indexes.
+-   **Key Tables**:
+    -   `internal_feedback`: Stores customer feedback for 1-3 star ratings with message_id, customer details, rating, feedback text, and user_email for multi-tenant support.
+    -   `messages`: Includes `sms_consent_confirmed` boolean column to track TCPA compliance for each sent message.
+-   **Features**: Auto-saves and updates customer data, maintains complete message history, tracks subscription quotas with transaction-based enforcement, stores internal feedback with email notifications, and automatically initializes tables.
 
 ## File Storage
 

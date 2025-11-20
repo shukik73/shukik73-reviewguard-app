@@ -114,12 +114,25 @@ export async function initializeDatabase() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS internal_feedback (
+      id SERIAL PRIMARY KEY,
+      message_id INTEGER REFERENCES messages(id),
+      customer_name VARCHAR(255) NOT NULL,
+      customer_phone VARCHAR(50) NOT NULL,
+      rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      feedback_text TEXT,
+      user_email VARCHAR(255) REFERENCES users(company_email),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE INDEX IF NOT EXISTS idx_event_logs_email ON event_logs(email);
     CREATE INDEX IF NOT EXISTS idx_event_logs_type ON event_logs(event_type);
     CREATE INDEX IF NOT EXISTS idx_event_logs_created ON event_logs(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_user_sessions_expire ON user_sessions(expire);
     CREATE INDEX IF NOT EXISTS idx_sms_optouts_phone ON sms_optouts(phone);
     CREATE INDEX IF NOT EXISTS idx_user_settings_email ON user_settings(user_email);
+    CREATE INDEX IF NOT EXISTS idx_internal_feedback_user ON internal_feedback(user_email);
+    CREATE INDEX IF NOT EXISTS idx_internal_feedback_created ON internal_feedback(created_at DESC);
   `);
 
   await pool.query(`
@@ -167,6 +180,10 @@ export async function initializeDatabase() {
       
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='feedback_collected_at') THEN
         ALTER TABLE messages ADD COLUMN feedback_collected_at TIMESTAMP;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='sms_consent_confirmed') THEN
+        ALTER TABLE messages ADD COLUMN sms_consent_confirmed BOOLEAN DEFAULT NULL;
       END IF;
     END $$;
   `);

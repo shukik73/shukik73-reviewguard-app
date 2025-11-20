@@ -3,111 +3,228 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rate Your Experience - Techy Miramar</title>
+  <title>Rate Your Experience</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .star-button {
-      transition: transform 0.2s, filter 0.2s;
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .star-button:hover {
-      transform: scale(1.15);
-      filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+    
+    .star {
+      font-size: 3rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #cbd5e1;
     }
-    .star-button:active {
-      transform: scale(1.05);
+    
+    .star.selected,
+    .star:hover {
+      color: #fbbf24;
+      transform: scale(1.1);
+    }
+    
+    .star.selected {
+      animation: pulse 0.3s ease-in-out;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
     }
   </style>
 </head>
-<body class="bg-gradient-to-br from-purple-50 to-indigo-100 min-h-screen flex items-center justify-center p-4">
-  
-  <div id="rating-container" class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-    <!-- Logo/Header -->
-    <div class="text-center mb-6">
-      <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-        <span class="text-3xl font-bold text-white">TM</span>
+<body>
+  <div class="w-full max-w-md mx-auto p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 text-center">
+      <!-- Rating Screen -->
+      <div id="rating-screen">
+        <h1 class="text-2xl font-bold text-slate-800 mb-2">How was your experience?</h1>
+        <p class="text-slate-600 mb-8">We'd love to hear your feedback</p>
+        
+        <div class="flex justify-center gap-2 mb-8" id="star-container">
+          <span class="star" data-rating="1">⭐</span>
+          <span class="star" data-rating="2">⭐</span>
+          <span class="star" data-rating="3">⭐</span>
+          <span class="star" data-rating="4">⭐</span>
+          <span class="star" data-rating="5">⭐</span>
+        </div>
+        
+        <p class="text-sm text-slate-500">Tap a star to rate</p>
       </div>
-      <h1 class="text-2xl font-bold text-gray-900">Techy Miramar</h1>
-      <p class="text-sm text-gray-600 mt-1">How was your experience?</p>
+
+      <!-- Internal Feedback Screen (1-3 stars) -->
+      <div id="internal-feedback-screen" class="hidden">
+        <h2 class="text-xl font-bold text-slate-800 mb-4">Thank you for your feedback</h2>
+        <p class="text-slate-600 mb-6">We'd like to know more about your experience to help us improve.</p>
+        
+        <div class="mb-6">
+          <label class="block text-left text-sm font-medium text-slate-700 mb-2">
+            What could we have done better?
+          </label>
+          <textarea
+            id="feedback-text"
+            rows="4"
+            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+            placeholder="Your feedback helps us improve..."
+          ></textarea>
+        </div>
+        
+        <button
+          id="submit-internal-feedback"
+          class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:shadow-lg transition-all"
+        >
+          Submit Feedback
+        </button>
+        
+        <div class="mt-6 pt-6 border-t border-slate-200">
+          <p class="text-sm text-slate-600 mb-3">Or post a public review:</p>
+          <button
+            id="submit-public-review-low"
+            class="text-indigo-600 hover:text-indigo-700 font-medium text-sm underline"
+          >
+            Leave a Google Review
+          </button>
+        </div>
+      </div>
+
+      <!-- High Rating Screen (4-5 stars) -->
+      <div id="high-rating-screen" class="hidden">
+        <div class="mb-6">
+          <div class="text-6xl mb-4">🎉</div>
+          <h2 class="text-2xl font-bold text-slate-800 mb-2">Thank you!</h2>
+          <p class="text-slate-600 mb-6">We're thrilled you had a great experience!</p>
+        </div>
+        
+        <button
+          id="submit-google-review"
+          class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:shadow-lg transition-all mb-4"
+        >
+          Leave a Google Review
+        </button>
+        
+        <button
+          id="skip-review"
+          class="text-slate-500 hover:text-slate-700 text-sm"
+        >
+          Skip for now
+        </button>
+      </div>
+
+      <!-- Success Screen -->
+      <div id="success-screen" class="hidden">
+        <div class="text-6xl mb-4">✅</div>
+        <h2 class="text-2xl font-bold text-slate-800 mb-2">Thank you!</h2>
+        <p class="text-slate-600">Your feedback has been submitted.</p>
+      </div>
     </div>
-
-    <!-- Star Rating -->
-    <div class="flex justify-center gap-4 mb-8">
-      <button class="star-button text-6xl" data-rating="1">⭐</button>
-      <button class="star-button text-6xl" data-rating="2">⭐</button>
-      <button class="star-button text-6xl" data-rating="3">⭐</button>
-      <button class="star-button text-6xl" data-rating="4">⭐</button>
-      <button class="star-button text-6xl" data-rating="5">⭐</button>
-    </div>
-
-    <p class="text-center text-xs text-gray-500 mb-2">Tap a star to rate</p>
-    <p class="text-center text-xs text-gray-400">1 = Poor • 5 = Excellent</p>
-  </div>
-
-  <!-- Thank You Message (hidden by default) -->
-  <div id="thank-you-container" class="hidden bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-    <div class="text-6xl mb-4">✅</div>
-    <h2 class="text-2xl font-bold text-gray-900 mb-2">Thank You!</h2>
-    <p id="thank-you-message" class="text-gray-600 mb-4"></p>
-    <p class="text-xs text-gray-400">You can close this window now.</p>
   </div>
 
   <script>
-    // Get token from URL
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+    const feedbackToken = urlParams.get('token');
+    
+    let selectedRating = 0;
 
-    if (!token) {
-      document.getElementById('rating-container').innerHTML = `
-        <div class="text-center">
-          <div class="text-6xl mb-4">❌</div>
-          <h2 class="text-xl font-bold text-gray-900 mb-2">Invalid Link</h2>
-          <p class="text-gray-600">This feedback link is not valid.</p>
-        </div>
-      `;
+    const ratingScreen = document.getElementById('rating-screen');
+    const internalFeedbackScreen = document.getElementById('internal-feedback-screen');
+    const highRatingScreen = document.getElementById('high-rating-screen');
+    const successScreen = document.getElementById('success-screen');
+    const stars = document.querySelectorAll('.star');
+
+    if (!feedbackToken) {
+      document.body.innerHTML = '<div class="text-white text-center p-8"><h1 class="text-2xl font-bold mb-2">Invalid Link</h1><p>This feedback link is invalid or has expired.</p></div>';
     }
 
-    // Handle star rating clicks
-    const starButtons = document.querySelectorAll('.star-button');
-    starButtons.forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const rating = parseInt(btn.getAttribute('data-rating'));
-        await submitRating(rating);
+    stars.forEach(star => {
+      star.addEventListener('click', function() {
+        selectedRating = parseInt(this.getAttribute('data-rating'));
+        
+        stars.forEach((s, index) => {
+          if (index < selectedRating) {
+            s.classList.add('selected');
+          } else {
+            s.classList.remove('selected');
+          }
+        });
+
+        setTimeout(() => {
+          ratingScreen.classList.add('hidden');
+          
+          if (selectedRating >= 4) {
+            highRatingScreen.classList.remove('hidden');
+          } else {
+            internalFeedbackScreen.classList.remove('hidden');
+          }
+        }, 500);
       });
     });
 
-    async function submitRating(rating) {
+    document.getElementById('submit-internal-feedback').addEventListener('click', async function() {
+      const feedbackText = document.getElementById('feedback-text').value;
+      
       try {
-        const response = await fetch('/api/feedback/submit', {
+        const response = await fetch('/api/feedback/internal', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            token: token,
-            rating: rating
+            feedbackToken: feedbackToken,
+            rating: selectedRating,
+            feedbackText: feedbackText
           })
         });
 
         const data = await response.json();
 
         if (data.success) {
-          // Hide rating container, show thank you message
-          document.getElementById('rating-container').classList.add('hidden');
-          document.getElementById('thank-you-container').classList.remove('hidden');
-          
-          const thankYouMessage = document.getElementById('thank-you-message');
-          
-          if (rating >= 4) {
-            thankYouMessage.textContent = "We're so glad you had a great experience! We just sent you a text message with a link to leave us a Google review. Thank you!";
-          } else {
-            thankYouMessage.textContent = "We appreciate your honest feedback. We'll be in touch soon to make things right!";
-          }
+          internalFeedbackScreen.classList.add('hidden');
+          successScreen.classList.remove('hidden');
         } else {
-          alert('Error: ' + (data.error || 'Failed to submit rating'));
+          alert('Error: ' + data.error);
         }
       } catch (error) {
-        console.error('Error submitting rating:', error);
-        alert('Failed to submit rating. Please try again.');
+        console.error('Error:', error);
+        alert('Failed to submit feedback. Please try again.');
+      }
+    });
+
+    document.getElementById('submit-public-review-low').addEventListener('click', async function() {
+      await redirectToGoogleReview();
+    });
+
+    document.getElementById('submit-google-review').addEventListener('click', async function() {
+      await redirectToGoogleReview();
+    });
+
+    document.getElementById('skip-review').addEventListener('click', function() {
+      highRatingScreen.classList.add('hidden');
+      successScreen.classList.remove('hidden');
+    });
+
+    async function redirectToGoogleReview() {
+      try {
+        const response = await fetch('/api/feedback/public', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            feedbackToken: feedbackToken,
+            rating: selectedRating
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.reviewLink) {
+          window.location.href = data.reviewLink;
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to redirect. Please try again.');
       }
     }
   </script>

@@ -10,14 +10,23 @@ async function checkOptOut(pool, phone) {
 
 export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone, upload) => async (req, res) => {
   try {
-    const { customerName, customerPhone, messageType, additionalInfo, feedbackRating } = req.body;
+    const { customerName, customerPhone, messageType, additionalInfo, feedbackRating, smsConsentConfirmed } = req.body;
     const userEmail = req.session.userEmail;
     const feedbackScore = feedbackRating ? parseInt(feedbackRating) : null;
+    const consentConfirmed = smsConsentConfirmed === 'true' || smsConsentConfirmed === true;
 
     if (!customerName || !customerPhone) {
       return res.status(400).json({ 
         success: false, 
         error: 'Customer name and phone number are required' 
+      });
+    }
+
+    if (!consentConfirmed) {
+      return res.status(400).json({
+        success: false,
+        error: 'SMS consent must be confirmed before sending messages',
+        code: 'CONSENT_REQUIRED'
       });
     }
 
@@ -176,8 +185,8 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
       const followUpDueAt = messageType === 'review' ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) : null;
 
       await pool.query(
-        `INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid, feedback_token, follow_up_due_at, review_status, user_email) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        `INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid, feedback_token, follow_up_due_at, review_status, user_email, sms_consent_confirmed) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
          ON CONFLICT DO NOTHING`,
         [
           customerId,
@@ -191,7 +200,8 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
           feedbackToken,
           followUpDueAt,
           messageType === 'review' ? 'pending' : null,
-          userEmail
+          userEmail,
+          consentConfirmed
         ]
       );
       

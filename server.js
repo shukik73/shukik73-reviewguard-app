@@ -32,6 +32,7 @@ import createDataRoutes from './routes/dataRoutes.js';
 import createOCRRoutes from './routes/ocrRoutes.js';
 import createBillingRoutes from './routes/billingRoutes.js';
 import createSettingsRoutes from './routes/settingsRoutes.js';
+import createFeedbackRoutes from './routes/feedbackRoutes.js';
 import requireAuth from './middleware/requireAuth.js';
 import { smsLimiter, apiLimiter } from './middleware/rateLimiter.js';
 
@@ -42,7 +43,22 @@ const PORT = 5000;
 
 app.set('trust proxy', 1);
 
-app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "js.stripe.com", "cdn.tailwindcss.com", "code.jquery.com", "cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "'unsafe-inline'", "cdn.tailwindcss.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://api.stripe.com"],
+      frameSrc: ["'self'", "js.stripe.com"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: []
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}));
 
 app.use(session({
   store: new (connectPgSimple(session))({ pool, tableName: 'user_sessions', createTableIfMissing: false }),
@@ -76,6 +92,7 @@ app.use(createDataRoutes(pool));
 app.use(createOCRRoutes(pool, ocrUpload));
 app.use(createBillingRoutes(pool));
 app.use(createSettingsRoutes(pool, requireAuth));
+app.use(createFeedbackRoutes(pool));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
