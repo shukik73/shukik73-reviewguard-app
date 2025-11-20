@@ -543,7 +543,7 @@ export const handleIncomingSMS = (pool, validateAndFormatPhone) => async (req, r
 
     const messageBody = Body.trim().toUpperCase();
     
-    if (messageBody === 'STOP' || messageBody === 'UNSUBSCRIBE' || messageBody === 'CANCEL' || messageBody === 'END' || messageBody === 'QUIT') {
+    if (messageBody === 'STOP' || messageBody === 'STOPALL' || messageBody === 'UNSUBSCRIBE' || messageBody === 'CANCEL' || messageBody === 'END' || messageBody === 'QUIT') {
       await pool.query(
         `INSERT INTO sms_optouts (phone, reason)
          VALUES ($1, $2)

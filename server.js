@@ -10,6 +10,11 @@ if (!process.env.SESSION_SECRET) {
   process.exit(1);
 }
 
+if (process.env.SESSION_SECRET.length < 32) {
+  console.warn('⚠️  WARNING: SESSION_SECRET is shorter than 32 characters.');
+  console.warn('   For production use, please use a longer, cryptographically secure secret.');
+}
+
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
