@@ -18,7 +18,7 @@ export const createCheckoutSession = (pool) => async (req, res) => {
         name: 'starter'
       },
       pro: {
-        priceId: process.env.STRIPE_PRICE_ID_PRO || 'price_pro',
+        priceId: process.env.STRIPE_PRICE_ID || process.env.STRIPE_PRICE_ID_PRO || 'price_pro',
         quota: 1000,
         name: 'pro'
       }
@@ -90,7 +90,7 @@ export const getPricing = (req, res) => {
       id: 'starter',
       name: 'Starter Plan',
       priceId: process.env.STRIPE_PRICE_ID_STARTER || 'price_starter',
-      amount: 4900,
+      amount: 1900,
       currency: 'usd',
       interval: 'month',
       smsQuota: 300,
@@ -105,8 +105,8 @@ export const getPricing = (req, res) => {
     pro: {
       id: 'pro',
       name: 'Pro Plan',
-      priceId: process.env.STRIPE_PRICE_ID_PRO || 'price_pro',
-      amount: 9900,
+      priceId: process.env.STRIPE_PRICE_ID || process.env.STRIPE_PRICE_ID_PRO || 'price_pro',
+      amount: 4900,
       currency: 'usd',
       interval: 'month',
       smsQuota: 1000,

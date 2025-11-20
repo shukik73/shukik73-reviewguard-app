@@ -467,7 +467,7 @@
                 Starter
               </div>
               <div class="text-2xl font-semibold text-slate-900 mb-1">
-                $49 <span class="text-sm text-slate-500">/ month</span>
+                $19 <span class="text-sm text-slate-500">/ month</span>
               </div>
               <ul class="mt-3 space-y-1.5 text-xs text-slate-600">
                 <li>✅ 300 SMS per month</li>
@@ -489,7 +489,7 @@
                 Pro
               </div>
               <div class="text-2xl font-semibold text-slate-900 mb-1">
-                $99 <span class="text-sm text-slate-500">/ month</span>
+                $49 <span class="text-sm text-slate-500">/ month</span>
               </div>
               <ul class="mt-3 space-y-1.5 text-xs text-slate-600">
                 <li>✅ 1,000 SMS per month</li>
@@ -499,8 +499,8 @@
                 <li>✅ OCR text extraction</li>
                 <li>✅ Priority support</li>
               </ul>
-              <button class="btn-primary w-full mt-4 text-sm">
-                Subscribe to Pro
+              <button id="subscribe-pro-btn" class="btn-primary w-full mt-4 text-sm">
+                Upgrade to Pro ($49/mo)
               </button>
               <p class="mt-3 text-[11px] text-slate-500">
                 Test mode: use card 4242 4242 4242 4242 with any future expiry & CVC.
@@ -1253,6 +1253,55 @@
         cameraStream = null;
         cameraVideo.srcObject = null;
       }
+    }
+
+    // Billing - Upgrade to Pro button handler
+    const subscribeProBtn = document.getElementById('subscribe-pro-btn');
+    if (subscribeProBtn) {
+      subscribeProBtn.addEventListener('click', async () => {
+        try {
+          // Disable button and show loading state
+          subscribeProBtn.disabled = true;
+          subscribeProBtn.textContent = 'Creating checkout session...';
+
+          // Get user email from session
+          const authResponse = await fetch('/api/auth/me');
+          const authData = await authResponse.json();
+          
+          if (!authData.success || !authData.user?.email) {
+            showNotification('Please log in to subscribe', 'error');
+            subscribeProBtn.disabled = false;
+            subscribeProBtn.textContent = 'Upgrade to Pro ($49/mo)';
+            return;
+          }
+          
+          // Call the backend to create checkout session
+          const response = await fetch('/api/create-checkout-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email: authData.user.email,
+              planId: 'pro'
+            })
+          });
+
+          const data = await response.json();
+
+          if (data.url) {
+            // Redirect to Stripe Checkout
+            window.location.href = data.url;
+          } else {
+            throw new Error(data.error || 'Failed to create checkout session');
+          }
+        } catch (error) {
+          console.error('Checkout error:', error);
+          showNotification('Failed to start checkout. Please try again.', 'error');
+          subscribeProBtn.disabled = false;
+          subscribeProBtn.textContent = 'Upgrade to Pro ($49/mo)';
+        }
+      });
     }
   </script>
 
