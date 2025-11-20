@@ -1072,7 +1072,7 @@
       }
       
       // Show confirmation modal
-      openSmsConfirmationModal();
+      window.openSmsConfirmationModal();
     });
 
     // Main function to send SMS
@@ -1153,8 +1153,8 @@
       }
     }
 
-    // SMS Confirmation Modal Functions
-    function openSmsConfirmationModal() {
+    // SMS Confirmation Modal Functions - Make them global for onclick handlers
+    window.openSmsConfirmationModal = function() {
       const customerName = customerNameInput.value;
       const customerPhone = document.getElementById('customer-phone').value;
       const messageType = messageTypeSelect.value;
@@ -1191,19 +1191,19 @@
 
       // Show modal
       document.getElementById('sms-confirmation-modal').classList.remove('hidden');
-    }
+    };
 
-    function closeSmsConfirmationModal() {
+    window.closeSmsConfirmationModal = function() {
       document.getElementById('sms-confirmation-modal').classList.add('hidden');
-    }
+    };
 
-    async function confirmAndSendSMS() {
+    window.confirmAndSendSMS = async function() {
       // Close modal
-      closeSmsConfirmationModal();
+      window.closeSmsConfirmationModal();
       
       // Call the actual send SMS function
       await sendSMS();
-    }
+    };
 
     // OCR Upload Handler
     const ocrUploadInput = document.getElementById('ocr-upload');
