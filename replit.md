@@ -16,12 +16,15 @@ A single-page web application built with an Express.js backend and a PostgreSQL 
 
 The application follows a clean **Model-View-Controller (MVC)** architecture with clear separation of concerns:
 
-- **server.js** (334 lines): Bootstrap logic only - database initialization, Twilio helper functions, session/middleware setup, and route mounting. No business logic.
+- **server.js** (94 lines): Ultra-minimal bootstrap - imports, middleware setup, and route mounting only. No business logic, no configuration.
+- **/config/database.js**: Database connection pool and schema initialization logic. Exports `pool` and `initializeDatabase()`.
+- **/utils/twilio.js**: Twilio credential fetching, client initialization, and phone validation utilities. Exports `getCredentials()`, `getTwilioClient()`, `getTwilioFromPhoneNumber()`, and `validateAndFormatPhone()`.
+- **/utils/multerConfig.js**: Multer file upload configuration for both disk storage (photos) and memory storage (OCR).
 - **/controllers**: Business logic organized by domain (auth, SMS/reviews, data, OCR, billing, settings). Each controller exports factory functions that receive dependencies (pool, Twilio helpers) and return route handlers.
 - **/routes**: Route definitions that import controllers and create Express routers. Each route file maps HTTP endpoints to controller functions.
-- **/middleware**: Shared middleware like `requireAuth.js` for authentication enforcement across protected routes.
+- **/middleware**: Shared middleware like `requireAuth.js` for authentication enforcement and `rateLimiter.js` for rate limiting.
 
-The refactored architecture reduces the monolithic server.js from 2127 lines to 334 lines (84% reduction), improving maintainability, testability, and code organization. All business logic is now modular and domain-separated. Phone numbers are normalized to E.164 format. File uploads are handled by Multer with both disk storage (photos) and memory storage (OCR), with server-side validation.
+The refactored architecture reduces server.js from 2127 lines to 94 lines (96% reduction), with complete modularization of database, Twilio, and file upload logic. All business logic is domain-separated. **Security**: SESSION_SECRET has no fallback - the app performs startup validation and immediately exits with clear error messages if DATABASE_URL or SESSION_SECRET are missing. Phone numbers are normalized to E.164 format.
 
 ### Phone Number Validation
 
