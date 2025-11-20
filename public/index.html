@@ -173,7 +173,7 @@
 
       <!-- SMS Confirmation Modal -->
       <div id="sms-confirmation-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div class="modal-backdrop absolute inset-0" onclick="closeSmsConfirmationModal()"></div>
+        <div class="modal-backdrop absolute inset-0" id="modal-backdrop"></div>
         <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fade-in">
           <h3 class="text-xl font-bold text-slate-900 mb-4">Confirm SMS</h3>
           
@@ -202,13 +202,13 @@
           
           <div class="flex gap-3">
             <button 
-              onclick="closeSmsConfirmationModal()"
+              id="modal-cancel-btn"
               class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-lg transition-all"
             >
               Cancel
             </button>
             <button 
-              onclick="confirmAndSendSMS()"
+              id="modal-confirm-btn"
               class="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg"
             >
               ✓ Confirm & Send
@@ -1204,6 +1204,19 @@
       // Call the actual send SMS function
       await sendSMS();
     };
+
+    // Add event listeners for modal buttons
+    document.getElementById('modal-cancel-btn').addEventListener('click', function() {
+      window.closeSmsConfirmationModal();
+    });
+
+    document.getElementById('modal-confirm-btn').addEventListener('click', async function() {
+      await window.confirmAndSendSMS();
+    });
+
+    document.getElementById('modal-backdrop').addEventListener('click', function() {
+      window.closeSmsConfirmationModal();
+    });
 
     // OCR Upload Handler
     const ocrUploadInput = document.getElementById('ocr-upload');
