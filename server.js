@@ -127,11 +127,21 @@ async function initializeDatabase() {
       reason VARCHAR(100) DEFAULT 'STOP'
     );
 
+    CREATE TABLE IF NOT EXISTS user_settings (
+      id SERIAL PRIMARY KEY,
+      user_email VARCHAR(255) UNIQUE NOT NULL REFERENCES users(company_email) ON DELETE CASCADE,
+      business_name VARCHAR(255),
+      sms_template TEXT DEFAULT 'Hi {name}, thanks for visiting {business}! Please review us here: {link}',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE INDEX IF NOT EXISTS idx_event_logs_email ON event_logs(email);
     CREATE INDEX IF NOT EXISTS idx_event_logs_type ON event_logs(event_type);
     CREATE INDEX IF NOT EXISTS idx_event_logs_created ON event_logs(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_user_sessions_expire ON user_sessions(expire);
     CREATE INDEX IF NOT EXISTS idx_sms_optouts_phone ON sms_optouts(phone);
+    CREATE INDEX IF NOT EXISTS idx_user_settings_email ON user_settings(user_email);
   `);
 
   await pool.query(`
