@@ -512,18 +512,48 @@
 
       <!-- SETTINGS SECTION -->
       <section id="settings" class="section hidden">
-        <h1 class="text-xl font-semibold text-slate-100 mb-3">
+        <h1 class="text-xl font-semibold text-slate-900 mb-3">
           Settings
         </h1>
 
         <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-5 max-w-xl space-y-4">
           <label class="block">
             <span class="text-xs font-medium text-slate-700">
+              Business Name
+            </span>
+            <input
+              type="text"
+              id="settings-business-name"
+              placeholder="e.g., Techy Miramar"
+              class="mt-1.5 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <p class="mt-1 text-[11px] text-slate-500">
+              This will be displayed in the header and used in messages.
+            </p>
+          </label>
+
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700">
+              SMS Message Template
+            </span>
+            <textarea
+              id="settings-sms-template"
+              rows="3"
+              placeholder="Hi {name}, thanks for visiting {business}! Please review us here: {link}"
+              class="mt-1.5 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            ></textarea>
+            <p class="mt-1 text-[11px] text-slate-500">
+              Use {name} for customer name, {business} for your business name, and {link} for the review link.
+            </p>
+          </label>
+
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700">
               Google Review Link
             </span>
             <input
               type="url"
-              id="review-link"
+              id="settings-review-link"
               placeholder="https://g.page/r/your-google-review-link"
               class="mt-1.5 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
@@ -532,7 +562,7 @@
             </p>
           </label>
 
-          <button class="btn-primary">
+          <button id="save-settings-btn" class="btn-primary">
             💾 Save Settings
           </button>
         </div>
