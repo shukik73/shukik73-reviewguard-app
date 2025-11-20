@@ -9,23 +9,25 @@ export const getSettings = (pool) => async (req, res) => {
       });
     }
 
-    const result = await pool.query(
+    const subscriptionResult = await pool.query(
       'SELECT google_review_link FROM subscriptions WHERE email = $1',
       [userEmail]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'Settings not found. Please set up your subscription first.'
-      });
-    }
+    const settingsResult = await pool.query(
+      'SELECT business_name, sms_template FROM user_settings WHERE user_email = $1',
+      [userEmail]
+    );
+
+    const settings = {
+      google_review_link: subscriptionResult.rows[0]?.google_review_link || 'https://g.page/r/CXmh-C0UxHgqEBM/review',
+      business_name: settingsResult.rows[0]?.business_name || '',
+      sms_template: settingsResult.rows[0]?.sms_template || 'Hi {name}, thanks for visiting {business}! Please review us here: {link}'
+    };
 
     res.json({
       success: true,
-      settings: {
-        google_review_link: result.rows[0].google_review_link || 'https://g.page/r/CXmh-C0UxHgqEBM/review'
-      }
+      settings
     });
   } catch (error) {
     console.error('Error fetching settings:', error);
@@ -36,7 +38,7 @@ export const getSettings = (pool) => async (req, res) => {
 export const updateSettings = (pool) => async (req, res) => {
   try {
     const userEmail = req.session.userEmail;
-    const { google_review_link } = req.body;
+    const { google_review_link, business_name, sms_template } = req.body;
 
     if (!userEmail) {
       return res.status(401).json({
@@ -45,19 +47,25 @@ export const updateSettings = (pool) => async (req, res) => {
       });
     }
 
-    const result = await pool.query(`
+    await pool.query(`
       UPDATE subscriptions 
       SET google_review_link = $1, updated_at = CURRENT_TIMESTAMP
       WHERE email = $2
-      RETURNING *
     `, [google_review_link || 'https://g.page/r/CXmh-C0UxHgqEBM/review', userEmail]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'Subscription not found. Please set up your subscription first.'
-      });
-    }
+    await pool.query(`
+      INSERT INTO user_settings (user_email, business_name, sms_template, updated_at)
+      VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_email) 
+      DO UPDATE SET 
+        business_name = EXCLUDED.business_name,
+        sms_template = EXCLUDED.sms_template,
+        updated_at = CURRENT_TIMESTAMP
+    `, [
+      userEmail,
+      business_name || '',
+      sms_template || 'Hi {name}, thanks for visiting {business}! Please review us here: {link}'
+    ]);
 
     res.json({
       success: true,

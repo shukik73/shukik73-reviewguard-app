@@ -708,6 +708,60 @@
       showNotification('Customer data loaded!', 'success');
     }
 
+    async function loadSettings() {
+      try {
+        const response = await fetch('/api/settings');
+        const data = await response.json();
+        
+        if (data.success && data.settings) {
+          document.getElementById('settings-business-name').value = data.settings.business_name || '';
+          document.getElementById('settings-sms-template').value = data.settings.sms_template || 'Hi {name}, thanks for visiting {business}! Please review us here: {link}';
+          document.getElementById('settings-review-link').value = data.settings.google_review_link || '';
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    }
+
+    async function saveSettings() {
+      try {
+        const businessName = document.getElementById('settings-business-name').value;
+        const smsTemplate = document.getElementById('settings-sms-template').value;
+        const reviewLink = document.getElementById('settings-review-link').value;
+
+        const response = await fetch('/api/settings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            business_name: businessName,
+            sms_template: smsTemplate,
+            google_review_link: reviewLink
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showNotification('Settings saved successfully!', 'success');
+          updateHeaderBusinessName(businessName);
+        } else {
+          showNotification(data.error || 'Failed to save settings', 'error');
+        }
+      } catch (error) {
+        console.error('Error saving settings:', error);
+        showNotification('Failed to save settings. Please try again.', 'error');
+      }
+    }
+
+    function updateHeaderBusinessName(businessName) {
+      const headerTitle = document.querySelector('.text-sm.font-semibold.text-slate-900');
+      if (headerTitle && businessName) {
+        headerTitle.textContent = `${businessName} SMS Manager`;
+      }
+    }
+
     function showSection(id) {
       sections.forEach(sec => {
         sec.classList.toggle('hidden', sec.id !== id);
@@ -727,6 +781,7 @@
       if (id === 'dashboard') loadDashboard();
       if (id === 'history') loadHistory();
       if (id === 'customers') loadCustomers();
+      if (id === 'settings') loadSettings();
     }
 
     tabs.forEach(btn => {
@@ -791,6 +846,12 @@
           showNotification('Logout failed. Please try again.', 'error');
         }
       });
+    }
+
+    // Save Settings handler
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
+    if (saveSettingsBtn) {
+      saveSettingsBtn.addEventListener('click', saveSettings);
     }
 
     // Message preview updater
