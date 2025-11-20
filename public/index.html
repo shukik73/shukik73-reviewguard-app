@@ -1265,10 +1265,18 @@
           subscribeProBtn.textContent = 'Creating checkout session...';
 
           // Get user email from session
-          const authResponse = await fetch('/api/auth/me');
+          const authResponse = await fetch('/api/auth/session');
+          
+          if (!authResponse.ok) {
+            showNotification('Please log in to subscribe', 'error');
+            subscribeProBtn.disabled = false;
+            subscribeProBtn.textContent = 'Upgrade to Pro ($49/mo)';
+            return;
+          }
+          
           const authData = await authResponse.json();
           
-          if (!authData.success || !authData.user?.email) {
+          if (!authData.user?.email) {
             showNotification('Please log in to subscribe', 'error');
             subscribeProBtn.disabled = false;
             subscribeProBtn.textContent = 'Upgrade to Pro ($49/mo)';
