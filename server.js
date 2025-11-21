@@ -34,6 +34,8 @@ import createBillingRoutes from './routes/billingRoutes.js';
 import createSettingsRoutes from './routes/settingsRoutes.js';
 import createFeedbackRoutes from './routes/feedbackRoutes.js';
 import createAIRoutes from './routes/aiRoutes.js';
+import { createTelegramRoutes } from './routes/telegramRoutes.js';
+import { initializeTelegramBot } from './controllers/telegramController.js';
 import requireAuth from './middleware/requireAuth.js';
 import { smsLimiter, apiLimiter } from './middleware/rateLimiter.js';
 
@@ -95,6 +97,7 @@ app.use(createBillingRoutes(pool));
 app.use(createSettingsRoutes(pool, requireAuth));
 app.use(createFeedbackRoutes(pool));
 app.use(createAIRoutes(pool));
+app.use('/api', createTelegramRoutes(pool));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
@@ -107,6 +110,7 @@ app.get('/', (req, res) => {
 async function startServer() {
   try {
     await initializeDatabase();
+    initializeTelegramBot();
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`🌐 Access the app at http://0.0.0.0:${PORT}`);
