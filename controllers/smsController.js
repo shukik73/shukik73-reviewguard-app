@@ -88,13 +88,6 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
       ON CONFLICT (email) DO NOTHING
     `, [userEmail]);
 
-    const settingsResult = await pool.query(
-      'SELECT google_review_link FROM subscriptions WHERE email = $1',
-      [userEmail]
-    );
-    
-    const googleReviewLink = settingsResult.rows[0]?.google_review_link || 'https://g.page/r/CXmh-C0UxHgqEBM/review';
-
     const isOptedOut = await checkOptOut(pool, formattedPhone);
     if (isOptedOut) {
       return res.status(400).json({
