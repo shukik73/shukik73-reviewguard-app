@@ -38,7 +38,7 @@ export const getStats = (pool) => async (req, res) => {
     const totalCustomers = await pool.query('SELECT COUNT(*) as count FROM customers');
     
     const todayMessages = await pool.query(
-      "SELECT COUNT(*) as count FROM messages WHERE sent_at >= CURRENT_DATE"
+      "SELECT COUNT(*) as count FROM messages WHERE sent_at >= NOW() - INTERVAL '24 hours'"
     );
     
     const weekMessages = await pool.query(
