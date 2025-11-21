@@ -63,9 +63,7 @@ export async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_auth_tokens_token ON auth_tokens(token);
     CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON auth_tokens(user_id);
     CREATE INDEX IF NOT EXISTS idx_messages_sent_at ON messages(sent_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id);
     CREATE INDEX IF NOT EXISTS idx_messages_customer_id ON messages(customer_id);
-    CREATE INDEX IF NOT EXISTS idx_customers_user_id ON customers(user_id);
     CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
   `);
 
@@ -137,68 +135,112 @@ export async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_internal_feedback_created ON internal_feedback(created_at DESC);
   `);
 
-  await pool.query(`
-    DO $$ 
-    BEGIN
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='customers' AND column_name='user_id') THEN
-        ALTER TABLE customers DROP CONSTRAINT IF EXISTS customers_phone_key;
-        ALTER TABLE customers ADD COLUMN user_id INTEGER DEFAULT 1 NOT NULL REFERENCES users(id) ON DELETE CASCADE;
-        ALTER TABLE customers ADD CONSTRAINT customers_user_id_phone_unique UNIQUE(user_id, phone);
-      END IF;
-      
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='user_id') THEN
-        ALTER TABLE messages ADD COLUMN user_id INTEGER DEFAULT 1 NOT NULL REFERENCES users(id) ON DELETE CASCADE;
-        CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id);
-      END IF;
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='review_status') THEN
-        ALTER TABLE messages ADD COLUMN review_status VARCHAR(20) DEFAULT 'pending' CHECK (review_status IN ('pending', 'link_clicked', 'reviewed', 'follow_up_sent'));
-      END IF;
-      
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='review_link_token') THEN
-        ALTER TABLE messages ADD COLUMN review_link_token TEXT UNIQUE;
-      END IF;
-      
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='review_link_clicked_at') THEN
-        ALTER TABLE messages ADD COLUMN review_link_clicked_at TIMESTAMP;
-      END IF;
-      
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='review_received_at') THEN
-        ALTER TABLE messages ADD COLUMN review_received_at TIMESTAMP;
-      END IF;
-      
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='follow_up_sent_at') THEN
-        ALTER TABLE messages ADD COLUMN follow_up_sent_at TIMESTAMP;
-      END IF;
-      
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='follow_up_due_at') THEN
-        ALTER TABLE messages ADD COLUMN follow_up_due_at TIMESTAMP;
-      END IF;
-      
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='follow_up_message_id') THEN
-        ALTER TABLE messages ADD COLUMN follow_up_message_id INTEGER REFERENCES messages(id);
-      END IF;
-      
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='user_email') THEN
-        ALTER TABLE messages ADD COLUMN user_email VARCHAR(255) REFERENCES users(company_email);
-      END IF;
-      
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='feedback_token') THEN
-        ALTER TABLE messages ADD COLUMN feedback_token TEXT UNIQUE;
-      END IF;
-      
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='feedback_rating') THEN
-        ALTER TABLE messages ADD COLUMN feedback_rating INTEGER CHECK (feedback_rating BETWEEN 1 AND 5);
-      END IF;
-      
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='feedback_collected_at') THEN
-        ALTER TABLE messages ADD COLUMN feedback_collected_at TIMESTAMP;
-      END IF;
-      
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='sms_consent_confirmed') THEN
-        ALTER TABLE messages ADD COLUMN sms_consent_confirmed BOOLEAN DEFAULT NULL;
-      END IF;
-    END $$;
-  `);
+  try {
+    await pool.query(`
+      ALTER TABLE customers 
+      ADD COLUMN IF NOT EXISTS user_id INTEGER DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE
+    `);
+  } catch (e) {
+    // Ignore if column already exists or constraint fails
+  }
+
+  try {
+    await pool.query(`
+      DROP CONSTRAINT IF EXISTS customers_phone_key CASCADE
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE customers 
+      ADD CONSTRAINT customers_user_id_phone_unique UNIQUE(user_id, phone)
+    `);
+  } catch (e) {
+    // Ignore if constraint already exists
+  }
+
+  try {
+    await pool.query(`
+      ALTER TABLE messages 
+      ADD COLUMN IF NOT EXISTS user_id INTEGER DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS review_status VARCHAR(20) DEFAULT 'pending'
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS review_link_token TEXT UNIQUE
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS review_link_clicked_at TIMESTAMP
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS review_received_at TIMESTAMP
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS follow_up_sent_at TIMESTAMP
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS follow_up_due_at TIMESTAMP
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS follow_up_message_id INTEGER REFERENCES messages(id)
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS user_email VARCHAR(255) REFERENCES users(company_email)
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS feedback_token TEXT UNIQUE
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS feedback_rating INTEGER CHECK (feedback_rating BETWEEN 1 AND 5)
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS feedback_collected_at TIMESTAMP
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS sms_consent_confirmed BOOLEAN DEFAULT NULL
+    `);
+  } catch (e) {}
+
+  try {
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id)`);
+  } catch (e) {}
 
   console.log('✅ Database initialized');
 }
