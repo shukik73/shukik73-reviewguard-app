@@ -77,6 +77,32 @@ All SEO rules are disabled. Focus on sincere apology, acknowledging frustration,
 
 **Error Handling:** Network errors return 503 with retry message. Validation failures return 500 with user-friendly error. Development mode includes detailed error messages.
 
+### Telegram Autopilot Review Loop
+
+A Telegram bot integration enables real-time review approval workflow via mobile messaging. The system sends new Google reviews with AI-generated replies to a designated Telegram chat for instant approval.
+
+**Architecture:**
+- `/controllers/telegramController.js`: Bot initialization in polling mode, message handler, and review approval workflow
+- `initializeTelegramBot()`: Called on server startup, initializes bot if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are set
+- `sendReviewForApproval(reviewData, aiReply)`: Formats and sends review approval request to Telegram
+- Message listener: Responds to 'YES' (case-insensitive) for approval, redirects other messages to dashboard
+
+**Workflow:**
+1. New Google review arrives (future automation)
+2. AI generates SEO-optimized reply following 10 Golden Rules
+3. System sends formatted message to Telegram: "🌟 New Google Review! From: [Name] ([Stars] ⭐) Review: [Text] / 🤖 AI Proposed Reply: [Reply] / Reply 'YES' to post this to Google."
+4. User replies 'YES' → Bot responds "✅ Reply Posted! (Mock Mode)" and logs "Posting to Google API..."
+5. Other replies → Bot responds "❌ Edit mode not supported yet. Please log in to Dashboard."
+
+**API Endpoints:**
+- `POST /api/test-telegram`: Test endpoint sends mock 5-star iPhone review with AI reply to Telegram
+
+**Environment Variables:**
+- `TELEGRAM_BOT_TOKEN`: Bot token from @BotFather (required)
+- `TELEGRAM_CHAT_ID`: Your Telegram chat ID (required)
+
+**Security:** Bot gracefully handles missing secrets with clear warning messages. No hardcoded credentials.
+
 ### Security Layer
 
 **Rate Limiting & Headers**: Production-ready security includes Helmet.js with a properly configured Content Security Policy (CSP) allowing necessary resources like Stripe.js, Tailwind CDN, and jQuery while blocking unsafe inline scripts by default. Express-rate-limit middleware protects endpoints: SMS sending endpoints are limited to 5 requests per hour per IP to prevent abuse and protect Twilio costs. General API endpoints have a 100 requests per 15 minutes limit. Both limiters return proper 429 status codes with informative error messages.
