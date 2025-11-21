@@ -690,22 +690,23 @@
         const response = await fetch('/api/stats');
         const data = await response.json();
         
-        if (data.success) {
-          document.getElementById('stat-total-messages').textContent = data.totalMessages || 0;
-          document.getElementById('stat-total-customers').textContent = data.totalCustomers || 0;
-          document.getElementById('stat-today').textContent = data.todayMessages || 0;
-          document.getElementById('stat-this-week').textContent = data.thisWeekMessages || 0;
+        if (data.success && data.stats) {
+          // Update the stat cards with correct data path
+          document.getElementById('stat-total-messages').textContent = data.stats.totalMessages || 0;
+          document.getElementById('stat-total-customers').textContent = data.stats.totalCustomers || 0;
+          document.getElementById('stat-today').textContent = data.stats.todayMessages || 0;
+          document.getElementById('stat-this-week').textContent = data.stats.weekMessages || 0;
           
+          // Populate recent messages
           const recentContainer = document.getElementById('recent-messages');
-          if (data.recentMessages && data.recentMessages.length > 0) {
-            recentContainer.innerHTML = data.recentMessages.map(msg => `
+          if (data.stats.recentMessages && data.stats.recentMessages.length > 0) {
+            recentContainer.innerHTML = data.stats.recentMessages.map(msg => `
               <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="font-medium text-sm text-slate-900">${msg.customer_name}</span>
                     <span class="text-xs px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">${msg.message_type}</span>
                   </div>
-                  <p class="text-xs text-slate-600">${msg.customer_phone}</p>
                   <p class="text-[11px] text-slate-500 mt-1">${new Date(msg.sent_at).toLocaleString()}</p>
                 </div>
               </div>
@@ -716,6 +717,7 @@
         }
       } catch (error) {
         console.error('Error loading dashboard:', error);
+        showNotification('Failed to load dashboard data', 'error');
       }
     }
     
