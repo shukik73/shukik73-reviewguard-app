@@ -6,46 +6,89 @@ const openai = new OpenAI({
 });
 
 function extractDeviceMentions(text) {
-  const devicePatterns = [
-    /\b(iPhones?(?:\s+\d+(?:\s+(?:Pro|Plus|Max|Mini|SE))?)?)\b/gi,
-    /\b(iPads?(?:\s+(?:Pro|Air|Mini))?(?:\s+\d+(?:th)?)?)\b/gi,
-    /\b(MacBooks?(?:\s+(?:Pro|Air))?(?:\s+\d+)?)\b/gi,
-    /\b(Apple\s+Watches?(?:\s+Series\s+\d+)?)\b/gi,
-    /\b(AirPods?(?:\s+(?:Pro|Max))?)\b/gi,
-    /\b(iMacs?(?:\s+(?:Pro))?(?:\s+\d+)?)\b/gi,
-    /\b(Samsung\s+(?:Galaxy\s+)?(?:S\d+|Note\s+\d+|A\d+|Z\s+(?:Fold|Flip)\s*\d*))\b/gi,
-    /\b(Google\s+Pixel(?:\s+\d+(?:\s+(?:Pro|XL))?)?)\b/gi,
-    /\b(Surface(?:\s+(?:Pro|Laptop|Book|Go)\s*\d*)?)\b/gi,
-    /\b(Chromebooks?)\b/gi,
-    /\b(laptops?)\b/gi,
-    /\b(tablets?)\b/gi,
-    /\b(computers?)\b/gi,
-    /\b(PCs?)\b/gi,
-    /\b(Macs?)\b/gi,
-    /\b(phones?)\b/gi,
-    /\b((?:gaming\s+)?consoles?)\b/gi,
-    /\b(Xbox(?:\s+(?:Series\s+)?[XS])?)\b/gi,
-    /\b(PlayStation(?:\s+\d+)?)\b/gi,
-    /\b(Nintendo\s+Switch)\b/gi,
+  const deviceBrands = [
+    'iPhone', 'iPad', 'MacBook', 'iMac', 'Apple Watch', 'AirPods',
+    'Samsung Galaxy', 'Samsung', 'Galaxy',
+    'Google Pixel', 'Pixel',
+    'Surface', 'Dell', 'HP', 'Lenovo', 'Asus', 'Acer',
+    'Xbox', 'PlayStation', 'Nintendo Switch', 'Switch'
+  ];
+  
+  const genericDevices = [
+    'laptop', 'laptops', 'tablet', 'tablets', 'phone', 'phones',
+    'computer', 'computers', 'PC', 'PCs', 'Mac', 'Macs',
+    'Chromebook', 'Chromebooks', 'console', 'consoles'
   ];
   
   const foundDevices = [];
-  const seenLower = new Set();
   
-  for (const pattern of devicePatterns) {
+  const allKeywords = [...deviceBrands, ...genericDevices];
+  
+  const boundaryWords = ['and', 'or', 'both', 'repair', 'fixed', 'repaired', 'broken', 'issue', 'problem', 'ready', 'done', 'finished', 'service', 'work', 'works', 'working', 'great', 'amazing', 'excellent', 'fast', 'quick', 'slow', 'bad', 'good', 'super', 'very', 'really', 'so', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'with', 'from', 'was', 'were', 'is', 'are', 'my', 'your', 'their', 'his', 'her', 'our', 'its', 'also', 'too', 'plus', 'as', 'well', 'today', 'yesterday', 'now', 'here', 'there', 'perfectly', 'perfectly!'];
+  
+  for (const keyword of allKeywords) {
+    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`\\b(${escapedKeyword}(?:[\\s-]+[A-Za-z0-9.]+)*)`, 'gi');
+    
     const matches = text.matchAll(pattern);
     for (const match of matches) {
-      const device = match[1];
-      const deviceLower = device.toLowerCase();
+      let devicePhrase = match[1].trim();
       
-      if (!seenLower.has(deviceLower)) {
-        foundDevices.push(device);
-        seenLower.add(deviceLower);
+      const tokens = devicePhrase.split(/\s+/);
+      let validTokens = [tokens[0]];
+      
+      for (let i = 1; i < tokens.length; i++) {
+        const token = tokens[i];
+        const tokenClean = token.replace(/[^A-Za-z0-9.]/g, '').toLowerCase();
+        
+        if (boundaryWords.includes(tokenClean)) {
+          break;
+        }
+        
+        if (/^[A-Za-z0-9.]+$/.test(token)) {
+          validTokens.push(token);
+        } else {
+          break;
+        }
+      }
+      
+      devicePhrase = validTokens.join(' ').trim();
+      
+      devicePhrase = devicePhrase.replace(/[.,;:!?]+$/, '');
+      
+      if (devicePhrase && devicePhrase.length > 0) {
+        foundDevices.push(devicePhrase);
       }
     }
   }
   
-  return foundDevices;
+  const deduplicated = [];
+  const sortedDevices = foundDevices.sort((a, b) => b.length - a.length);
+  
+  for (const device of sortedDevices) {
+    const deviceLower = device.toLowerCase();
+    let isDuplicate = false;
+    
+    for (const existing of deduplicated) {
+      const existingLower = existing.toLowerCase();
+      if (existingLower.includes(deviceLower) || deviceLower.includes(existingLower)) {
+        if (existingLower.length >= deviceLower.length) {
+          isDuplicate = true;
+          break;
+        } else {
+          const index = deduplicated.indexOf(existing);
+          deduplicated.splice(index, 1);
+          break;
+        }
+      }
+    }
+    
+    if (!isDuplicate) {
+      deduplicated.push(device);
+    }
+  }
+  
+  return deduplicated;
 }
 
 function validateDeviceRuleCompliance(reviewText, generatedReply) {
@@ -56,7 +99,8 @@ function validateDeviceRuleCompliance(reviewText, generatedReply) {
       status: 'passed', 
       reason: 'No devices mentioned in review',
       devicesRequired: [],
-      devicesMentioned: []
+      devicesMentioned: [],
+      missingDevices: []
     };
   }
   
@@ -65,20 +109,26 @@ function validateDeviceRuleCompliance(reviewText, generatedReply) {
     replyLower.includes(device.toLowerCase())
   );
   
-  if (mentionedDevices.length === 0) {
+  const missingDevices = devicesInReview.filter(device => 
+    !replyLower.includes(device.toLowerCase())
+  );
+  
+  if (mentionedDevices.length < devicesInReview.length) {
     return { 
       status: 'failed',
-      reason: `Device Rule Violation: Review mentions "${devicesInReview.join('", "')}" but reply does not mention any device`,
+      reason: `Device Rule Violation: Review mentions ${devicesInReview.length} device(s) but reply only mentions ${mentionedDevices.length}. Missing: "${missingDevices.join('", "')}"`,
       devicesRequired: devicesInReview,
-      devicesMentioned: []
+      devicesMentioned: mentionedDevices,
+      missingDevices: missingDevices
     };
   }
   
   return { 
     status: 'passed',
-    reason: 'Device rule satisfied',
+    reason: `Device rule satisfied - all ${devicesInReview.length} device(s) mentioned`,
     devicesRequired: devicesInReview,
-    devicesMentioned: mentionedDevices
+    devicesMentioned: mentionedDevices,
+    missingDevices: []
   };
 }
 
@@ -187,7 +237,8 @@ Write a reply (2-3 sentences) following ALL 10 Golden Rules above. Make it sound
             status: validation.status,
             reason: validation.reason,
             devicesRequired: validation.devicesRequired,
-            devicesMentioned: validation.devicesMentioned
+            devicesMentioned: validation.devicesMentioned,
+            missingDevices: validation.missingDevices || []
           }
         });
       }
@@ -201,9 +252,18 @@ Write a reply (2-3 sentences) following ALL 10 Golden Rules above. Make it sound
         deviceRuleApplied: rating >= 4,
         devicesDetected: rating >= 4 ? extractDeviceMentions(reviewText) : []
       },
-      validation: validation || {
+      validation: validation ? {
+        status: validation.status,
+        reason: validation.reason,
+        devicesRequired: validation.devicesRequired || [],
+        devicesMentioned: validation.devicesMentioned || [],
+        missingDevices: validation.missingDevices || []
+      } : {
         status: 'not_applicable',
-        reason: 'Device rule only applies to 4-5 star reviews'
+        reason: 'Device rule only applies to 4-5 star reviews',
+        devicesRequired: [],
+        devicesMentioned: [],
+        missingDevices: []
       }
     });
   } catch (error) {
