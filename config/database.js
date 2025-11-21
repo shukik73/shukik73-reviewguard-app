@@ -29,17 +29,14 @@ export async function initializeDatabase() {
 
     CREATE TABLE IF NOT EXISTS customers (
       id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       name VARCHAR(255) NOT NULL,
-      phone VARCHAR(50) NOT NULL,
+      phone VARCHAR(50) NOT NULL UNIQUE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(user_id, phone)
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS messages (
       id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       customer_id INTEGER REFERENCES customers(id),
       customer_name VARCHAR(255) NOT NULL,
       customer_phone VARCHAR(50) NOT NULL,
@@ -144,12 +141,13 @@ export async function initializeDatabase() {
     DO $$ 
     BEGIN
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='customers' AND column_name='user_id') THEN
-        ALTER TABLE customers ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE;
+        ALTER TABLE customers DROP CONSTRAINT IF EXISTS customers_phone_key;
+        ALTER TABLE customers ADD COLUMN user_id INTEGER DEFAULT 1 NOT NULL REFERENCES users(id) ON DELETE CASCADE;
         ALTER TABLE customers ADD CONSTRAINT customers_user_id_phone_unique UNIQUE(user_id, phone);
       END IF;
       
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='user_id') THEN
-        ALTER TABLE messages ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE;
+        ALTER TABLE messages ADD COLUMN user_id INTEGER DEFAULT 1 NOT NULL REFERENCES users(id) ON DELETE CASCADE;
         CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id);
       END IF;
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='messages' AND column_name='review_status') THEN
