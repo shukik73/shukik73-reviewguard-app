@@ -38,6 +38,40 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
       });
     }
 
+    const userResult = await pool.query('SELECT id FROM users WHERE company_email = $1', [userEmail]);
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+    const userId = userResult.rows[0].id;
+
+    const settingsCheckResult = await pool.query(
+      'SELECT business_name FROM user_settings WHERE user_email = $1',
+      [userEmail]
+    );
+    const businessName = settingsCheckResult.rows[0]?.business_name;
+
+    const subscriptionCheckResult = await pool.query(
+      'SELECT google_review_link FROM subscriptions WHERE email = $1',
+      [userEmail]
+    );
+    const googleReviewLink = subscriptionCheckResult.rows[0]?.google_review_link;
+
+    if (!businessName || !googleReviewLink) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please go to Settings and configure your Business Name and Google Review Link before sending messages.',
+        code: 'ONBOARDING_INCOMPLETE',
+        missingFields: {
+          businessName: !businessName,
+          googleReviewLink: !googleReviewLink
+        }
+      });
+    }
+
     let formattedPhone;
     try {
       formattedPhone = validateAndFormatPhone(customerPhone);
@@ -164,8 +198,8 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
     try {
       let customerId = null;
       const customerCheck = await pool.query(
-        'SELECT id FROM customers WHERE phone = $1',
-        [formattedPhone]
+        'SELECT id FROM customers WHERE user_id = $1 AND phone = $2',
+        [userId, formattedPhone]
       );
 
       if (customerCheck.rows.length > 0) {
@@ -176,8 +210,8 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
         );
       } else {
         const newCustomer = await pool.query(
-          'INSERT INTO customers (name, phone) VALUES ($1, $2) RETURNING id',
-          [customerName, formattedPhone]
+          'INSERT INTO customers (user_id, name, phone) VALUES ($1, $2, $3) RETURNING id',
+          [userId, customerName, formattedPhone]
         );
         customerId = newCustomer.rows[0].id;
       }
@@ -185,10 +219,11 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
       const followUpDueAt = messageType === 'review' ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) : null;
 
       await pool.query(
-        `INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid, feedback_token, follow_up_due_at, review_status, user_email, sms_consent_confirmed) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        `INSERT INTO messages (user_id, customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid, feedback_token, follow_up_due_at, review_status, user_email, sms_consent_confirmed) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          ON CONFLICT DO NOTHING`,
         [
+          userId,
           customerId,
           customerName,
           formattedPhone,
