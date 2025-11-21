@@ -144,6 +144,12 @@
               <span>👥</span> <span>Customers</span>
             </button>
             <button
+              data-section="reviews"
+              class="nav-tab inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-md text-slate-600 hover:bg-slate-50 transition-all"
+            >
+              <span>🤖</span> <span>AI Reviews</span>
+            </button>
+            <button
               data-section="billing"
               class="nav-tab inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-md text-slate-600 hover:bg-slate-50 transition-all"
             >
@@ -592,9 +598,95 @@
         </div>
       </section>
 
+      <!-- AI REVIEWS SECTION -->
+      <section id="reviews" class="section hidden">
+        <h1 class="text-xl font-semibold text-slate-100 mb-3">
+          AI Review Reply Assistant
+        </h1>
+
+        <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-6 max-w-3xl">
+          <p class="text-sm text-slate-600 mb-5">
+            Paste a customer review below, and our AI will generate an SEO-optimized reply following Techy Miramar's 10 Golden Rules.
+          </p>
+
+          <div class="space-y-4">
+            <!-- Customer Name Input -->
+            <label class="block">
+              <span class="text-xs font-medium text-slate-700 mb-1.5 block">
+                Customer Name <span class="text-red-500">*</span>
+              </span>
+              <input
+                type="text"
+                id="ai-customer-name"
+                placeholder="e.g., John Smith"
+                class="block w-full text-sm rounded-md border border-slate-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </label>
+
+            <!-- Star Rating Input -->
+            <label class="block">
+              <span class="text-xs font-medium text-slate-700 mb-1.5 block">
+                Star Rating <span class="text-red-500">*</span>
+              </span>
+              <select
+                id="ai-star-rating"
+                class="block w-full text-sm rounded-md border border-slate-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">Select rating...</option>
+                <option value="5">⭐⭐⭐⭐⭐ 5 Stars</option>
+                <option value="4">⭐⭐⭐⭐ 4 Stars</option>
+                <option value="3">⭐⭐⭐ 3 Stars</option>
+                <option value="2">⭐⭐ 2 Stars</option>
+                <option value="1">⭐ 1 Star</option>
+              </select>
+            </label>
+
+            <!-- Review Text Input -->
+            <label class="block">
+              <span class="text-xs font-medium text-slate-700 mb-1.5 block">
+                Customer's Review <span class="text-red-500">*</span>
+              </span>
+              <textarea
+                id="ai-review-text"
+                rows="5"
+                placeholder="Paste the customer's review here..."
+                class="block w-full text-sm rounded-md border border-slate-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              ></textarea>
+            </label>
+
+            <!-- Generate Button -->
+            <button
+              id="generate-reply-btn"
+              class="btn-primary w-full py-3"
+            >
+              ✨ Generate AI Reply
+            </button>
+          </div>
+
+          <!-- Generated Reply Section (hidden by default) -->
+          <div id="ai-reply-container" class="hidden mt-6">
+            <div class="border-t border-slate-200 pt-6">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-slate-900">Generated Reply</h3>
+                <button
+                  id="copy-reply-btn"
+                  class="btn-secondary text-xs px-3 py-1.5"
+                >
+                  📋 Copy to Clipboard
+                </button>
+              </div>
+              <div
+                id="ai-reply-text"
+                class="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-lg p-4 text-sm text-slate-800 leading-relaxed"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- SETTINGS SECTION -->
       <section id="settings" class="section hidden">
-        <h1 class="text-xl font-semibold text-slate-900 mb-3">
+        <h1 class="text-xl font-semibold text-slate-100 mb-3">
           Settings
         </h1>
 
@@ -878,6 +970,7 @@
       if (id === 'customers') loadCustomers();
       if (id === 'settings') loadSettings();
       if (id === 'billing') updateSubscriptionDisplay();
+      if (id === 'reviews') clearAIReviewForm();
     }
 
     tabs.forEach(btn => {
@@ -963,6 +1056,81 @@
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     if (saveSettingsBtn) {
       saveSettingsBtn.addEventListener('click', saveSettings);
+    }
+
+    // AI Review Reply functionality
+    function clearAIReviewForm() {
+      document.getElementById('ai-customer-name').value = '';
+      document.getElementById('ai-star-rating').value = '';
+      document.getElementById('ai-review-text').value = '';
+      document.getElementById('ai-reply-container').classList.add('hidden');
+    }
+
+    async function generateAIReply() {
+      const customerName = document.getElementById('ai-customer-name').value.trim();
+      const starRating = document.getElementById('ai-star-rating').value;
+      const reviewText = document.getElementById('ai-review-text').value.trim();
+      const generateBtn = document.getElementById('generate-reply-btn');
+
+      if (!customerName || !starRating || !reviewText) {
+        showNotification('Please fill in all fields', 'error');
+        return;
+      }
+
+      generateBtn.disabled = true;
+      generateBtn.textContent = '⏳ Generating...';
+
+      try {
+        const response = await fetch('/api/generate-reply', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            customerName,
+            starRating: parseInt(starRating),
+            reviewText
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.reply) {
+          document.getElementById('ai-reply-text').textContent = data.reply;
+          document.getElementById('ai-reply-container').classList.remove('hidden');
+          showNotification('AI reply generated successfully!', 'success');
+        } else {
+          showNotification(data.error || 'Failed to generate reply', 'error');
+        }
+      } catch (error) {
+        console.error('Error generating AI reply:', error);
+        showNotification('Failed to generate reply. Please try again.', 'error');
+      } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = '✨ Generate AI Reply';
+      }
+    }
+
+    function copyReplyToClipboard() {
+      const replyText = document.getElementById('ai-reply-text').textContent;
+      
+      navigator.clipboard.writeText(replyText).then(() => {
+        showNotification('Reply copied to clipboard!', 'success');
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        showNotification('Failed to copy to clipboard', 'error');
+      });
+    }
+
+    // AI Review Reply event listeners
+    const generateReplyBtn = document.getElementById('generate-reply-btn');
+    if (generateReplyBtn) {
+      generateReplyBtn.addEventListener('click', generateAIReply);
+    }
+
+    const copyReplyBtn = document.getElementById('copy-reply-btn');
+    if (copyReplyBtn) {
+      copyReplyBtn.addEventListener('click', copyReplyToClipboard);
     }
 
     // Message preview updater

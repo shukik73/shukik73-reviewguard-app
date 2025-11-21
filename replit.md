@@ -47,6 +47,36 @@ A production-ready user authentication system supports multi-tenancy with person
 
 Stripe Subscription Billing is integrated with transaction-based, race-condition-free SMS quota enforcement. This includes trial accounts (50 SMS), tiered subscription plans (Starter: 500 SMS, Pro: 2000 SMS) via Stripe Checkout, email-based tracking, and Stripe webhooks for subscription status updates. Quota enforcement uses PostgreSQL row-level locking to prevent concurrent quota bypass and ensures atomic quota reservation with rollback on failure.
 
+### AI-Powered Review Reply Assistant
+
+An OpenAI-powered system generates SEO-optimized Google Review responses following "10 Golden Rules" with server-side enforcement. The system uses gpt-4o-mini via Replit AI Integrations (no API key required, billed to credits).
+
+**The 10 Golden Rules:**
+
+**For Positive Reviews (4-5 stars):**
+1. **Device Rule (Mandatory)**: If customer mentions a device (iPhone, iPad, laptop, etc.), the reply MUST mention that exact device. Server-side validation automatically detects devices in reviews and rejects AI responses that fail to mention them.
+2. **Cross-Sell**: Occasionally mention other services (laptops, iPads, phones).
+3. **Location**: Include "Techy Miramar" or "here in Miramar".
+4. **Gratitude**: Thank customer by name.
+5. **Natural Tone**: Warm and genuine, not robotic.
+6. **Specificity**: Reference specific details from review.
+7. **Brevity**: 2-3 sentences max.
+8. **Professionalism**: Friendly yet professional.
+9. **Future Focus**: Invite them back.
+10. **Compliance**: Follow Google's review response policies.
+
+**For Negative Reviews (1-3 stars):**
+All SEO rules are disabled. Focus on sincere apology, acknowledging frustration, taking responsibility, and directing to support@techymiramar.com. No device mentions, cross-selling, or keywords.
+
+**Implementation:**
+- `/controllers/aiController.js`: OpenAI chat completions with dual system prompts (positive vs negative).
+- `extractDeviceMentions()`: Server-side regex extraction of device keywords from review text.
+- `validateDeviceRuleCompliance()`: Post-generation validation that rejects responses missing required device mentions.
+- `/api/generate-reply`: POST endpoint accepting `{ customerName, starRating, reviewText }`.
+- Frontend: "AI Reviews" tab with form inputs, "Generate AI Reply" button, and "Copy to Clipboard" functionality.
+
+**Error Handling:** Network errors return 503 with retry message. Validation failures return 500 with user-friendly error. Development mode includes detailed error messages.
+
 ### Security Layer
 
 **Rate Limiting & Headers**: Production-ready security includes Helmet.js with a properly configured Content Security Policy (CSP) allowing necessary resources like Stripe.js, Tailwind CDN, and jQuery while blocking unsafe inline scripts by default. Express-rate-limit middleware protects endpoints: SMS sending endpoints are limited to 5 requests per hour per IP to prevent abuse and protect Twilio costs. General API endpoints have a 100 requests per 15 minutes limit. Both limiters return proper 429 status codes with informative error messages.

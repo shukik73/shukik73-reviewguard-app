@@ -33,6 +33,7 @@ import createOCRRoutes from './routes/ocrRoutes.js';
 import createBillingRoutes from './routes/billingRoutes.js';
 import createSettingsRoutes from './routes/settingsRoutes.js';
 import createFeedbackRoutes from './routes/feedbackRoutes.js';
+import createAIRoutes from './routes/aiRoutes.js';
 import requireAuth from './middleware/requireAuth.js';
 import { smsLimiter, apiLimiter } from './middleware/rateLimiter.js';
 
@@ -93,6 +94,7 @@ app.use(createOCRRoutes(pool, ocrUpload));
 app.use(createBillingRoutes(pool));
 app.use(createSettingsRoutes(pool, requireAuth));
 app.use(createFeedbackRoutes(pool));
+app.use(createAIRoutes(pool));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });

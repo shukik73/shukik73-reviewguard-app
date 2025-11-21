@@ -15,7 +15,7 @@ ignorePorts = false
 
 [agent]
 expertMode = true
-integrations = ["twilio:1.0.0", "resend:1.0.0"]
+integrations = ["twilio:1.0.0", "resend:1.0.0", "javascript_openai_ai_integrations:1.0.0"]
 
 [workflows]
 runButton = "Project"
@@ -52,3 +52,7 @@ externalPort = 3001
 [[ports]]
 localPort = 43339
 externalPort = 3000
+
+[[ports]]
+localPort = 44823
+externalPort = 3002
