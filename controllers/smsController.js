@@ -52,7 +52,7 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
       'SELECT business_name FROM user_settings WHERE user_email = $1',
       [userEmail]
     );
-    const businessName = settingsCheckResult.rows[0]?.business_name;
+    const businessName = settingsCheckResult.rows[0]?.business_name || 'Our Store';
 
     const subscriptionCheckResult = await pool.query(
       'SELECT google_review_link FROM subscriptions WHERE email = $1',
@@ -60,13 +60,12 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
     );
     const googleReviewLink = subscriptionCheckResult.rows[0]?.google_review_link;
 
-    if (!businessName || !googleReviewLink) {
+    if (!googleReviewLink) {
       return res.status(400).json({
         success: false,
-        error: 'Please go to Settings and configure your Business Name and Google Review Link before sending messages.',
+        error: 'Please go to Settings and configure your Google Review Link before sending messages.',
         code: 'ONBOARDING_INCOMPLETE',
         missingFields: {
-          businessName: !businessName,
           googleReviewLink: !googleReviewLink
         }
       });
@@ -103,7 +102,7 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
     const feedbackToken = messageType === 'review' ? crypto.randomBytes(8).toString('hex') : null;
     const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
     
-    let message = additionalInfo || '';
+    let message = (additionalInfo || '').replace(/{business}/g, businessName);
     
     if (messageType === 'review' && feedbackToken) {
       const feedbackLink = `${appHost}/feedback.html?token=${feedbackToken}`;
