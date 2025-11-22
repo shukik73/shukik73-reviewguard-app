@@ -1,17 +1,4 @@
-import OpenAI from 'openai';
-
-const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
-
-if (!apiKey || apiKey.includes('DUMMY')) {
-  console.error('❌ CRITICAL: Missing or invalid OPENAI_API_KEY');
-  console.error('   Expected AI_INTEGRATIONS_OPENAI_API_KEY or OPENAI_API_KEY in Secrets');
-  throw new Error('Missing OPENAI_API_KEY in Secrets');
-}
-
-const openai = new OpenAI({
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  apiKey: apiKey,
-});
+import { getOpenAI } from '../lib/openai.js';
 
 function extractDeviceMentions(text) {
   const deviceBrands = [
@@ -219,6 +206,7 @@ Rule 10 (COMPLIANCE): Never violate Google's review response policies.`;
 Write a reply (2-3 sentences) following ALL 10 Golden Rules above. Make it sound natural and grateful.`;
     }
 
+    const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [

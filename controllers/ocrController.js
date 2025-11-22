@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import heicConvert from 'heic-convert';
-import { openai } from '../lib/openai.js';
+import { getOpenAI } from '../lib/openai.js';
 
 export const processOCR = (pool) => async (req, res) => {
   console.log('=== OCR REQUEST RECEIVED ===');
@@ -51,6 +51,7 @@ export const processOCR = (pool) => async (req, res) => {
 
     console.log('Sending to OpenAI GPT-4o Vision for OCR processing...');
 
+    const openai = getOpenAI();
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
