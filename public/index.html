@@ -999,6 +999,9 @@
             userDisplay.textContent = user.first_name || 'User';
           }
           
+          // Update global business name for message preview
+          businessName = user.business_name || 'Our Store';
+          
           // Update header branding
           const headerBranding = document.getElementById('header-branding');
           if (headerBranding) {
@@ -1008,6 +1011,9 @@
               headerBranding.textContent = 'SMS Manager';
             }
           }
+          
+          // Update preview with new business name
+          updatePreview();
         }
       } catch (error) {
         console.error('Error loading user:', error);
@@ -1089,7 +1095,11 @@
     // Save Settings handler
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     if (saveSettingsBtn) {
-      saveSettingsBtn.addEventListener('click', saveSettings);
+      saveSettingsBtn.addEventListener('click', async function() {
+        await saveSettings();
+        // Reload user data to update business name after saving
+        loadUserOnPageLoad();
+      });
     }
 
     // AI Review Reply functionality
@@ -1167,6 +1177,9 @@
       copyReplyBtn.addEventListener('click', copyReplyToClipboard);
     }
 
+    // Global business name variable
+    let businessName = 'Our Store';
+
     // Message preview updater
     const messageTypeSelect = document.getElementById('message-type');
     const customerNameInput = document.getElementById('customer-name');
@@ -1186,7 +1199,7 @@
       let message = '';
 
       if (type === 'review') {
-        message = `Hi ${name}! Thank you for choosing Techy Miramar for your ${device} ${repair}. How was your experience? Please rate us: [Feedback Link]`;
+        message = `Hi ${name}! Thank you for choosing ${businessName} for your ${device} ${repair}. How was your experience? Please rate us: [Feedback Link]`;
       } else if (type === 'ready') {
         message = `Hi ${name}! Great news - your ${device} is ready for pickup! We've completed the ${repair}. Stop by anytime during business hours. See you soon!`;
       } else if (type === 'follow_up') {
@@ -1298,7 +1311,7 @@
       let additionalInfo = '';
       if (messageType === 'review') {
         // For review requests, send feedback collection SMS first
-        additionalInfo = `Hi ${customerName}! Thank you for choosing Techy Miramar for your ${device} ${repair}. How was your experience? Please rate us:`;
+        additionalInfo = `Hi ${customerName}! Thank you for choosing ${businessName} for your ${device} ${repair}. How was your experience? Please rate us:`;
       } else if (messageType === 'ready') {
         additionalInfo = `Hi ${customerName}! Great news - your ${device} is ready for pickup! We've completed the ${repair}. Stop by anytime during business hours. See you soon!`;
       } else if (messageType === 'follow_up') {
@@ -1375,7 +1388,7 @@
       // Build the message preview
       let messagePreview = '';
       if (messageType === 'review') {
-        messagePreview = `Hi ${customerName}! Thank you for choosing Techy Miramar for your ${device} ${repair}. How was your experience? Please rate us:`;
+        messagePreview = `Hi ${customerName}! Thank you for choosing ${businessName} for your ${device} ${repair}. How was your experience? Please rate us:`;
       } else if (messageType === 'ready') {
         messagePreview = `Hi ${customerName}! Great news - your ${device} is ready for pickup! We've completed the ${repair}. Stop by anytime during business hours. See you soon!`;
       } else if (messageType === 'follow_up') {
