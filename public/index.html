@@ -96,8 +96,8 @@
             TM
           </div>
           <div>
-            <div class="text-sm font-semibold text-slate-900">
-              Techy Miramar SMS Manager
+            <div id="header-branding" class="text-sm font-semibold text-slate-900">
+              Loading...
             </div>
             <div class="text-xs text-slate-500">
               Reviews, pickup notifications & customer follow-ups
@@ -107,7 +107,7 @@
 
         <div class="flex items-center gap-3">
           <span class="hidden sm:inline text-sm text-slate-600">
-            Logged in as <span class="font-medium">Shuki</span>
+            Logged in as <span id="user-display-name" class="font-medium">Loading...</span>
           </span>
           <button id="logout-btn" class="btn-secondary text-sm">
             Logout
@@ -932,7 +932,11 @@
             setTimeout(() => toast.remove(), 300);
           }, 2000);
           
-          updateHeaderBusinessName(businessName);
+          // Update header immediately
+          const headerBranding = document.getElementById('header-branding');
+          if (headerBranding && businessName) {
+            headerBranding.textContent = `${businessName} SMS Manager`;
+          }
         } else {
           showNotification(data.error || 'Failed to save settings', 'error');
         }
@@ -980,23 +984,44 @@
       });
     });
 
-    // Load business name on page load
-    async function loadBusinessNameOnPageLoad() {
+    // Load user on page load
+    async function loadUserOnPageLoad() {
       try {
-        const response = await fetch('/api/settings');
+        const response = await fetch('/api/auth/me');
         const data = await response.json();
         
-        if (data.success && data.settings && data.settings.business_name) {
-          updateHeaderBusinessName(data.settings.business_name);
+        if (data.success && data.user) {
+          const user = data.user;
+          
+          // Update user display name
+          const userDisplay = document.getElementById('user-display-name');
+          if (userDisplay) {
+            userDisplay.textContent = user.first_name || 'User';
+          }
+          
+          // Update header branding
+          const headerBranding = document.getElementById('header-branding');
+          if (headerBranding) {
+            if (user.business_name) {
+              headerBranding.textContent = `${user.business_name} SMS Manager`;
+            } else {
+              headerBranding.textContent = 'SMS Manager';
+            }
+          }
         }
       } catch (error) {
-        console.error('Error loading business name:', error);
+        console.error('Error loading user:', error);
+        // Fallback display
+        const headerBranding = document.getElementById('header-branding');
+        if (headerBranding) {
+          headerBranding.textContent = 'SMS Manager';
+        }
       }
     }
 
     // Default section
     showSection('send-sms');
-    loadBusinessNameOnPageLoad();
+    loadUserOnPageLoad();
 
     // Notification System
     function showNotification(message, type = 'success') {

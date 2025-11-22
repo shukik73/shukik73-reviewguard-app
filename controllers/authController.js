@@ -489,3 +489,53 @@ export const resetPassword = (pool) => async (req, res) => {
     });
   }
 };
+
+export const getMe = (pool) => async (req, res) => {
+  try {
+    const userEmail = req.session.userEmail;
+
+    if (!userEmail) {
+      return res.status(401).json({
+        success: false,
+        error: 'Not authenticated'
+      });
+    }
+
+    const userResult = await pool.query(
+      'SELECT id, first_name, last_name, company_name, company_email FROM users WHERE company_email = $1',
+      [userEmail]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    const settingsResult = await pool.query(
+      'SELECT business_name FROM user_settings WHERE user_email = $1',
+      [userEmail]
+    );
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.company_email,
+        company_name: user.company_name,
+        business_name: settingsResult.rows[0]?.business_name || ''
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
