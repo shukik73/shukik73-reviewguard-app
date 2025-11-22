@@ -1024,11 +1024,17 @@
     loadUserOnPageLoad();
 
     // Notification System
+    let notificationTimeout;
     function showNotification(message, type = 'success') {
       const container = document.getElementById('notification-container');
       const messageDiv = document.getElementById('notification-message');
       const iconSpan = document.getElementById('notification-icon');
       const textSpan = document.getElementById('notification-text');
+      
+      // Clear any existing auto-hide timer
+      if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+      }
       
       // Set icon and color based on type
       if (type === 'success') {
@@ -1045,10 +1051,11 @@
       textSpan.textContent = message;
       container.classList.remove('hidden');
       
-      // Auto-hide after 4 seconds
-      setTimeout(() => {
+      // Auto-hide success after 4 seconds, errors stay visible longer (10 seconds) so user sees them
+      const hideDelay = type === 'error' ? 10000 : 4000;
+      notificationTimeout = setTimeout(() => {
         container.classList.add('hidden');
-      }, 4000);
+      }, hideDelay);
     }
 
     // Logout handler
