@@ -137,7 +137,8 @@ If you cannot find a field, use an empty string for that field.`
       }
     });
   } catch (error) {
-    console.error('OCR processing error:', error);
+    console.error('OCR Error:', error.response ? error.response.data : error.message);
+    console.error('Full error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to process image'
