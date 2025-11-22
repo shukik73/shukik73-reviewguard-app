@@ -50,8 +50,19 @@ export const processOCR = (pool) => async (req, res) => {
       : req.file.mimetype;
 
     console.log('Sending to OpenAI GPT-4o Vision for OCR processing...');
+    
+    let openai;
+    try {
+      openai = getOpenAI();
+      console.log('✅ OpenAI client initialized successfully');
+    } catch (err) {
+      console.error('❌ Failed to initialize OpenAI:', err.message);
+      console.error('   Environment check:');
+      console.error('   - AI_INTEGRATIONS_OPENAI_API_KEY:', process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? '✓ set' : '✗ missing');
+      console.error('   - OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '✓ set' : '✗ missing');
+      throw err;
+    }
 
-    const openai = getOpenAI();
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
