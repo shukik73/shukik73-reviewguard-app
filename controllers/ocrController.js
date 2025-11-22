@@ -1,6 +1,6 @@
 import sharp from 'sharp';
-import axios from 'axios';
 import heicConvert from 'heic-convert';
+import { openai } from '../lib/openai.js';
 
 export const processOCR = (pool) => async (req, res) => {
   try {
@@ -8,14 +8,6 @@ export const processOCR = (pool) => async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'No image file provided'
-      });
-    }
-
-    const apiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({
-        success: false,
-        error: 'OCR service not configured'
       });
     }
 
@@ -46,87 +38,84 @@ export const processOCR = (pool) => async (req, res) => {
 
     const base64Image = preprocessedImage.toString('base64');
 
-    const visionResponse = await axios.post(
-      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
-      {
-        requests: [{
-          image: { content: base64Image },
-          features: [{ type: 'TEXT_DETECTION' }]
-        }]
-      }
-    );
+    // Determine MIME type
+    const mimeType = req.file.mimetype === 'image/heic' || req.file.mimetype === 'image/heif' 
+      ? 'image/jpeg' 
+      : req.file.mimetype;
 
-    const textAnnotations = visionResponse.data.responses?.[0]?.textAnnotations || [];
-    
-    if (textAnnotations.length === 0) {
-      return res.json({
-        success: true,
-        data: {
-          customerName: '',
-          customerPhone: '',
-          device: '',
-          repair: '',
-          rawText: ''
+    console.log('Sending to OpenAI GPT-4o Vision for OCR processing...');
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `You are an Optical Character Recognition (OCR) expert for a Repair Shop POS system. Your goal is to extract: Customer Name, Phone Number, Device Model, and Repair Type.
+
+RULES FOR ACCURACY:
+
+Name: Look for the bold name at the very top or next to the "Customer Information" header. IGNORE text like "View More", "Edit", "Store Credits", or "Customer #".
+
+Phone: Find the phone number (usually starts with +1).
+
+Device: Look under headers like "Item Name", "Service Information", or "Labor/Service Details". Example: "iPhone 16 Pro Max", "HP Laptop".
+
+Repair: Look for the service description. Example: "Screen Replacement", "Motherboard Replacement".
+
+Return the result ONLY as a JSON object with NO additional text: { "name": "...", "phone": "...", "device": "...", "repair": "..." }
+
+If you cannot find a field, use an empty string for that field.`
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:${mimeType};base64,${base64Image}`
+              }
+            }
+          ]
         }
-      });
-    }
+      ],
+      max_tokens: 500
+    });
 
-    const rawText = textAnnotations[0]?.description || '';
-    console.log('=== OCR RAW TEXT ===');
-    console.log(rawText);
-    console.log('===================');
+    const aiResponse = response.choices[0].message.content;
+    console.log('=== OpenAI GPT-4o Response ===');
+    console.log(aiResponse);
+    console.log('================================');
 
     let customerName = '';
     let customerPhone = '';
     let device = '';
     let repair = '';
 
-    const lines = rawText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-
-    const metadataKeywords = [
-      'Customer #', 'Added on', 'Store Credits', 'Notifications', 'Email Alert', 'SMS Alert',
-      'Estimates', 'Inquiries', 'Tickets', 'Invoice', 'Trade-In', 'Store Credits',
-      'Select Store', 'Gift Card', 'Total', 'ID', 'Balance'
-    ];
-
-    const filteredLines = lines.filter(line => {
-      if (line.includes('(') && line.includes(')')) return false;
-      if (/^\d{4}-\d{2}-\d{2}/.test(line)) return false;
-      if (/\$\d+\.?\d*/.test(line)) return false;
-      if (metadataKeywords.some(keyword => line.includes(keyword))) return false;
-      return true;
-    });
-
-    for (const line of filteredLines) {
-      if (!customerName) {
-        const words = line.split(/\s+/);
-        if (words.length === 2 && words.every(w => /^[A-Z][a-z]+$/.test(w))) {
-          customerName = line;
-          continue;
-        }
+    try {
+      // Extract JSON from the response (handle case where AI returns extra text)
+      const jsonMatch = aiResponse.match(/\{[^{}]*"name"[^{}]*"phone"[^{}]*"device"[^{}]*"repair"[^{}]*\}/s);
+      if (jsonMatch) {
+        const extracted = JSON.parse(jsonMatch[0]);
+        customerName = extracted.name || '';
+        customerPhone = extracted.phone || '';
+        device = extracted.device || '';
+        repair = extracted.repair || '';
       }
-
-      const phoneMatch = line.match(/(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
-      if (phoneMatch && !customerPhone) {
-        customerPhone = phoneMatch[0].replace(/\D/g, '');
-        continue;
-      }
-
-      const deviceKeywords = ['iPhone', 'iPad', 'Samsung', 'Galaxy', 'Google Pixel', 'OnePlus', 'Cellphone Repairs', 'Apple', 'Android'];
-      if (deviceKeywords.some(keyword => line.includes(keyword)) && !device) {
-        device = line;
-      }
-
-      const repairKeywords = ['Screen', 'Battery', 'Camera', 'Charging', 'Port', 'Replacement', 'Repair', 'Device Issue'];
-      if (repairKeywords.some(keyword => line.includes(keyword)) && !repair) {
-        repair = line;
-      }
+    } catch (parseError) {
+      console.error('Failed to parse AI response as JSON:', parseError);
+      // If parsing fails, return empty fields
     }
 
-    if (customerPhone && customerPhone.length === 10) {
-      customerPhone = '+1' + customerPhone;
-    } else if (customerPhone && customerPhone.length === 11 && customerPhone.startsWith('1')) {
-      customerPhone = '+' + customerPhone;
+    // Normalize phone number if extracted
+    if (customerPhone) {
+      const phoneDigits = customerPhone.replace(/\D/g, '');
+      if (phoneDigits.length === 10) {
+        customerPhone = '+1' + phoneDigits;
+      } else if (phoneDigits.length === 11 && phoneDigits.startsWith('1')) {
+        customerPhone = '+' + phoneDigits;
+      } else if (phoneDigits.length > 0) {
+        customerPhone = '+' + phoneDigits;
+      }
     }
 
     const extractedData = {
@@ -144,8 +133,7 @@ export const processOCR = (pool) => async (req, res) => {
         customerName,
         customerPhone,
         device,
-        repair,
-        rawText
+        repair
       }
     });
   } catch (error) {
