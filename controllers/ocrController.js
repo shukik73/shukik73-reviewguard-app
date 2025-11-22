@@ -3,15 +3,21 @@ import heicConvert from 'heic-convert';
 import { openai } from '../lib/openai.js';
 
 export const processOCR = (pool) => async (req, res) => {
+  console.log('=== OCR REQUEST RECEIVED ===');
+  console.log('File:', req.file ? { fieldname: req.file.fieldname, size: req.file.size, mimetype: req.file.mimetype } : 'NO FILE');
+  
   try {
     if (!req.file) {
+      console.error('No file in request');
       return res.status(400).json({
         success: false,
         error: 'No image file provided'
       });
     }
 
+    console.log('Processing file:', req.file.originalname, 'Size:', req.file.size);
     let imageBuffer = req.file.buffer;
+    console.log('Buffer created, size:', imageBuffer.length);
     
     const isHeic = req.file.mimetype === 'image/heic' || 
                    req.file.mimetype === 'image/heif' ||
@@ -137,11 +143,18 @@ If you cannot find a field, use an empty string for that field.`
       }
     });
   } catch (error) {
-    console.error('OCR Error:', error.response ? error.response.data : error.message);
-    console.error('Full error:', error);
+    console.error('=== CRITICAL OCR ERROR ===');
+    console.error('FULL ERROR:', error);
+    console.error('OPENAI ERROR:', error.response ? error.response.data : 'No response data');
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('============================');
+    
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to process image';
+    
     res.status(500).json({
       success: false,
-      error: 'Failed to process image'
+      error: errorMessage
     });
   }
 };
