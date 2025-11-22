@@ -15,6 +15,12 @@ if (process.env.SESSION_SECRET.length < 32) {
   console.warn('   For production use, please use a longer, cryptographically secure secret.');
 }
 
+if (!process.env.OPENAI_API_KEY && !process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+  console.error('❌ FATAL ERROR: OPENAI_API_KEY is not set in Secrets.');
+  console.error('   Please add OPENAI_API_KEY to your Replit Secrets with your OpenAI API key.');
+  process.exit(1);
+}
+
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';

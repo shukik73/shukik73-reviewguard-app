@@ -1051,11 +1051,13 @@
       textSpan.textContent = message;
       container.classList.remove('hidden');
       
-      // Auto-hide success after 4 seconds, errors stay visible longer (10 seconds) so user sees them
-      const hideDelay = type === 'error' ? 10000 : 4000;
-      notificationTimeout = setTimeout(() => {
-        container.classList.add('hidden');
-      }, hideDelay);
+      // Success messages auto-hide after 4 seconds, errors stay visible until user dismisses or tries again
+      if (type === 'success') {
+        notificationTimeout = setTimeout(() => {
+          container.classList.add('hidden');
+        }, 4000);
+      }
+      // Error messages stay visible - user must take action to dismiss
     }
 
     // Logout handler
@@ -1485,6 +1487,8 @@
           ocrDeviceDisplay.textContent = '-';
           ocrRepairDisplay.textContent = '-';
           showNotification('Error: ' + (data.error || 'Failed to process image'), 'error');
+          // Reset input so user can try again
+          ocrUploadInput.value = '';
         }
       } catch (error) {
         console.error('OCR upload error:', error);
@@ -1493,6 +1497,8 @@
         ocrDeviceDisplay.textContent = '-';
         ocrRepairDisplay.textContent = '-';
         showNotification('Failed to process image. Please try again.', 'error');
+        // Reset input so user can try again
+        ocrUploadInput.value = '';
       }
     });
 
