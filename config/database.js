@@ -268,19 +268,21 @@ export async function initializeDatabase() {
     console.log(`[MIGRATION] Updated ${messagesResult.rowCount} messages rows`);
     
     console.log('[MIGRATION] Backfilling user_id in customers table...');
-    // Backfill customers.user_id based on messages.user_email
+    // Backfill customers.user_id based on messages using customer_id FK relationship
     const customersResult = await pool.query(`
       UPDATE customers 
       SET user_id = (
-        SELECT id FROM users 
-        WHERE company_email = (
-          SELECT user_email FROM messages 
-          WHERE customer_phone = customers.phone 
-          LIMIT 1
-        ) 
+        SELECT m.user_id FROM messages m 
+        WHERE m.customer_id = customers.id 
+        AND m.user_id IS NOT NULL 
         LIMIT 1
       ) 
-      WHERE user_id IS NULL OR user_id = 1
+      WHERE (user_id IS NULL OR user_id = 1)
+      AND EXISTS (
+        SELECT 1 FROM messages m 
+        WHERE m.customer_id = customers.id 
+        AND m.user_id IS NOT NULL
+      )
     `);
     console.log(`[MIGRATION] Updated ${customersResult.rowCount} customers rows`);
     
@@ -292,6 +294,16 @@ export async function initializeDatabase() {
       WHERE user_id IS NULL
     `);
     console.log(`[MIGRATION] Updated ${feedbackResult.rowCount} internal_feedback rows`);
+    
+    // Delete any orphaned rows that couldn't be backfilled
+    const orphanedMessages = await pool.query(`DELETE FROM messages WHERE user_id IS NULL`);
+    console.log(`[MIGRATION] Deleted ${orphanedMessages.rowCount} orphaned messages rows`);
+    
+    const orphanedCustomers = await pool.query(`DELETE FROM customers WHERE user_id IS NULL`);
+    console.log(`[MIGRATION] Deleted ${orphanedCustomers.rowCount} orphaned customers rows`);
+    
+    const orphanedFeedback = await pool.query(`DELETE FROM internal_feedback WHERE user_id IS NULL`);
+    console.log(`[MIGRATION] Deleted ${orphanedFeedback.rowCount} orphaned feedback rows`);
     
     console.log('[MIGRATION] ✅ Multi-tenant isolation migration complete');
   } catch (e) {

@@ -43,6 +43,17 @@ export const submitInternalFeedback = (pool) => async (req, res) => {
 
     const message = messageResult.rows[0];
 
+    // CRITICAL: Guard against NULL user_id to prevent orphaned feedback
+    if (!message.user_id) {
+      console.error(`[INTERNAL FEEDBACK] CRITICAL: Message ${message.id} has NULL user_id. Cannot save feedback.`);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Unable to process feedback due to data integrity issue. Please contact support.' 
+      });
+    }
+
+    console.log(`[INTERNAL FEEDBACK] Saving feedback for user_id: ${message.user_id}`);
+
     // Save internal feedback with user_id
     await pool.query(
       `INSERT INTO internal_feedback 
