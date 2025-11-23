@@ -174,11 +174,11 @@
             console.log(`[FEEDBACK] API failed, using fallback link:`, error);
           }
           
-          // STEP 3 (CRITICAL): ALWAYS redirect after 1 second, regardless of API success/failure
-          console.log(`[FEEDBACK] Redirecting to: ${googleLink} in 1 second...`);
+          // STEP 3 (CRITICAL): ALWAYS redirect after 0.75 seconds, regardless of API success/failure
+          console.log(`[FEEDBACK] Redirecting to: ${googleLink} in 0.75 seconds...`);
           setTimeout(() => {
             window.location.href = googleLink;
-          }, 1000);
+          }, 750);
           
           return;
         }
