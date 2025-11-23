@@ -95,6 +95,8 @@ export const submitPublicReview = (pool) => async (req, res) => {
   try {
     const { feedbackToken, rating } = req.body;
 
+    console.log(`[DEBUG] submitPublicReview - Token received: ${feedbackToken}`);
+
     if (!feedbackToken || !rating) {
       return res.status(400).json({ 
         success: false, 
@@ -120,7 +122,15 @@ export const submitPublicReview = (pool) => async (req, res) => {
       [feedbackToken]
     );
 
+    console.log(`[DEBUG] Token lookup result: ${result.rows.length} rows found for token: ${feedbackToken}`);
+    
+    // Debug: check all tokens in DB if none found
     if (result.rows.length === 0) {
+      const allTokens = await pool.query(
+        `SELECT id, feedback_token, customer_phone FROM messages WHERE feedback_token IS NOT NULL LIMIT 5`
+      );
+      console.log(`[DEBUG] Sample tokens in DB:`, allTokens.rows.map(r => ({ id: r.id, token: r.feedback_token, phone: r.customer_phone })));
+      
       return res.status(404).json({ 
         success: false, 
         error: 'Invalid feedback token' 

@@ -133,7 +133,7 @@
     }
 
     stars.forEach(star => {
-      star.addEventListener('click', function() {
+      star.addEventListener('click', async function() {
         selectedRating = parseInt(this.getAttribute('data-rating'));
         
         stars.forEach((s, index) => {
@@ -144,14 +144,43 @@
           }
         });
 
+        // For 4-5 stars: log rating and auto-redirect to Google
+        if (selectedRating >= 4) {
+          try {
+            console.log(`[FEEDBACK] Rating ${selectedRating} stars - Submitting to backend and redirecting to Google...`);
+            const response = await fetch('/api/feedback/public', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                feedbackToken: feedbackToken,
+                rating: selectedRating
+              })
+            });
+
+            const data = await response.json();
+            console.log(`[FEEDBACK] Backend response:`, data);
+
+            if (data.success && data.reviewLink) {
+              console.log(`[FEEDBACK] Redirecting to: ${data.reviewLink}`);
+              // Auto-redirect to Google Review link
+              setTimeout(() => {
+                window.location.href = data.reviewLink;
+              }, 500);
+            } else {
+              console.error(`[FEEDBACK] Error: ${data.error}`);
+              alert('Error: ' + data.error);
+            }
+          } catch (error) {
+            console.error('Error submitting rating:', error);
+            alert('Failed to process rating. Please try again.');
+          }
+          return; // Don't show the high rating screen, just redirect
+        }
+
+        // For 1-3 stars: show internal feedback form
         setTimeout(() => {
           ratingScreen.classList.add('hidden');
-          
-          if (selectedRating >= 4) {
-            highRatingScreen.classList.remove('hidden');
-          } else {
-            internalFeedbackScreen.classList.remove('hidden');
-          }
+          internalFeedbackScreen.classList.remove('hidden');
         }, 500);
       });
     });
