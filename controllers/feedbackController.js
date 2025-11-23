@@ -186,18 +186,36 @@ export const getFeedback = (pool) => async (req, res) => {
     const userId = req.user?.id;
     const userEmail = req.user?.email;
 
-    // TEMPORARY DEBUG MODE: Remove auth check to see ALL feedback
-    console.log(`[GET FEEDBACK DEBUG] Fetching ALL feedback (auth check disabled for debugging)`);
+    if (!userId) {
+      console.log(`[GET FEEDBACK] Authentication failed - no userId found`);
+      console.log(`[GET FEEDBACK DEBUG] req.user:`, req.user);
+      console.log(`[GET FEEDBACK DEBUG] req.session:`, req.session);
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Not authenticated' 
+      });
+    }
 
-    // Get ALL feedback (NO user_id filter for debugging)
+    console.log(`[GET FEEDBACK] Fetching feedback for user_id: ${userId}`);
+
+    // Get all feedback for this user (strict tenant filtering)
     const result = await pool.query(
-      `SELECT id, message_id, customer_name, customer_phone, rating, feedback_text, created_at, status, user_id
+      `SELECT id, message_id, customer_name, customer_phone, rating, feedback_text, created_at, status
        FROM internal_feedback
-       ORDER BY created_at DESC`
+       WHERE user_id = $1
+       ORDER BY created_at DESC`,
+      [userId]
     );
 
-    console.log(`[GET FEEDBACK DEBUG] Found ${result.rows.length} total feedback records in database`);
-    console.log(`[GET FEEDBACK DEBUG] Sample data:`, JSON.stringify(result.rows.slice(0, 2), null, 2));
+    console.log(`[GET FEEDBACK] Found ${result.rows.length} feedback records for user ${userId}`);
+    
+    // Debug: Also check total feedback count to help diagnose
+    const totalCount = await pool.query('SELECT COUNT(*) as count FROM internal_feedback');
+    console.log(`[GET FEEDBACK DEBUG] Total feedback in database: ${totalCount.rows[0].count}`);
+    
+    if (result.rows.length === 0 && totalCount.rows[0].count > 0) {
+      console.log(`[GET FEEDBACK DEBUG] User has no feedback but ${totalCount.rows[0].count} records exist in DB`);
+    }
 
     res.json({ 
       success: true, 
