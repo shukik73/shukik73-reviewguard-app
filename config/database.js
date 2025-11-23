@@ -298,11 +298,11 @@ export async function initializeDatabase() {
     // AUDIT: Log any orphaned rows that couldn't be backfilled (don't delete - preserve data)
     console.log('[MIGRATION] Auditing for orphaned rows...');
     
-    const orphanedMessages = await pool.query(`SELECT id, customer_phone, created_at FROM messages WHERE user_id IS NULL`);
+    const orphanedMessages = await pool.query(`SELECT id, customer_phone FROM messages WHERE user_id IS NULL`);
     if (orphanedMessages.rowCount > 0) {
       console.warn(`[MIGRATION] ⚠️ Found ${orphanedMessages.rowCount} orphaned messages rows (no user_id):`);
       orphanedMessages.rows.forEach(row => {
-        console.warn(`  - Message ID ${row.id}: ${row.customer_phone} created ${row.created_at}`);
+        console.warn(`  - Message ID ${row.id}: ${row.customer_phone}`);
       });
     }
     
