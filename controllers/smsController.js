@@ -389,10 +389,17 @@ export const submitFeedback = (pool, getTwilioClient, getTwilioFromPhoneNumber) 
           to: message.customer_phone
         });
 
+        // Get user_id from authenticated user
+        const userResult = await pgClient.query('SELECT id FROM users WHERE company_email = $1', [userEmail]);
+        if (userResult.rows.length === 0) {
+          throw new Error('User not found for email: ' + userEmail);
+        }
+        const userId = userResult.rows[0].id;
+
         await pgClient.query(
-          `INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, twilio_sid, review_link_token, user_email, review_status, follow_up_due_at) 
-           VALUES ($1, $2, $3, 'review_link', $4, $5, $6, $7, 'pending', CURRENT_TIMESTAMP + INTERVAL '3 days')`,
-          [message.customer_id, message.customer_name, message.customer_phone, message.review_link, twilioResult.sid, reviewToken, userEmail]
+          `INSERT INTO messages (user_id, customer_id, customer_name, customer_phone, message_type, review_link, twilio_sid, review_link_token, user_email, review_status, follow_up_due_at) 
+           VALUES ($1, $2, $3, $4, 'review_link', $5, $6, $7, $8, 'pending', CURRENT_TIMESTAMP + INTERVAL '3 days')`,
+          [userId, message.customer_id, message.customer_name, message.customer_phone, message.review_link, twilioResult.sid, reviewToken, userEmail]
         );
 
         await pgClient.query('COMMIT');
@@ -536,8 +543,8 @@ export const sendFollowups = (pool, getTwilioClient, getTwilioFromPhoneNumber) =
         });
         
         const newMessageResult = await pool.query(
-          `INSERT INTO messages (customer_id, customer_name, customer_phone, message_type, review_link, twilio_sid, follow_up_message_id)
-           SELECT customer_id, customer_name, customer_phone, 'review_follow_up', review_link, $1, $2
+          `INSERT INTO messages (user_id, customer_id, customer_name, customer_phone, message_type, review_link, twilio_sid, follow_up_message_id, user_email)
+           SELECT user_id, customer_id, customer_name, customer_phone, 'review_follow_up', review_link, $1, $2, user_email
            FROM messages WHERE id = $3
            RETURNING id`,
           [result.sid, messageId, messageId]

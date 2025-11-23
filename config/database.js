@@ -295,15 +295,64 @@ export async function initializeDatabase() {
     `);
     console.log(`[MIGRATION] Updated ${feedbackResult.rowCount} internal_feedback rows`);
     
-    // Delete any orphaned rows that couldn't be backfilled
-    const orphanedMessages = await pool.query(`DELETE FROM messages WHERE user_id IS NULL`);
-    console.log(`[MIGRATION] Deleted ${orphanedMessages.rowCount} orphaned messages rows`);
+    // AUDIT: Log any orphaned rows that couldn't be backfilled (don't delete - preserve data)
+    console.log('[MIGRATION] Auditing for orphaned rows...');
     
-    const orphanedCustomers = await pool.query(`DELETE FROM customers WHERE user_id IS NULL`);
-    console.log(`[MIGRATION] Deleted ${orphanedCustomers.rowCount} orphaned customers rows`);
+    const orphanedMessages = await pool.query(`SELECT id, customer_phone, created_at FROM messages WHERE user_id IS NULL`);
+    if (orphanedMessages.rowCount > 0) {
+      console.warn(`[MIGRATION] ⚠️ Found ${orphanedMessages.rowCount} orphaned messages rows (no user_id):`);
+      orphanedMessages.rows.forEach(row => {
+        console.warn(`  - Message ID ${row.id}: ${row.customer_phone} created ${row.created_at}`);
+      });
+    }
     
-    const orphanedFeedback = await pool.query(`DELETE FROM internal_feedback WHERE user_id IS NULL`);
-    console.log(`[MIGRATION] Deleted ${orphanedFeedback.rowCount} orphaned feedback rows`);
+    const orphanedCustomers = await pool.query(`SELECT id, phone, name FROM customers WHERE user_id IS NULL`);
+    if (orphanedCustomers.rowCount > 0) {
+      console.warn(`[MIGRATION] ⚠️ Found ${orphanedCustomers.rowCount} orphaned customers rows (no user_id):`);
+      orphanedCustomers.rows.forEach(row => {
+        console.warn(`  - Customer ID ${row.id}: ${row.name} (${row.phone})`);
+      });
+    }
+    
+    const orphanedFeedback = await pool.query(`SELECT id, customer_name, rating FROM internal_feedback WHERE user_id IS NULL`);
+    if (orphanedFeedback.rowCount > 0) {
+      console.warn(`[MIGRATION] ⚠️ Found ${orphanedFeedback.rowCount} orphaned feedback rows (no user_id):`);
+      orphanedFeedback.rows.forEach(row => {
+        console.warn(`  - Feedback ID ${row.id}: ${row.customer_name} (${row.rating} stars)`);
+      });
+    }
+    
+    // PREFLIGHT CHECK: Verify all critical rows have user_id before enforcing NOT NULL
+    const totalOrphans = orphanedMessages.rowCount + orphanedCustomers.rowCount + orphanedFeedback.rowCount;
+    
+    if (totalOrphans === 0) {
+      console.log('[MIGRATION] ✅ All rows have user_id. Enforcing NOT NULL constraints...');
+      
+      // Enforce NOT NULL constraints (safe because we verified no NULL values exist)
+      try {
+        await pool.query(`ALTER TABLE messages ALTER COLUMN user_id SET NOT NULL`);
+        console.log('[MIGRATION] ✅ messages.user_id set to NOT NULL');
+      } catch (e) {
+        console.log(`[MIGRATION] messages.user_id already NOT NULL: ${e.message}`);
+      }
+      
+      try {
+        await pool.query(`ALTER TABLE customers ALTER COLUMN user_id SET NOT NULL`);
+        console.log('[MIGRATION] ✅ customers.user_id set to NOT NULL');
+      } catch (e) {
+        console.log(`[MIGRATION] customers.user_id already NOT NULL: ${e.message}`);
+      }
+      
+      try {
+        await pool.query(`ALTER TABLE internal_feedback ALTER COLUMN user_id SET NOT NULL`);
+        console.log('[MIGRATION] ✅ internal_feedback.user_id set to NOT NULL');
+      } catch (e) {
+        console.log(`[MIGRATION] internal_feedback.user_id already NOT NULL: ${e.message}`);
+      }
+    } else {
+      console.warn(`[MIGRATION] ⚠️ SKIPPING NOT NULL enforcement: ${totalOrphans} orphaned rows need manual remediation`);
+      console.warn('[MIGRATION] ⚠️ Please review orphaned rows above and assign them to correct tenants');
+    }
     
     console.log('[MIGRATION] ✅ Multi-tenant isolation migration complete');
   } catch (e) {
