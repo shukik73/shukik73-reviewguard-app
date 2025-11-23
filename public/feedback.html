@@ -174,11 +174,11 @@
             console.log(`[FEEDBACK] API failed, using fallback link:`, error);
           }
           
-          // STEP 3 (CRITICAL): ALWAYS redirect after 2 seconds, regardless of API success/failure
-          console.log(`[FEEDBACK] Redirecting to: ${googleLink} in 2 seconds...`);
+          // STEP 3 (CRITICAL): ALWAYS redirect after 1 second, regardless of API success/failure
+          console.log(`[FEEDBACK] Redirecting to: ${googleLink} in 1 second...`);
           setTimeout(() => {
             window.location.href = googleLink;
-          }, 2000);
+          }, 1000);
           
           return;
         }
@@ -194,18 +194,36 @@
     document.getElementById('submit-internal-feedback').addEventListener('click', async function() {
       const feedbackText = document.getElementById('feedback-text').value;
       
+      // Explicitly extract token from URL (in case it was cleared)
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      
+      console.log('[INTERNAL FEEDBACK SUBMIT] Token from URL:', token);
+      console.log('[INTERNAL FEEDBACK SUBMIT] Rating:', selectedRating);
+      console.log('[INTERNAL FEEDBACK SUBMIT] Feedback text:', feedbackText);
+      
+      if (!token) {
+        alert('Error: Missing feedback token. Please use the link from your SMS.');
+        return;
+      }
+      
       try {
+        const payload = {
+          feedbackToken: token,
+          rating: selectedRating,
+          feedbackText: feedbackText
+        };
+        
+        console.log('[INTERNAL FEEDBACK SUBMIT] Sending payload:', payload);
+        
         const response = await fetch('/api/feedback/internal', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            feedbackToken: feedbackToken,
-            rating: selectedRating,
-            feedbackText: feedbackText
-          })
+          body: JSON.stringify(payload)
         });
 
         const data = await response.json();
+        console.log('[INTERNAL FEEDBACK SUBMIT] Response:', data);
 
         if (data.success) {
           internalFeedbackScreen.classList.add('hidden');
@@ -214,7 +232,7 @@
           alert('Error: ' + data.error);
         }
       } catch (error) {
-        console.error('Error:', error);
+        console.error('[INTERNAL FEEDBACK SUBMIT] Error:', error);
         alert('Failed to submit feedback. Please try again.');
       }
     });

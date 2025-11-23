@@ -2,9 +2,11 @@ import { sendEmail } from '../lib/resend.js';
 
 export const submitInternalFeedback = (pool) => async (req, res) => {
   try {
+    console.log('[INTERNAL FEEDBACK] Received Payload:', req.body);
+    
     const { feedbackToken, rating, feedbackText } = req.body;
 
-    console.log(`[INTERNAL FEEDBACK] Received Token: ${feedbackToken}, Rating: ${rating}`);
+    console.log(`[INTERNAL FEEDBACK] Received Token: ${feedbackToken}, Rating: ${rating}, Feedback: ${feedbackText}`);
 
     if (!feedbackToken || !rating) {
       return res.status(400).json({ 
