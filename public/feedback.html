@@ -143,8 +143,15 @@
           }
         });
 
-        // For 4-5 stars: show thank you modal, then redirect to Google
+        // For 4-5 stars: show thank you modal, then ALWAYS redirect to Google (fail-safe)
         if (selectedRating >= 4) {
+          // STEP 1: Show thank you modal immediately
+          ratingScreen.classList.add('hidden');
+          document.getElementById('thank-you-modal').classList.remove('hidden');
+
+          // STEP 2: Try to submit rating to backend in background (don't block on errors)
+          let googleLink = 'https://g.page/r/CXmh-C0UxHgqEBM/review'; // Fallback link
+          
           try {
             console.log(`[FEEDBACK] Rating ${selectedRating} stars - Submitting to backend...`);
             const response = await fetch('/api/feedback/public', {
@@ -160,23 +167,19 @@
             console.log(`[FEEDBACK] Backend response:`, data);
 
             if (data.success && data.reviewLink) {
-              // Hide rating screen, show thank you modal
-              ratingScreen.classList.add('hidden');
-              document.getElementById('thank-you-modal').classList.remove('hidden');
-              
-              console.log(`[FEEDBACK] Redirecting to: ${data.reviewLink} after 2 seconds`);
-              // Wait 2 seconds, then redirect to Google Review link
-              setTimeout(() => {
-                window.location.href = data.reviewLink;
-              }, 2000);
-            } else {
-              console.error(`[FEEDBACK] Error: ${data.error}`);
-              alert('Error: ' + data.error);
+              googleLink = data.reviewLink;
+              console.log(`[FEEDBACK] Got custom Google link: ${googleLink}`);
             }
           } catch (error) {
-            console.error('Error submitting rating:', error);
-            alert('Failed to process rating. Please try again.');
+            console.log(`[FEEDBACK] API failed, using fallback link:`, error);
           }
+          
+          // STEP 3 (CRITICAL): ALWAYS redirect after 2 seconds, regardless of API success/failure
+          console.log(`[FEEDBACK] Redirecting to: ${googleLink} in 2 seconds...`);
+          setTimeout(() => {
+            window.location.href = googleLink;
+          }, 2000);
+          
           return;
         }
 

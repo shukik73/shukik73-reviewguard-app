@@ -99,14 +99,19 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
     
-    const feedbackToken = messageType === 'review' ? crypto.randomBytes(8).toString('hex') : null;
+    const feedbackToken = messageType === 'review' ? crypto.randomUUID() : null;
     const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
+    
+    if (feedbackToken) {
+      console.log(`📋 Generated Token for ${formattedPhone}:`, feedbackToken);
+    }
     
     let message = (additionalInfo || '').replace(/{business}/g, businessName);
     
     if (messageType === 'review' && feedbackToken) {
       const feedbackLink = `${appHost}/feedback.html?token=${feedbackToken}`;
       message += `\n\n${feedbackLink}\n\nReply STOP to opt out.`;
+      console.log(`📱 SMS Link: ${feedbackLink}`);
     } else {
       message += `\n\nReply STOP to opt out.`;
     }
@@ -212,7 +217,7 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
 
       const insertResult = await pool.query(
         `INSERT INTO messages (user_id, customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid, feedback_token, follow_up_due_at, review_status, user_email, sms_consent_confirmed) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id`,
         [
           userId,
           customerId,
@@ -231,7 +236,8 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
         ]
       );
       
-      console.log(`✅ Message saved to DB with feedback_token: ${feedbackToken}`);
+      const messageId = insertResult.rows[0].id;
+      console.log(`✅ Message ID ${messageId} saved to DB with feedback_token: ${feedbackToken}`);
       dbSaved = true;
     } catch (dbError) {
       console.error('⚠️ Error saving to database (message sent successfully):', dbError);

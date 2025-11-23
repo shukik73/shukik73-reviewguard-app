@@ -4,6 +4,8 @@ export const submitInternalFeedback = (pool) => async (req, res) => {
   try {
     const { feedbackToken, rating, feedbackText } = req.body;
 
+    console.log(`[INTERNAL FEEDBACK] Received Token: ${feedbackToken}, Rating: ${rating}`);
+
     if (!feedbackToken || !rating) {
       return res.status(400).json({ 
         success: false, 
@@ -27,6 +29,8 @@ export const submitInternalFeedback = (pool) => async (req, res) => {
        WHERE feedback_token = $1`,
       [feedbackToken]
     );
+
+    console.log(`[INTERNAL FEEDBACK] Token lookup result: ${messageResult.rows.length} rows found`);
 
     if (messageResult.rows.length === 0) {
       return res.status(404).json({ 
