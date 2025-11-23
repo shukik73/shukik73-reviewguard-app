@@ -103,7 +103,7 @@ app.use(createDataRoutes(pool));
 app.use(createOCRRoutes(pool, ocrUpload));
 app.use(createBillingRoutes(pool));
 app.use(createSettingsRoutes(pool, requireAuth));
-app.use(createFeedbackRoutes(pool));
+app.use(createFeedbackRoutes(pool, requireAuth));
 app.use(createAIRoutes(pool));
 app.use('/api', createTelegramRoutes(pool));
 

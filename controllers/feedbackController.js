@@ -43,22 +43,31 @@ export const submitInternalFeedback = (pool) => async (req, res) => {
 
     const message = messageResult.rows[0];
 
+    console.log(`[INTERNAL FEEDBACK] 🔍 Message Data Retrieved:`, {
+      messageId: message.id,
+      userId: message.user_id,
+      customerName: message.customer_name,
+      userEmail: message.user_email
+    });
+
     // CRITICAL: Guard against NULL user_id to prevent orphaned feedback
     if (!message.user_id) {
-      console.error(`[INTERNAL FEEDBACK] CRITICAL: Message ${message.id} has NULL user_id. Cannot save feedback.`);
+      console.error(`[INTERNAL FEEDBACK] ❌ CRITICAL: Message ${message.id} has NULL user_id. Cannot save feedback.`);
+      console.error(`[INTERNAL FEEDBACK] This indicates the original message was created without user_id - data integrity issue!`);
       return res.status(500).json({ 
         success: false, 
         error: 'Unable to process feedback due to data integrity issue. Please contact support.' 
       });
     }
 
-    console.log(`[INTERNAL FEEDBACK] Saving feedback for user_id: ${message.user_id}`);
+    console.log(`[INTERNAL FEEDBACK] ✓ Linking Feedback to User ID: ${message.user_id}`);
 
     // Save internal feedback with user_id
-    await pool.query(
+    const insertResult = await pool.query(
       `INSERT INTO internal_feedback 
        (message_id, customer_name, customer_phone, rating, feedback_text, user_email, user_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, user_id`,
       [
         message.id,
         message.customer_name,
@@ -69,6 +78,12 @@ export const submitInternalFeedback = (pool) => async (req, res) => {
         message.user_id
       ]
     );
+
+    console.log(`[INTERNAL FEEDBACK] ✅ Feedback saved successfully:`, {
+      feedbackId: insertResult.rows[0].id,
+      linkedToUserId: insertResult.rows[0].user_id,
+      rating: ratingNum
+    });
 
     // Update message feedback info
     await pool.query(
@@ -187,7 +202,7 @@ export const getFeedback = (pool) => async (req, res) => {
     const userEmail = req.user?.email;
 
     if (!userId) {
-      console.log(`[GET FEEDBACK] Authentication failed - no userId found`);
+      console.log(`[GET FEEDBACK] ❌ Authentication failed - no userId found`);
       console.log(`[GET FEEDBACK DEBUG] req.user:`, req.user);
       console.log(`[GET FEEDBACK DEBUG] req.session:`, req.session);
       return res.status(401).json({ 
@@ -196,9 +211,9 @@ export const getFeedback = (pool) => async (req, res) => {
       });
     }
 
-    console.log(`[GET FEEDBACK] Fetching feedback for user_id: ${userId}`);
+    console.log(`[GET FEEDBACK] ✓ Authenticated - Fetching feedback for user_id: ${userId}`);
 
-    // Get all feedback for this user (strict tenant filtering)
+    // Get all feedback for this user (strict tenant filtering - SECURITY MAINTAINED)
     const result = await pool.query(
       `SELECT id, message_id, customer_name, customer_phone, rating, feedback_text, created_at, status
        FROM internal_feedback
@@ -207,14 +222,21 @@ export const getFeedback = (pool) => async (req, res) => {
       [userId]
     );
 
-    console.log(`[GET FEEDBACK] Found ${result.rows.length} feedback records for user ${userId}`);
-    
-    // Debug: Also check total feedback count to help diagnose
+    // DIAGNOSTIC LOGGING - Safe orphan detection without exposing data
     const totalCount = await pool.query('SELECT COUNT(*) as count FROM internal_feedback');
-    console.log(`[GET FEEDBACK DEBUG] Total feedback in database: ${totalCount.rows[0].count}`);
+    const orphanCount = await pool.query('SELECT COUNT(*) as count FROM internal_feedback WHERE user_id IS NULL');
+    
+    console.log(`[GET FEEDBACK] 📊 DIAGNOSTIC SUMMARY:`);
+    console.log(`  - Requesting User ID: ${userId}`);
+    console.log(`  - Feedback for this user: ${result.rows.length}`);
+    console.log(`  - Total feedback in DB: ${totalCount.rows[0].count}`);
+    console.log(`  - Orphaned feedback (NULL user_id): ${orphanCount.rows[0].count}`);
     
     if (result.rows.length === 0 && totalCount.rows[0].count > 0) {
-      console.log(`[GET FEEDBACK DEBUG] User has no feedback but ${totalCount.rows[0].count} records exist in DB`);
+      console.log(`[GET FEEDBACK] ⚠️  User has NO feedback but ${totalCount.rows[0].count} records exist in DB`);
+      if (parseInt(orphanCount.rows[0].count) > 0) {
+        console.log(`[GET FEEDBACK] 🔍 FOUND ORPHANED DATA: ${orphanCount.rows[0].count} feedback records have NULL user_id`);
+      }
     }
 
     res.json({ 
