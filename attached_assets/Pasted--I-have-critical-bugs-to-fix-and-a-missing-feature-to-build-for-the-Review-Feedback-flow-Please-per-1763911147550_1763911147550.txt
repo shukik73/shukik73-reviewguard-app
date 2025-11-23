@@ -1,0 +1,49 @@
+"I have critical bugs to fix and a missing feature to build for the Review/Feedback flow. Please perform the following 4 tasks:
+
+Fix 'Invalid Feedback Token' (Critical Bug):
+
+Problem: The system generates a link but fails to save the feedback_token into the database, causing errors when users click the link.
+
+The Fix: In controllers/smsController.js (inside sendReviewRequest), generate a UUID for feedback_token before the SQL insert.
+
+Action: Include this feedback_token in the SQL INSERT statement for the messages table.
+
+Link: Ensure the link sent in the SMS text uses this exact token: ?token=${feedbackToken}.
+
+Refine Review Page Logic (public/review.html):
+
+1-3 Stars (Hard Gating):
+
+If the user selects 1-3 stars, REMOVE/HIDE the 'Leave a Google Review' link container entirely. Do not give them the option to go to Google.
+
+Fix Submit: Ensure the 'Submit Feedback' button actually triggers a POST to /api/feedback with the token and message (currently it does nothing).
+
+4-5 Stars (The 'Bridge'):
+
+If the user selects 4-5 stars, DO NOT redirect immediately.
+
+Show: A beautiful, centered 'Thank You!' modal. Text: 'Thank you! Taking you to Google...'
+
+Wait: Set a setTimeout for 2000ms (2 seconds).
+
+Redirect: Then set window.location.href to the Google Review Link.
+
+Build the 'Feedback Inbox' (New Feature):
+
+Frontend (index.html): Add a new Navigation Tab called 'Feedback' (icon: 💬).
+
+Section: Create a #feedback section (hidden by default).
+
+Logic: Create a loadFeedback() function that fetches GET /api/feedback.
+
+UI: Render a list of feedback cards showing: Customer Name, Rating, Message, and Date.
+
+Styling: Give these cards a distinct look (e.g., light red border for low ratings) so they stand out.
+
+Action: Add a 'Mark as Read' button to hide the card.
+
+Backend & Database:
+
+Table: Ensure internal_feedback table exists with columns: id, message_id, rating, content, created_at, status (default 'unread').
+
+Controller: In controllers/feedbackController.js, ensure saveFeedback looks up the user via the feedback_token, and getFeedback returns the list of feedback for the dashboard."

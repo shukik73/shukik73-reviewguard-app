@@ -79,15 +79,14 @@
         >
           Submit Feedback
         </button>
-        
-        <div class="mt-6 pt-6 border-t border-slate-200">
-          <p class="text-sm text-slate-600 mb-3">Or post a public review:</p>
-          <button
-            id="submit-public-review-low"
-            class="text-indigo-600 hover:text-indigo-700 font-medium text-sm underline"
-          >
-            Leave a Google Review
-          </button>
+      </div>
+
+      <!-- Thank You Modal (4-5 stars) -->
+      <div id="thank-you-modal" class="hidden">
+        <div class="text-center">
+          <div class="text-6xl mb-6 animate-bounce">🎉</div>
+          <h2 class="text-3xl font-bold text-slate-800 mb-3">Thank you!</h2>
+          <p class="text-lg text-slate-600">Taking you to Google...</p>
         </div>
       </div>
 
@@ -144,10 +143,10 @@
           }
         });
 
-        // For 4-5 stars: log rating and auto-redirect to Google
+        // For 4-5 stars: show thank you modal, then redirect to Google
         if (selectedRating >= 4) {
           try {
-            console.log(`[FEEDBACK] Rating ${selectedRating} stars - Submitting to backend and redirecting to Google...`);
+            console.log(`[FEEDBACK] Rating ${selectedRating} stars - Submitting to backend...`);
             const response = await fetch('/api/feedback/public', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -161,11 +160,15 @@
             console.log(`[FEEDBACK] Backend response:`, data);
 
             if (data.success && data.reviewLink) {
-              console.log(`[FEEDBACK] Redirecting to: ${data.reviewLink}`);
-              // Auto-redirect to Google Review link
+              // Hide rating screen, show thank you modal
+              ratingScreen.classList.add('hidden');
+              document.getElementById('thank-you-modal').classList.remove('hidden');
+              
+              console.log(`[FEEDBACK] Redirecting to: ${data.reviewLink} after 2 seconds`);
+              // Wait 2 seconds, then redirect to Google Review link
               setTimeout(() => {
                 window.location.href = data.reviewLink;
-              }, 500);
+              }, 2000);
             } else {
               console.error(`[FEEDBACK] Error: ${data.error}`);
               alert('Error: ' + data.error);
@@ -174,10 +177,10 @@
             console.error('Error submitting rating:', error);
             alert('Failed to process rating. Please try again.');
           }
-          return; // Don't show the high rating screen, just redirect
+          return;
         }
 
-        // For 1-3 stars: show internal feedback form
+        // For 1-3 stars: show internal feedback form (NO Google link option)
         setTimeout(() => {
           ratingScreen.classList.add('hidden');
           internalFeedbackScreen.classList.remove('hidden');
@@ -213,37 +216,6 @@
       }
     });
 
-    document.getElementById('submit-public-review-low').addEventListener('click', async function() {
-      await redirectToGoogleReview();
-    });
-
-    document.getElementById('submit-google-review').addEventListener('click', async function() {
-      await redirectToGoogleReview();
-    });
-
-    async function redirectToGoogleReview() {
-      try {
-        const response = await fetch('/api/feedback/public', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            feedbackToken: feedbackToken,
-            rating: selectedRating
-          })
-        });
-
-        const data = await response.json();
-
-        if (data.success && data.reviewLink) {
-          window.open(data.reviewLink, '_blank');
-        } else {
-          alert('Error: ' + data.error);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to redirect. Please try again.');
-      }
-    }
   </script>
 </body>
 </html>

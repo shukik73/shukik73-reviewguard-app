@@ -162,3 +162,71 @@ export const submitPublicReview = (pool) => async (req, res) => {
     });
   }
 };
+
+export const getFeedback = (pool) => async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const userEmail = req.user?.email;
+
+    if (!userEmail) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Not authenticated' 
+      });
+    }
+
+    // Get all feedback for this user
+    const result = await pool.query(
+      `SELECT id, message_id, customer_name, customer_phone, rating, feedback_text, created_at, status
+       FROM internal_feedback
+       WHERE user_email = $1
+       ORDER BY created_at DESC`,
+      [userEmail]
+    );
+
+    res.json({ 
+      success: true, 
+      feedback: result.rows 
+    });
+
+  } catch (error) {
+    console.error('Error fetching feedback:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const markFeedbackAsRead = (pool) => async (req, res) => {
+  try {
+    const { feedbackId } = req.body;
+    const userEmail = req.user?.email;
+
+    if (!userEmail || !feedbackId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Feedback ID and authentication required' 
+      });
+    }
+
+    await pool.query(
+      `UPDATE internal_feedback
+       SET status = 'read'
+       WHERE id = $1 AND user_email = $2`,
+      [feedbackId, userEmail]
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Feedback marked as read' 
+    });
+
+  } catch (error) {
+    console.error('Error marking feedback as read:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
