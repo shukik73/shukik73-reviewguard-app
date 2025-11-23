@@ -30,6 +30,12 @@ The application follows a clean **Model-View-Controller (MVC)** architecture wit
 -   **OCR Text Extraction**: Integrates **Google Cloud Vision API** for professional-grade text extraction from repair order photos (customer name, phone, device, repair issue). Uses Sharp for image preprocessing and smart parsing for keyword-based extraction.
 -   **Review Tracking & Follow-up**: A hybrid system tracks review link clicks, monitors review status, automatically flags customers for follow-up, and provides dashboard analytics with bulk follow-up options.
 -   **User Authentication**: Production-ready, multi-tenant authentication with secure sign-up, bcrypt password hashing, PostgreSQL-backed sessions with CSRF protection, and email-based password reset.
+-   **Multi-Tenant Data Isolation**: Enterprise-grade tenant isolation with automated migration system:
+    -   **Staged Migration**: Removes DEFAULT 1 from user_id columns, backfills using FK relationships, audits orphaned rows, and enforces NOT NULL constraints after preflight verification.
+    -   **Write Path Protection**: All message, customer, and feedback creation paths explicitly provide user_id with validation guards.
+    -   **Database Constraints**: NOT NULL enforced on customers.user_id, messages.user_id, and internal_feedback.user_id to prevent future regressions.
+    -   **Authorization Filters**: All read/write operations filter by authenticated user_id to ensure complete data isolation.
+    -   **Feedback Inbox**: Multi-tenant internal feedback display with proper user_id filtering and mark-as-read functionality.
 -   **Subscription Billing**: **Stripe Subscription Billing** integration with transaction-based, race-condition-free SMS quota enforcement. Supports trial accounts and tiered plans, using Stripe webhooks for status updates and PostgreSQL row-level locking for atomic quota management.
 -   **AI-Powered Review Reply Assistant**: Utilizes OpenAI (gpt-4o-mini via Replit AI Integrations) to generate SEO-optimized Google Review responses based on "10 Golden Rules." Includes server-side validation for compliance (e.g., mandatory device mentions for positive reviews).
 -   **Telegram Autopilot Review Loop**: Integrates a Telegram bot for real-time review approval workflow. New Google reviews and AI-generated replies are sent to a designated Telegram chat for instant approval, allowing users to post to Google with a simple 'YES' command.
@@ -88,8 +94,12 @@ A static HTML/CSS/JavaScript frontend with a modern, purple gradient design and 
 
 -   **PostgreSQL Database**: Replit-managed Neon instance.
 -   **Schema**: Includes tables for `customers`, `messages`, `subscriptions`, `users`, `user_sessions`, `auth_tokens`, `sms_optouts`, `user_settings`, and `internal_feedback`, with defined relationships and indexes.
--   **Key Tables**: `internal_feedback` (customer feedback), `messages` (includes `sms_consent_confirmed` for TCPA).
--   **Features**: Auto-saves customer data, maintains message history, tracks subscription quotas with transaction-based enforcement, stores internal feedback, and automatically initializes tables.
+-   **Key Tables**: 
+    -   `internal_feedback` (customer feedback with user_id for tenant isolation, status column for read tracking)
+    -   `messages` (includes `sms_consent_confirmed` for TCPA, user_id NOT NULL for tenant isolation)
+    -   `customers` (user_id NOT NULL for tenant isolation, UNIQUE constraint on (user_id, phone))
+-   **Multi-Tenant Schema**: All tables use user_id foreign keys with NOT NULL constraints. Migration system automatically backfills legacy data and enforces constraints.
+-   **Features**: Auto-saves customer data, maintains message history, tracks subscription quotas with transaction-based enforcement, stores internal feedback with tenant isolation, and automatically initializes tables with migration support.
 
 ## File Storage
 
