@@ -210,10 +210,9 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
 
       const followUpDueAt = messageType === 'review' ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) : null;
 
-      await pool.query(
+      const insertResult = await pool.query(
         `INSERT INTO messages (user_id, customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid, feedback_token, follow_up_due_at, review_status, user_email, sms_consent_confirmed) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-         ON CONFLICT DO NOTHING`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
         [
           userId,
           customerId,
@@ -232,6 +231,7 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
         ]
       );
       
+      console.log(`✅ Message saved to DB with feedback_token: ${feedbackToken}`);
       dbSaved = true;
     } catch (dbError) {
       console.error('⚠️ Error saving to database (message sent successfully):', dbError);
