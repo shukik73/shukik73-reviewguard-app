@@ -629,3 +629,143 @@ export const handleIncomingSMS = (pool, validateAndFormatPhone) => async (req, r
     res.status(200).send('OK');
   }
 };
+
+export const sendReminder = (pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone) => async (req, res) => {
+  try {
+    const { messageId, customerName, customerPhone, reviewLink } = req.body;
+    const userEmail = req.session.userEmail;
+
+    if (!userEmail) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+
+    if (!messageId || !customerName || !customerPhone || !reviewLink) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields'
+      });
+    }
+
+    const userResult = await pool.query('SELECT id FROM users WHERE company_email = $1', [userEmail]);
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    const userId = userResult.rows[0].id;
+
+    const settingsCheckResult = await pool.query(
+      'SELECT business_name FROM user_settings WHERE user_email = $1',
+      [userEmail]
+    );
+    const businessName = settingsCheckResult.rows[0]?.business_name || 'Our Store';
+
+    let formattedPhone;
+    try {
+      formattedPhone = validateAndFormatPhone(customerPhone);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid phone number format. Please use 10-digit US format or E.164 international format (+1...)'
+      });
+    }
+
+    const isOptedOut = await checkOptOut(pool, formattedPhone);
+    if (isOptedOut) {
+      return res.status(400).json({
+        success: false,
+        error: `${customerName} has opted out of SMS messages.`
+      });
+    }
+
+    const subscriptionCheckResult = await pool.query(
+      'SELECT status, sms_quota, sms_used FROM subscriptions WHERE email = $1',
+      [userEmail]
+    );
+
+    if (subscriptionCheckResult.rows.length === 0) {
+      return res.status(403).json({
+        success: false,
+        error: 'No active subscription found. Please subscribe to a plan.'
+      });
+    }
+
+    const subscription = subscriptionCheckResult.rows[0];
+    
+    if (subscription.status !== 'active' && subscription.status !== 'trialing') {
+      return res.status(403).json({
+        success: false,
+        error: 'Your subscription is not active. Please update your billing.'
+      });
+    }
+
+    if (subscription.sms_used >= subscription.sms_quota) {
+      return res.status(403).json({
+        success: false,
+        error: 'SMS quota exceeded. Please upgrade your plan or wait for quota reset.'
+      });
+    }
+
+    const reminderMessage = `Hi ${customerName}, just checking if you had a moment to leave us a review? It helps a lot! ${reviewLink}\n\nReply STOP to opt out`;
+
+    console.log(`[SEND REMINDER] Sending reminder to ${customerName} at ${formattedPhone}`);
+
+    const twilioClient = getTwilioClient();
+    const fromNumber = getTwilioFromPhoneNumber();
+
+    const result = await twilioClient.messages.create({
+      from: fromNumber,
+      to: formattedPhone,
+      body: reminderMessage
+    });
+
+    await pool.query(
+      'BEGIN'
+    );
+
+    try {
+      await pool.query(
+        `UPDATE subscriptions 
+         SET sms_used = sms_used + 1 
+         WHERE email = $1 
+         FOR UPDATE`,
+        [userEmail]
+      );
+
+      await pool.query(
+        `INSERT INTO messages (user_id, customer_name, customer_phone, message_type, review_link, twilio_sid, user_email, follow_up_message_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [userId, customerName, formattedPhone, 'reminder', reviewLink, result.sid, userEmail, messageId]
+      );
+
+      await pool.query(
+        `UPDATE messages 
+         SET follow_up_sent_at = CURRENT_TIMESTAMP, review_status = 'reminder_sent'
+         WHERE id = $1`,
+        [messageId]
+      );
+
+      await pool.query('COMMIT');
+
+      console.log(`[SEND REMINDER] ✓ Reminder sent successfully to ${customerName}`);
+
+      res.json({
+        success: true,
+        message: `Reminder sent to ${customerName}`
+      });
+    } catch (dbError) {
+      await pool.query('ROLLBACK');
+      throw dbError;
+    }
+  } catch (error) {
+    console.error('Error sending reminder:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to send reminder'
+    });
+  }
+};
