@@ -6,5 +6,13 @@ export default function requireAuth(req, res, next) {
       code: 'AUTH_REQUIRED'
     });
   }
+  
+  // Populate req.user from session data
+  req.user = {
+    id: req.session.userId,
+    email: req.session.userEmail,
+    companyName: req.session.companyName
+  };
+  
   next();
 }
