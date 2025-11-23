@@ -24,9 +24,9 @@ export const submitInternalFeedback = (pool) => async (req, res) => {
       });
     }
 
-    // Get the message details
+    // Get the message details (including user_id)
     const messageResult = await pool.query(
-      `SELECT id, customer_name, customer_phone, user_email 
+      `SELECT id, customer_name, customer_phone, user_email, user_id 
        FROM messages 
        WHERE feedback_token = $1`,
       [feedbackToken]
@@ -43,18 +43,19 @@ export const submitInternalFeedback = (pool) => async (req, res) => {
 
     const message = messageResult.rows[0];
 
-    // Save internal feedback
+    // Save internal feedback with user_id
     await pool.query(
       `INSERT INTO internal_feedback 
-       (message_id, customer_name, customer_phone, rating, feedback_text, user_email)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
+       (message_id, customer_name, customer_phone, rating, feedback_text, user_email, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         message.id,
         message.customer_name,
         message.customer_phone,
         ratingNum,
         feedbackText || null,
-        message.user_email
+        message.user_email,
+        message.user_id
       ]
     );
 
@@ -174,21 +175,25 @@ export const getFeedback = (pool) => async (req, res) => {
     const userId = req.user?.id;
     const userEmail = req.user?.email;
 
-    if (!userEmail) {
+    if (!userId) {
       return res.status(401).json({ 
         success: false, 
         error: 'Not authenticated' 
       });
     }
 
-    // Get all feedback for this user
+    console.log(`[GET FEEDBACK] Fetching feedback for user_id: ${userId}`);
+
+    // Get all feedback for this user (filter by user_id)
     const result = await pool.query(
       `SELECT id, message_id, customer_name, customer_phone, rating, feedback_text, created_at, status
        FROM internal_feedback
-       WHERE user_email = $1
+       WHERE user_id = $1
        ORDER BY created_at DESC`,
-      [userEmail]
+      [userId]
     );
+
+    console.log(`[GET FEEDBACK] Found ${result.rows.length} feedback records for user ${userId}`);
 
     res.json({ 
       success: true, 
