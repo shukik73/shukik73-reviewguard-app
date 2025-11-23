@@ -30,7 +30,7 @@ export async function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS customers (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
-      phone VARCHAR(50) NOT NULL UNIQUE,
+      phone VARCHAR(50) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -146,9 +146,12 @@ export async function initializeDatabase() {
 
   try {
     await pool.query(`
+      ALTER TABLE customers 
       DROP CONSTRAINT IF EXISTS customers_phone_key CASCADE
     `);
-  } catch (e) {}
+  } catch (e) {
+    // Ignore if constraint doesn't exist
+  }
 
   try {
     await pool.query(`
