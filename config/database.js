@@ -141,7 +141,7 @@ export async function initializeDatabase() {
   try {
     await pool.query(`
       ALTER TABLE customers 
-      ADD COLUMN IF NOT EXISTS user_id INTEGER DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE
+      ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
     `);
   } catch (e) {
     // Ignore if column already exists or constraint fails
@@ -168,7 +168,7 @@ export async function initializeDatabase() {
   try {
     await pool.query(`
       ALTER TABLE messages 
-      ADD COLUMN IF NOT EXISTS user_id INTEGER DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE
+      ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
     `);
   } catch (e) {}
 
@@ -247,6 +247,56 @@ export async function initializeDatabase() {
   try {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id)`);
   } catch (e) {}
+
+  // CRITICAL MIGRATION: Remove DEFAULT 1 from user_id columns and backfill
+  try {
+    console.log('[MIGRATION] Removing DEFAULT 1 from user_id columns...');
+    
+    // Drop DEFAULT from customers.user_id
+    await pool.query(`ALTER TABLE customers ALTER COLUMN user_id DROP DEFAULT`);
+    
+    // Drop DEFAULT from messages.user_id
+    await pool.query(`ALTER TABLE messages ALTER COLUMN user_id DROP DEFAULT`);
+    
+    console.log('[MIGRATION] Backfilling user_id in messages table...');
+    // Backfill messages.user_id based on user_email
+    const messagesResult = await pool.query(`
+      UPDATE messages 
+      SET user_id = (SELECT id FROM users WHERE company_email = messages.user_email LIMIT 1) 
+      WHERE user_id IS NULL OR user_id = 1
+    `);
+    console.log(`[MIGRATION] Updated ${messagesResult.rowCount} messages rows`);
+    
+    console.log('[MIGRATION] Backfilling user_id in customers table...');
+    // Backfill customers.user_id based on messages.user_email
+    const customersResult = await pool.query(`
+      UPDATE customers 
+      SET user_id = (
+        SELECT id FROM users 
+        WHERE company_email = (
+          SELECT user_email FROM messages 
+          WHERE customer_phone = customers.phone 
+          LIMIT 1
+        ) 
+        LIMIT 1
+      ) 
+      WHERE user_id IS NULL OR user_id = 1
+    `);
+    console.log(`[MIGRATION] Updated ${customersResult.rowCount} customers rows`);
+    
+    console.log('[MIGRATION] Backfilling user_id in internal_feedback table...');
+    // Backfill internal_feedback.user_id based on user_email
+    const feedbackResult = await pool.query(`
+      UPDATE internal_feedback 
+      SET user_id = (SELECT id FROM users WHERE company_email = internal_feedback.user_email LIMIT 1) 
+      WHERE user_id IS NULL
+    `);
+    console.log(`[MIGRATION] Updated ${feedbackResult.rowCount} internal_feedback rows`);
+    
+    console.log('[MIGRATION] ✅ Multi-tenant isolation migration complete');
+  } catch (e) {
+    console.error('[MIGRATION] Warning: Migration failed (may have already run):', e.message);
+  }
 
   console.log('✅ Database initialized');
 }
