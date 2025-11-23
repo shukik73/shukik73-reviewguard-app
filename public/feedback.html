@@ -116,6 +116,28 @@
   </div>
 
   <script>
+    // CRITICAL: Track link click immediately on page load
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      
+      if (token) {
+        console.log('[LINK CLICK] Tracking click for token:', token);
+        fetch('/api/track-link-click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: token })
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('[LINK CLICK] Tracking response:', data);
+        })
+        .catch(error => {
+          console.error('[LINK CLICK] Tracking failed:', error);
+        });
+      }
+    })();
+
     const urlParams = new URLSearchParams(window.location.search);
     const feedbackToken = urlParams.get('token');
     
@@ -174,11 +196,11 @@
             console.log(`[FEEDBACK] API failed, using fallback link:`, error);
           }
           
-          // STEP 3 (CRITICAL): ALWAYS redirect after 0.75 seconds, regardless of API success/failure
-          console.log(`[FEEDBACK] Redirecting to: ${googleLink} in 0.75 seconds...`);
+          // STEP 3 (CRITICAL): ALWAYS redirect after 0.5 seconds, regardless of API success/failure
+          console.log(`[FEEDBACK] Redirecting to: ${googleLink} in 0.5 seconds...`);
           setTimeout(() => {
             window.location.href = googleLink;
-          }, 750);
+          }, 500);
           
           return;
         }

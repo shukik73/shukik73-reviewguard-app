@@ -8,6 +8,7 @@ export default function createFeedbackRoutes(pool) {
   router.post('/api/feedback/public', feedbackController.submitPublicReview(pool));
   router.get('/api/feedback', feedbackController.getFeedback(pool));
   router.post('/api/feedback/mark-read', feedbackController.markFeedbackAsRead(pool));
+  router.post('/api/track-link-click', feedbackController.trackLinkClick(pool));
 
   return router;
 }

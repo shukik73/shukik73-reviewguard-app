@@ -220,6 +220,54 @@ export const getFeedback = (pool) => async (req, res) => {
   }
 };
 
+export const trackLinkClick = (pool) => async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    console.log(`[TRACK LINK CLICK] Received token: ${token}`);
+
+    if (!token) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Token is required' 
+      });
+    }
+
+    // Update the message to mark link as clicked
+    const result = await pool.query(
+      `UPDATE messages 
+       SET review_status = 'link_clicked', 
+           review_link_clicked_at = CURRENT_TIMESTAMP
+       WHERE feedback_token = $1
+       RETURNING id, customer_name, review_status`,
+      [token]
+    );
+
+    if (result.rows.length === 0) {
+      console.log(`[TRACK LINK CLICK] No message found for token: ${token}`);
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Invalid token' 
+      });
+    }
+
+    const message = result.rows[0];
+    console.log(`[TRACK LINK CLICK] ✅ Marked message ${message.id} as clicked for ${message.customer_name}`);
+
+    res.json({ 
+      success: true,
+      message: 'Link click tracked successfully'
+    });
+
+  } catch (error) {
+    console.error('Error tracking link click:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
 export const markFeedbackAsRead = (pool) => async (req, res) => {
   try {
     const { feedbackId } = req.body;
