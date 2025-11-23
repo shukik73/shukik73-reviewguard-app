@@ -212,21 +212,34 @@ export const getFeedback = (pool) => async (req, res) => {
 export const markFeedbackAsRead = (pool) => async (req, res) => {
   try {
     const { feedbackId } = req.body;
-    const userEmail = req.user?.email;
+    const userId = req.user?.id;
 
-    if (!userEmail || !feedbackId) {
+    if (!userId || !feedbackId) {
       return res.status(400).json({ 
         success: false, 
         error: 'Feedback ID and authentication required' 
       });
     }
 
-    await pool.query(
+    console.log(`[MARK FEEDBACK READ] User ${userId} marking feedback ${feedbackId} as read`);
+
+    // Update only if feedback belongs to this user (multi-tenant security)
+    const result = await pool.query(
       `UPDATE internal_feedback
        SET status = 'read'
-       WHERE id = $1 AND user_email = $2`,
-      [feedbackId, userEmail]
+       WHERE id = $1 AND user_id = $2
+       RETURNING id`,
+      [feedbackId, userId]
     );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Feedback not found or access denied' 
+      });
+    }
+
+    console.log(`[MARK FEEDBACK READ] Successfully marked feedback ${feedbackId} as read`);
 
     res.json({ 
       success: true, 

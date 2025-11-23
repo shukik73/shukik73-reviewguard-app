@@ -122,6 +122,8 @@ export async function initializeDatabase() {
       rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
       feedback_text TEXT,
       user_email VARCHAR(255) REFERENCES users(company_email),
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      status VARCHAR(20) DEFAULT 'unread',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -132,6 +134,7 @@ export async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_sms_optouts_phone ON sms_optouts(phone);
     CREATE INDEX IF NOT EXISTS idx_user_settings_email ON user_settings(user_email);
     CREATE INDEX IF NOT EXISTS idx_internal_feedback_user ON internal_feedback(user_email);
+    CREATE INDEX IF NOT EXISTS idx_internal_feedback_user_id ON internal_feedback(user_id);
     CREATE INDEX IF NOT EXISTS idx_internal_feedback_created ON internal_feedback(created_at DESC);
   `);
 
