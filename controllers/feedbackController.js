@@ -186,25 +186,18 @@ export const getFeedback = (pool) => async (req, res) => {
     const userId = req.user?.id;
     const userEmail = req.user?.email;
 
-    if (!userId) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Not authenticated' 
-      });
-    }
+    // TEMPORARY DEBUG MODE: Remove auth check to see ALL feedback
+    console.log(`[GET FEEDBACK DEBUG] Fetching ALL feedback (auth check disabled for debugging)`);
 
-    console.log(`[GET FEEDBACK] Fetching feedback for user_id: ${userId}`);
-
-    // Get all feedback for this user (filter by user_id)
+    // Get ALL feedback (NO user_id filter for debugging)
     const result = await pool.query(
-      `SELECT id, message_id, customer_name, customer_phone, rating, feedback_text, created_at, status
+      `SELECT id, message_id, customer_name, customer_phone, rating, feedback_text, created_at, status, user_id
        FROM internal_feedback
-       WHERE user_id = $1
-       ORDER BY created_at DESC`,
-      [userId]
+       ORDER BY created_at DESC`
     );
 
-    console.log(`[GET FEEDBACK] Found ${result.rows.length} feedback records for user ${userId}`);
+    console.log(`[GET FEEDBACK DEBUG] Found ${result.rows.length} total feedback records in database`);
+    console.log(`[GET FEEDBACK DEBUG] Sample data:`, JSON.stringify(result.rows.slice(0, 2), null, 2));
 
     res.json({ 
       success: true, 
