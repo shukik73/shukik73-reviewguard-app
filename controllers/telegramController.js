@@ -2,8 +2,10 @@ import TelegramBot from 'node-telegram-bot-api';
 
 let bot;
 let chatId;
+let pool;
 
-export const initializeTelegramBot = () => {
+export const initializeTelegramBot = (dbPool) => {
+  pool = dbPool;
   const token = process.env.TELEGRAM_BOT_TOKEN;
   chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -26,8 +28,40 @@ export const initializeTelegramBot = () => {
       const text = msg.text || '';
 
       if (text.trim().toUpperCase() === 'YES') {
-        await bot.sendMessage(incomingChatId, '✅ Reply Posted! (Mock Mode)');
-        console.log('📤 Posting to Google API...');
+        console.log('[TELEGRAM] YES command received - posting review');
+        
+        try {
+          // Find the latest pending review
+          const result = await pool.query(
+            `SELECT id, customer_name, star_rating, ai_proposed_reply 
+             FROM pending_reviews 
+             WHERE status = 'pending' 
+             ORDER BY created_at DESC 
+             LIMIT 1`
+          );
+
+          if (result.rows.length === 0) {
+            await bot.sendMessage(incomingChatId, '❌ No pending reviews found.');
+            return;
+          }
+
+          const review = result.rows[0];
+
+          // Update status to 'posted'
+          await pool.query(
+            `UPDATE pending_reviews 
+             SET status = 'posted' 
+             WHERE id = $1`,
+            [review.id]
+          );
+
+          await bot.sendMessage(incomingChatId, `✅ Reply Posted to Google! (Simulated)\n\n📝 Review ID: ${review.id}\n👤 Customer: ${review.customer_name}\n⭐ Rating: ${review.star_rating} stars`);
+          console.log(`[TELEGRAM] ✅ Review ${review.id} marked as posted`);
+
+        } catch (error) {
+          console.error('[TELEGRAM] Error processing YES command:', error);
+          await bot.sendMessage(incomingChatId, '❌ Error posting review. Please try again.');
+        }
       } else {
         await bot.sendMessage(incomingChatId, '❌ Edit mode not supported yet. Please log in to Dashboard.');
       }
@@ -38,6 +72,36 @@ export const initializeTelegramBot = () => {
     });
   } catch (error) {
     console.error('Failed to initialize Telegram bot:', error.message);
+  }
+};
+
+export const sendApprovalRequest = async (reviewId, reviewData, aiReply) => {
+  if (!bot || !chatId) {
+    throw new Error('Telegram bot not initialized. Please set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Secrets.');
+  }
+
+  const { customerName, starRating, reviewText } = reviewData;
+
+  const stars = '⭐'.repeat(starRating);
+
+  const message = `🚨 New Review!
+
+👤 ${customerName} rated ${stars} ${starRating} star${starRating !== 1 ? 's' : ''}
+
+💬 "${reviewText}"
+
+🤖 AI Draft:
+"${aiReply}"
+
+Reply YES to post this.`;
+
+  try {
+    await bot.sendMessage(chatId, message);
+    console.log(`[TELEGRAM] ✅ Review ${reviewId} sent to Telegram for approval`);
+    return { success: true, message: 'Review sent to Telegram' };
+  } catch (error) {
+    console.error('[TELEGRAM] Failed to send approval request:', error.message);
+    throw error;
   }
 };
 

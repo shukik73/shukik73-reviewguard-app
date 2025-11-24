@@ -118,7 +118,7 @@ app.get('/', (req, res) => {
 async function startServer() {
   try {
     await initializeDatabase();
-    initializeTelegramBot();
+    initializeTelegramBot(pool);
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`🌐 Access the app at http://0.0.0.0:${PORT}`);
