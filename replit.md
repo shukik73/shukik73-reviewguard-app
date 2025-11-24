@@ -38,7 +38,12 @@ The application follows a clean **Model-View-Controller (MVC)** architecture wit
     -   **Feedback Inbox**: Multi-tenant internal feedback display with proper user_id filtering and mark-as-read functionality.
 -   **Subscription Billing**: **Stripe Subscription Billing** integration with transaction-based, race-condition-free SMS quota enforcement. Supports trial accounts and tiered plans, using Stripe webhooks for status updates and PostgreSQL row-level locking for atomic quota management.
 -   **AI-Powered Review Reply Assistant**: Utilizes OpenAI (gpt-4o-mini via Replit AI Integrations) to generate SEO-optimized Google Review responses based on "10 Golden Rules." Includes server-side validation for compliance (e.g., mandatory device mentions for positive reviews).
--   **Telegram Autopilot Review Loop**: Integrates a Telegram bot for real-time review approval workflow. New Google reviews and AI-generated replies are sent to a designated Telegram chat for instant approval, allowing users to post to Google with a simple 'YES' command.
+-   **Telegram Autopilot Review Loop**: Complete AI-to-Telegram integration for review management:
+    -   **processIncomingReview()**: Orchestrates AI reply generation, database persistence, and Telegram notification in a single automated pipeline.
+    -   **pending_reviews Table**: Stores customer reviews, AI-generated replies, and approval status for audit trail.
+    -   **Telegram Approval Workflow**: Sends formatted review notifications to designated Telegram chat with one-click "YES" approval.
+    -   **Status Tracking**: Automatically updates review status from 'pending' to 'posted' upon approval.
+    -   **Test Endpoint**: POST `/api/simulate-review` allows browser-based testing of the complete workflow.
 -   **Security Layer**: Implements Helmet.js with a Content Security Policy (CSP) and `express-rate-limit` middleware to protect API endpoints (e.g., 5 requests/hour for SMS sending, 100 requests/15 mins for general APIs).
 -   **SMS Opt-Out Compliance**: Full TCPA/CAN-SPAM compliance with automatic STOP/START keyword handling via Twilio webhook, maintaining an `sms_optouts` database table and checking opt-out status before sending messages.
 
@@ -71,6 +76,8 @@ A static HTML/CSS/JavaScript frontend with a modern, purple gradient design and 
 
 -   **Twilio Communications API**: For SMS and MMS messaging.
 -   **Google Cloud Vision API**: For OCR text extraction.
+-   **OpenAI API**: For AI-powered review reply generation (gpt-4o-mini via Replit AI Integrations).
+-   **Telegram Bot API**: For real-time review approval workflow with YES command listener.
 -   **Stripe**: For subscription billing and payment processing.
 -   **Resend**: For sending automated emails (e.g., welcome, password resets).
 
@@ -93,11 +100,12 @@ A static HTML/CSS/JavaScript frontend with a modern, purple gradient design and 
 ## Database Layer
 
 -   **PostgreSQL Database**: Replit-managed Neon instance.
--   **Schema**: Includes tables for `customers`, `messages`, `subscriptions`, `users`, `user_sessions`, `auth_tokens`, `sms_optouts`, `user_settings`, and `internal_feedback`, with defined relationships and indexes.
+-   **Schema**: Includes tables for `customers`, `messages`, `subscriptions`, `users`, `user_sessions`, `auth_tokens`, `sms_optouts`, `user_settings`, `internal_feedback`, and `pending_reviews`, with defined relationships and indexes.
 -   **Key Tables**: 
     -   `internal_feedback` (customer feedback with user_id for tenant isolation, status column for read tracking)
     -   `messages` (includes `sms_consent_confirmed` for TCPA, user_id NOT NULL for tenant isolation)
     -   `customers` (user_id NOT NULL for tenant isolation, UNIQUE constraint on (user_id, phone))
+    -   `pending_reviews` (AI-generated review replies awaiting Telegram approval: id, customer_name, star_rating, review_text, ai_proposed_reply, status, created_at)
 -   **Multi-Tenant Schema**: All tables use user_id foreign keys with NOT NULL constraints. Migration system automatically backfills legacy data and enforces constraints.
 -   **Features**: Auto-saves customer data, maintains message history, tracks subscription quotas with transaction-based enforcement, stores internal feedback with tenant isolation, and automatically initializes tables with migration support.
 
