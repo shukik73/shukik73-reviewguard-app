@@ -46,7 +46,7 @@ The application follows a clean **Model-View-Controller (MVC)** architecture wit
     -   **Telegram Approval Workflow**: Sends formatted review notifications to user's designated Telegram chat with one-click "YES" approval.
     -   **Settings UI**: POST `/api/settings/telegram` endpoint for saving bot credentials, with connection testing and validation.
     -   **Test Endpoint**: POST `/api/simulate-review` (requires auth) allows browser-based testing of the complete workflow for the authenticated user.
--   **Security Layer**: Implements Helmet.js with a Content Security Policy (CSP) and `express-rate-limit` middleware to protect API endpoints (e.g., 5 requests/hour for SMS sending, 100 requests/15 mins for general APIs).
+-   **Security Layer**: Implements Helmet.js with a Content Security Policy (CSP) and `express-rate-limit` middleware with Redis-backed storage to protect API endpoints (e.g., 5 requests/hour for SMS sending, 100 requests/15 mins for general APIs). Rate limits persist across server restarts when Redis is configured via `REDIS_URL`. Graceful fallback to in-memory storage if Redis is unavailable.
 -   **SMS Opt-Out Compliance**: Full TCPA/CAN-SPAM compliance with automatic STOP/START keyword handling via Twilio webhook, maintaining an `sms_optouts` database table and checking opt-out status before sending messages.
 
 ## Communication Layer
