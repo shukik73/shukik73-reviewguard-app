@@ -98,6 +98,8 @@ A static HTML/CSS/JavaScript frontend with a modern, purple gradient design and 
 -   **connect-pg-simple**: PostgreSQL session store.
 -   **helmet**: Security headers.
 -   **express-rate-limit**: Rate limiting middleware.
+-   **ioredis**: Redis client for Node.js.
+-   **rate-limit-redis**: Redis store for express-rate-limit.
 
 ## Database Layer
 
