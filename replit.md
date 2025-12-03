@@ -15,14 +15,23 @@ A single-page web application using an Express.js backend and a PostgreSQL datab
 ## Backend Architecture
 
 The application follows a clean **Model-View-Controller (MVC)** architecture with modular components:
-- **`server.js`**: Minimal bootstrap for imports, middleware, and route mounting.
-- **`config/database.js`**: Handles database connection and schema initialization.
+- **`server.js`**: Minimal bootstrap for imports, middleware, and route mounting. No database migrations run on startup.
+- **`config/database.js`**: Handles database connection pool only.
+- **`scripts/init-db.js`**: Standalone database migration script. Run with `npm run migrate` before first deployment or after schema changes.
 - **`utils/twilio.js`**: Manages Twilio credentials, client initialization, and phone validation.
 - **`utils/multerConfig.js`**: Configures Multer for file uploads (disk for photos, memory for OCR).
 - **`controllers`**: Contains domain-specific business logic (auth, SMS/reviews, data, OCR, billing, settings, feedback).
 - **`routes`**: Defines API endpoints and maps them to controller functions.
 - **`middleware`**: Includes shared utilities like authentication (`requireAuth.js`) and rate limiting (`rateLimiter.js`).
 - **Security**: Robust startup validation for essential environment variables (`DATABASE_URL`, `SESSION_SECRET`). Phone numbers are normalized to E.164 format.
+
+### Database Migrations
+
+Database schema changes are managed separately from application startup for production safety:
+- **Migration Script**: `npm run migrate` runs `scripts/init-db.js`
+- **Run Before First Deployment**: Execute `npm run migrate` to create all tables
+- **Safe for Production**: Migrations use `IF NOT EXISTS` and `ADD COLUMN IF NOT EXISTS` for idempotency
+- **Multi-Tenant Backfill**: Automatically handles legacy data migration with user_id assignment
 
 ### Key Features and Technical Implementations:
 
