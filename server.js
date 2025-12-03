@@ -31,7 +31,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
-import { pool, initializeDatabase } from './config/database.js';
+import { pool } from './config/database.js';
 import { getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone } from './utils/twilio.js';
 import { upload, ocrUpload } from './utils/multerConfig.js';
 import { initializeRedis } from './utils/redis.js';
@@ -126,7 +126,6 @@ async function startServer() {
     app.use(createAIRoutes(pool, requireAuth));
     app.use('/api', createTelegramRoutes(pool));
 
-    await initializeDatabase();
     initializeTelegramBot(pool);
     
     app.listen(PORT, '0.0.0.0', () => {
