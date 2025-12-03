@@ -111,4 +111,4 @@ A static HTML/CSS/JavaScript frontend with a modern, purple gradient design and 
 
 ## File Storage
 
--   **File System Storage**: Local disk storage in `/uploads` for photos, served statically. Photo paths are stored in the database.
+-   **Cloudinary Cloud Storage**: Photos are uploaded to Cloudinary for cloud-ready, stateless deployment. The `utils/cloudinary.js` configures the Cloudinary v2 client using environment variables (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`). Multer uses `CloudinaryStorage` for photo uploads while OCR uploads remain in memory. Photo URLs (secure_url) are stored in the database and used for Twilio MMS.
