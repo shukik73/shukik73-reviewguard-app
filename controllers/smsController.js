@@ -123,9 +123,9 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
     };
 
     if (req.file) {
-      const publicUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-      messageOptions.mediaUrl = [publicUrl];
-      console.log('Sending MMS with photo:', publicUrl);
+      const photoUrl = req.file.path || req.file.secure_url || `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+      messageOptions.mediaUrl = [photoUrl];
+      console.log('Sending MMS with photo:', photoUrl);
     }
 
     const pgClient = await pool.connect();
@@ -215,6 +215,8 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
 
       const followUpDueAt = messageType === 'review' ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) : null;
 
+      const photoPath = req.file ? (req.file.path || req.file.secure_url || req.file.filename) : null;
+      
       const insertResult = await pool.query(
         `INSERT INTO messages (user_id, customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid, feedback_token, follow_up_due_at, review_status, user_email, sms_consent_confirmed) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id`,
@@ -226,7 +228,7 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
           messageType,
           googleReviewLink || null,
           additionalInfo || null,
-          req.file ? req.file.filename : null,
+          photoPath,
           result.sid,
           feedbackToken,
           followUpDueAt,

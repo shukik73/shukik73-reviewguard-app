@@ -1,24 +1,27 @@
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import { getCloudinary, isCloudinaryConfigured } from './cloudinary.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+let storage;
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadsDir = path.join(__dirname, '..', 'uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+if (isCloudinaryConfigured()) {
+  const cloudinary = getCloudinary();
+  
+  storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+      folder: 'sms-manager-uploads',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+      transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }]
     }
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'photo-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+  });
+  
+  console.log('✅ Multer configured with Cloudinary storage');
+} else {
+  storage = multer.memoryStorage();
+  console.warn('⚠️  Multer using memory storage (Cloudinary not configured)');
+}
 
 export const upload = multer({ 
   storage: storage,
