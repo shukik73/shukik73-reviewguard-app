@@ -1,9 +1,9 @@
 import multer from 'multer';
-import path from 'path';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import { getCloudinary, isCloudinaryConfigured } from './cloudinary.js';
 
 let storage;
+let cloudinaryEnabled = false;
 
 if (isCloudinaryConfigured()) {
   const cloudinary = getCloudinary();
@@ -17,11 +17,14 @@ if (isCloudinaryConfigured()) {
     }
   });
   
+  cloudinaryEnabled = true;
   console.log('✅ Multer configured with Cloudinary storage');
 } else {
   storage = multer.memoryStorage();
-  console.warn('⚠️  Multer using memory storage (Cloudinary not configured)');
+  console.warn('⚠️  Multer using memory storage (Cloudinary not configured - photo uploads will be rejected)');
 }
+
+export const isCloudinaryEnabled = () => cloudinaryEnabled;
 
 export const upload = multer({ 
   storage: storage,

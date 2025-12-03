@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { isCloudinaryEnabled } from '../utils/multerConfig.js';
 
 async function checkOptOut(pool, phone) {
   const result = await pool.query(
@@ -123,7 +124,23 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
     };
 
     if (req.file) {
-      const photoUrl = req.file.path || req.file.secure_url || `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+      if (!isCloudinaryEnabled()) {
+        return res.status(503).json({
+          success: false,
+          error: 'Photo uploads are currently unavailable. Please configure Cloudinary or send without a photo.',
+          code: 'CLOUDINARY_NOT_CONFIGURED'
+        });
+      }
+      
+      const photoUrl = req.file.path || req.file.secure_url;
+      if (!photoUrl) {
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to upload photo to cloud storage. Please try again.',
+          code: 'UPLOAD_FAILED'
+        });
+      }
+      
       messageOptions.mediaUrl = [photoUrl];
       console.log('Sending MMS with photo:', photoUrl);
     }
@@ -215,7 +232,7 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
 
       const followUpDueAt = messageType === 'review' ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) : null;
 
-      const photoPath = req.file ? (req.file.path || req.file.secure_url || req.file.filename) : null;
+      const photoPath = req.file ? (req.file.path || req.file.secure_url) : null;
       
       const insertResult = await pool.query(
         `INSERT INTO messages (user_id, customer_id, customer_name, customer_phone, message_type, review_link, additional_info, photo_path, twilio_sid, feedback_token, follow_up_due_at, review_status, user_email, sms_consent_confirmed) 
