@@ -104,7 +104,7 @@ app.use(createOCRRoutes(pool, ocrUpload));
 app.use(createBillingRoutes(pool));
 app.use(createSettingsRoutes(pool, requireAuth));
 app.use(createFeedbackRoutes(pool, requireAuth));
-app.use(createAIRoutes(pool));
+app.use(createAIRoutes(pool, requireAuth));
 app.use('/api', createTelegramRoutes(pool));
 
 app.get('/api/health', (req, res) => {

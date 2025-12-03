@@ -127,11 +127,11 @@ function validateDeviceRuleCompliance(reviewText, generatedReply) {
   };
 }
 
-export const processIncomingReview = async (pool, reviewData, telegramSender) => {
+export const processIncomingReview = async (pool, userId, reviewData, telegramSender) => {
   try {
     const { customerName, starRating, reviewText } = reviewData;
 
-    console.log(`[AUTOPILOT] Processing review from ${customerName} (${starRating}⭐)`);
+    console.log(`[AUTOPILOT] Processing review from ${customerName} (${starRating}⭐) for user ${userId}`);
 
     // Step 1: Generate AI reply using 10 Golden Rules
     const rating = parseInt(starRating);
@@ -208,21 +208,21 @@ Write a reply (2-3 sentences) following ALL 10 Golden Rules above. Make it sound
     const aiReply = completion.choices[0].message.content.trim();
     console.log(`[AUTOPILOT] AI Generated Reply: ${aiReply}`);
 
-    // Step 2: Save to pending_reviews table
+    // Step 2: Save to pending_reviews table with user_id for multi-tenancy
     const insertResult = await pool.query(
-      `INSERT INTO pending_reviews (customer_name, star_rating, review_text, ai_proposed_reply, status)
-       VALUES ($1, $2, $3, $4, 'pending')
+      `INSERT INTO pending_reviews (user_id, customer_name, star_rating, review_text, ai_proposed_reply, status)
+       VALUES ($1, $2, $3, $4, $5, 'pending')
        RETURNING id`,
-      [customerName, starRating, reviewText, aiReply]
+      [userId, customerName, starRating, reviewText, aiReply]
     );
 
     const reviewId = insertResult.rows[0].id;
-    console.log(`[AUTOPILOT] Saved review to pending_reviews table (ID: ${reviewId})`);
+    console.log(`[AUTOPILOT] Saved review to pending_reviews table (ID: ${reviewId}) for user ${userId}`);
 
-    // Step 3: Send to Telegram for approval
+    // Step 3: Send to Telegram for approval (user's own bot)
     if (telegramSender) {
-      await telegramSender(reviewId, reviewData, aiReply);
-      console.log(`[AUTOPILOT] Sent approval request to Telegram`);
+      await telegramSender(userId, reviewId, reviewData, aiReply);
+      console.log(`[AUTOPILOT] Sent approval request to Telegram for user ${userId}`);
     }
 
     return {
@@ -393,6 +393,15 @@ Write a reply (2-3 sentences) following ALL 10 Golden Rules above. Make it sound
 
 export const simulateReview = (pool) => async (req, res) => {
   try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+
     const { name, rating, text } = req.body;
 
     if (!name || !rating || !text) {
@@ -408,13 +417,11 @@ export const simulateReview = (pool) => async (req, res) => {
       reviewText: text
     };
 
-    console.log('[SIMULATE REVIEW] Received:', reviewData);
+    console.log(`[SIMULATE REVIEW] Received for user ${userId}:`, reviewData);
 
-    // Import the sendApprovalRequest function dynamically
     const { sendApprovalRequest } = await import('./telegramController.js');
 
-    // Process the review through the autopilot
-    const result = await processIncomingReview(pool, reviewData, sendApprovalRequest);
+    const result = await processIncomingReview(pool, userId, reviewData, sendApprovalRequest);
 
     res.json({
       success: true,

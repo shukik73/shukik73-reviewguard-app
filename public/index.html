@@ -774,6 +774,67 @@
             💾 Save Settings
           </button>
         </div>
+
+        <!-- Telegram Integration Section -->
+        <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-5 max-w-xl mt-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+              <span class="text-white text-lg">✈️</span>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">Telegram Bot Integration</h3>
+              <p class="text-[11px] text-slate-500">Get review approval notifications on your phone</p>
+            </div>
+            <div id="telegram-status-badge" class="ml-auto px-2 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">
+              Not Configured
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <label class="block">
+              <span class="text-xs font-medium text-slate-700">
+                Bot Token
+              </span>
+              <input
+                type="password"
+                id="telegram-bot-token"
+                placeholder="Enter your Telegram Bot Token from @BotFather"
+                class="mt-1.5 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <p class="mt-1 text-[11px] text-slate-500">
+                Get this from @BotFather on Telegram. Create a new bot and copy the token.
+              </p>
+            </label>
+
+            <label class="block">
+              <span class="text-xs font-medium text-slate-700">
+                Chat ID
+              </span>
+              <input
+                type="text"
+                id="telegram-chat-id"
+                placeholder="Your Telegram Chat ID"
+                class="mt-1.5 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <p class="mt-1 text-[11px] text-slate-500">
+                Send /start to your bot, then use @userinfobot to get your Chat ID.
+              </p>
+            </label>
+
+            <div class="flex gap-3 pt-2">
+              <button id="save-telegram-btn" class="btn-primary flex-1 bg-blue-600 hover:bg-blue-700">
+                💾 Save Telegram Settings
+              </button>
+              <button id="test-telegram-btn" class="btn-secondary flex-1" disabled>
+                🔔 Send Test Message
+              </button>
+            </div>
+
+            <button id="disconnect-telegram-btn" class="w-full text-xs text-red-600 hover:text-red-700 py-2 hidden">
+              Disconnect Telegram Bot
+            </button>
+          </div>
+        </div>
       </section>
 
     </main>
@@ -1117,6 +1178,130 @@
         headerTitle.textContent = `${businessName} SMS Manager`;
       }
     }
+
+    async function loadTelegramConfig() {
+      try {
+        const response = await fetch('/api/settings/telegram');
+        const data = await response.json();
+        
+        const statusBadge = document.getElementById('telegram-status-badge');
+        const testBtn = document.getElementById('test-telegram-btn');
+        const disconnectBtn = document.getElementById('disconnect-telegram-btn');
+        const chatIdInput = document.getElementById('telegram-chat-id');
+        const tokenInput = document.getElementById('telegram-bot-token');
+        
+        if (data.success && data.configured) {
+          statusBadge.textContent = 'Connected';
+          statusBadge.className = 'ml-auto px-2 py-1 rounded-full text-[10px] font-medium bg-green-100 text-green-700';
+          testBtn.disabled = false;
+          disconnectBtn.classList.remove('hidden');
+          chatIdInput.value = data.config.chatId || '';
+          tokenInput.placeholder = 'Bot token configured (hidden for security)';
+        } else {
+          statusBadge.textContent = 'Not Configured';
+          statusBadge.className = 'ml-auto px-2 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600';
+          testBtn.disabled = true;
+          disconnectBtn.classList.add('hidden');
+          chatIdInput.value = '';
+          tokenInput.placeholder = 'Enter your Telegram Bot Token from @BotFather';
+        }
+      } catch (error) {
+        console.error('Error loading Telegram config:', error);
+      }
+    }
+
+    async function saveTelegramConfig() {
+      const botToken = document.getElementById('telegram-bot-token').value.trim();
+      const chatId = document.getElementById('telegram-chat-id').value.trim();
+      
+      if (!botToken || !chatId) {
+        showNotification('Please enter both Bot Token and Chat ID', 'error');
+        return;
+      }
+      
+      const saveBtn = document.getElementById('save-telegram-btn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      
+      try {
+        const response = await fetch('/api/settings/telegram', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ botToken, chatId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showNotification('Telegram connected successfully! Check your Telegram for a test message.', 'success');
+          document.getElementById('telegram-bot-token').value = '';
+          loadTelegramConfig();
+        } else {
+          showNotification(data.error || 'Failed to save Telegram settings', 'error');
+        }
+      } catch (error) {
+        console.error('Error saving Telegram config:', error);
+        showNotification('Failed to save Telegram settings', 'error');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '💾 Save Telegram Settings';
+      }
+    }
+
+    async function testTelegramConnection() {
+      const testBtn = document.getElementById('test-telegram-btn');
+      testBtn.disabled = true;
+      testBtn.textContent = 'Sending...';
+      
+      try {
+        const response = await fetch('/api/settings/telegram/test', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showNotification('Test message sent! Check your Telegram.', 'success');
+        } else {
+          showNotification(data.error || 'Failed to send test message', 'error');
+        }
+      } catch (error) {
+        console.error('Error testing Telegram:', error);
+        showNotification('Failed to send test message', 'error');
+      } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = '🔔 Send Test Message';
+      }
+    }
+
+    async function disconnectTelegram() {
+      if (!confirm('Are you sure you want to disconnect your Telegram bot?')) {
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/settings/telegram', {
+          method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showNotification('Telegram bot disconnected', 'success');
+          loadTelegramConfig();
+        } else {
+          showNotification(data.error || 'Failed to disconnect Telegram', 'error');
+        }
+      } catch (error) {
+        console.error('Error disconnecting Telegram:', error);
+        showNotification('Failed to disconnect Telegram', 'error');
+      }
+    }
     
     async function sendReminder(messageId, customerName, customerPhone, reviewLink) {
       try {
@@ -1169,7 +1354,7 @@
       if (id === 'dashboard') loadDashboard();
       if (id === 'history') loadHistory();
       if (id === 'customers') loadCustomers();
-      if (id === 'settings') loadSettings();
+      if (id === 'settings') { loadSettings(); loadTelegramConfig(); }
       if (id === 'billing') updateSubscriptionDisplay();
       if (id === 'feedback') loadFeedback();
       if (id === 'reviews') clearAIReviewForm();
@@ -1298,6 +1483,22 @@
         // Reload user data to update business name after saving
         loadUserOnPageLoad();
       });
+    }
+
+    // Telegram Settings handlers
+    const saveTelegramBtn = document.getElementById('save-telegram-btn');
+    if (saveTelegramBtn) {
+      saveTelegramBtn.addEventListener('click', saveTelegramConfig);
+    }
+
+    const testTelegramBtn = document.getElementById('test-telegram-btn');
+    if (testTelegramBtn) {
+      testTelegramBtn.addEventListener('click', testTelegramConnection);
+    }
+
+    const disconnectTelegramBtn = document.getElementById('disconnect-telegram-btn');
+    if (disconnectTelegramBtn) {
+      disconnectTelegramBtn.addEventListener('click', disconnectTelegram);
     }
 
     // AI Review Reply functionality

@@ -38,12 +38,14 @@ The application follows a clean **Model-View-Controller (MVC)** architecture wit
     -   **Feedback Inbox**: Multi-tenant internal feedback display with proper user_id filtering and mark-as-read functionality.
 -   **Subscription Billing**: **Stripe Subscription Billing** integration with transaction-based, race-condition-free SMS quota enforcement. Supports trial accounts and tiered plans, using Stripe webhooks for status updates and PostgreSQL row-level locking for atomic quota management.
 -   **AI-Powered Review Reply Assistant**: Utilizes OpenAI (gpt-4o-mini via Replit AI Integrations) to generate SEO-optimized Google Review responses based on "10 Golden Rules." Includes server-side validation for compliance (e.g., mandatory device mentions for positive reviews).
--   **Telegram Autopilot Review Loop**: Complete AI-to-Telegram integration for review management:
-    -   **processIncomingReview()**: Orchestrates AI reply generation, database persistence, and Telegram notification in a single automated pipeline.
-    -   **pending_reviews Table**: Stores customer reviews, AI-generated replies, and approval status for audit trail.
-    -   **Telegram Approval Workflow**: Sends formatted review notifications to designated Telegram chat with one-click "YES" approval.
-    -   **Status Tracking**: Automatically updates review status from 'pending' to 'posted' upon approval.
-    -   **Test Endpoint**: POST `/api/simulate-review` allows browser-based testing of the complete workflow.
+-   **Telegram Autopilot Review Loop (Multi-Tenant)**: Complete AI-to-Telegram integration for review management with per-user bot support:
+    -   **Multi-Tenant Architecture**: Each user configures their own Telegram bot via Settings UI. Bot credentials stored in `telegram_configs` table with user_id FK.
+    -   **getBotForUser(userId)**: Helper function that fetches credentials from database and instantiates TelegramBot instances on-demand.
+    -   **processIncomingReview()**: Orchestrates AI reply generation, database persistence (with user_id), and Telegram notification using user's own bot.
+    -   **pending_reviews Table**: Stores customer reviews, AI-generated replies, approval status, and user_id for tenant isolation.
+    -   **Telegram Approval Workflow**: Sends formatted review notifications to user's designated Telegram chat with one-click "YES" approval.
+    -   **Settings UI**: POST `/api/settings/telegram` endpoint for saving bot credentials, with connection testing and validation.
+    -   **Test Endpoint**: POST `/api/simulate-review` (requires auth) allows browser-based testing of the complete workflow for the authenticated user.
 -   **Security Layer**: Implements Helmet.js with a Content Security Policy (CSP) and `express-rate-limit` middleware to protect API endpoints (e.g., 5 requests/hour for SMS sending, 100 requests/15 mins for general APIs).
 -   **SMS Opt-Out Compliance**: Full TCPA/CAN-SPAM compliance with automatic STOP/START keyword handling via Twilio webhook, maintaining an `sms_optouts` database table and checking opt-out status before sending messages.
 
@@ -100,12 +102,13 @@ A static HTML/CSS/JavaScript frontend with a modern, purple gradient design and 
 ## Database Layer
 
 -   **PostgreSQL Database**: Replit-managed Neon instance.
--   **Schema**: Includes tables for `customers`, `messages`, `subscriptions`, `users`, `user_sessions`, `auth_tokens`, `sms_optouts`, `user_settings`, `internal_feedback`, and `pending_reviews`, with defined relationships and indexes.
+-   **Schema**: Includes tables for `customers`, `messages`, `subscriptions`, `users`, `user_sessions`, `auth_tokens`, `sms_optouts`, `user_settings`, `internal_feedback`, `pending_reviews`, and `telegram_configs`, with defined relationships and indexes.
 -   **Key Tables**: 
     -   `internal_feedback` (customer feedback with user_id for tenant isolation, status column for read tracking)
     -   `messages` (includes `sms_consent_confirmed` for TCPA, user_id NOT NULL for tenant isolation)
     -   `customers` (user_id NOT NULL for tenant isolation, UNIQUE constraint on (user_id, phone))
-    -   `pending_reviews` (AI-generated review replies awaiting Telegram approval: id, customer_name, star_rating, review_text, ai_proposed_reply, status, created_at)
+    -   `pending_reviews` (AI-generated review replies awaiting Telegram approval: id, customer_name, star_rating, review_text, ai_proposed_reply, status, user_id, created_at)
+    -   `telegram_configs` (per-user Telegram bot credentials: id, user_id, bot_token, chat_id, is_active, created_at, updated_at)
 -   **Multi-Tenant Schema**: All tables use user_id foreign keys with NOT NULL constraints. Migration system automatically backfills legacy data and enforces constraints.
 -   **Features**: Auto-saves customer data, maintains message history, tracks subscription quotas with transaction-based enforcement, stores internal feedback with tenant isolation, and automatically initializes tables with migration support.
 

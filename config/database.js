@@ -359,5 +359,55 @@ export async function initializeDatabase() {
     console.error('[MIGRATION] Warning: Migration failed (may have already run):', e.message);
   }
 
+  // Create telegram_configs table for multi-tenant Telegram bot support
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS telegram_configs (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      bot_token TEXT NOT NULL,
+      chat_id VARCHAR(100) NOT NULL,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id)
+    );
+    
+    CREATE INDEX IF NOT EXISTS idx_telegram_configs_user_id ON telegram_configs(user_id);
+  `);
+
+  // Create pending_reviews table for AI-generated review approval workflow
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pending_reviews (
+      id SERIAL PRIMARY KEY,
+      customer_name VARCHAR(255) NOT NULL,
+      star_rating INTEGER NOT NULL CHECK (star_rating BETWEEN 1 AND 5),
+      review_text TEXT NOT NULL,
+      ai_proposed_reply TEXT NOT NULL,
+      status VARCHAR(20) DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Add user_id column to pending_reviews if it doesn't exist (migration for existing tables)
+  try {
+    await pool.query(`
+      ALTER TABLE pending_reviews 
+      ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
+    `);
+  } catch (e) {
+    // Column may already exist
+  }
+
+  // Create indexes for pending_reviews (after ensuring columns exist)
+  try {
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pending_reviews_user_id ON pending_reviews(user_id)`);
+  } catch (e) {}
+  try {
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pending_reviews_status ON pending_reviews(status)`);
+  } catch (e) {}
+  try {
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_pending_reviews_created ON pending_reviews(created_at DESC)`);
+  } catch (e) {}
+
   console.log('✅ Database initialized');
 }
