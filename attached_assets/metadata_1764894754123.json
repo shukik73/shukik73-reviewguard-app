@@ -1,0 +1,5 @@
+{
+  "name": "ReviewGuard SMS",
+  "description": "A multi-tenant SaaS for repair shops to automate review management using OCR and AI.",
+  "requestFramePermissions": []
+}
