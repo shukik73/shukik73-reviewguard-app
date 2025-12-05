@@ -274,22 +274,29 @@
               </div>
             </div>
 
-            <div class="bg-accent rounded-xl p-5 text-white">
-              <div class="flex items-center gap-2 mb-4">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            <div class="rounded-xl p-6 text-white" style="background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 50%, #4F46E5 100%);">
+              <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center mb-4">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
-                <h3 class="font-semibold">Quick Compose</h3>
               </div>
-              <p class="text-indigo-100 text-sm mb-4">Instantly reach a customer without leaving the dashboard.</p>
+              <h3 class="text-xl font-bold italic mb-1">Quick Send</h3>
+              <p class="text-white/80 text-sm mb-5">Instantly reach a customer without leaving the dashboard.</p>
               
-              <div class="space-y-3">
+              <div class="space-y-4">
                 <div>
-                  <label class="text-xs font-medium text-indigo-100 block mb-1">Customer Phone</label>
-                  <input type="tel" id="quick-phone" placeholder="+1 (555) 000-0000" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-indigo-200 text-sm focus:outline-none focus:ring-2 focus:ring-white/30" />
+                  <label class="text-xs font-semibold text-white/90 uppercase tracking-wide block mb-2">Phone Number</label>
+                  <input type="tel" id="quick-phone" placeholder="+1 (555) 000-0000" class="w-full px-4 py-3 rounded-lg bg-white text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-white/50" />
                 </div>
-                <button id="quick-compose-btn" class="w-full py-2.5 bg-white text-accent font-medium rounded-lg hover:bg-indigo-50 transition-colors text-sm">
-                  Go to Full SMS Form →
+                <div>
+                  <label class="text-xs font-semibold text-white/90 uppercase tracking-wide block mb-2">Message</label>
+                  <textarea id="quick-message" rows="3" placeholder="Your device is ready for pickup..." class="w-full px-4 py-3 rounded-lg bg-white text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"></textarea>
+                </div>
+                <button id="quick-send-btn" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-full transition-colors text-sm flex items-center justify-center gap-2">
+                  Send Notification
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -777,10 +784,54 @@
     });
 
     document.getElementById('new-message-btn').addEventListener('click', () => showSection('send-sms'));
-    document.getElementById('quick-compose-btn').addEventListener('click', () => {
-      const phone = document.getElementById('quick-phone').value;
-      if (phone) document.getElementById('customer-phone').value = phone;
-      showSection('send-sms');
+    document.getElementById('quick-send-btn').addEventListener('click', async () => {
+      const phone = document.getElementById('quick-phone').value.trim();
+      const message = document.getElementById('quick-message').value.trim();
+      
+      if (!phone) {
+        showNotification('Please enter a phone number', 'error');
+        return;
+      }
+      if (!message) {
+        showNotification('Please enter a message', 'error');
+        return;
+      }
+      
+      const btn = document.getElementById('quick-send-btn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sending...';
+      btn.disabled = true;
+      
+      try {
+        const response = await fetch('/api/send-sms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerPhone: phone,
+            customerName: 'Quick Send',
+            messageType: 'ready',
+            customMessage: message,
+            smsConsentConfirmed: true
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showNotification('Message sent successfully!', 'success');
+          document.getElementById('quick-phone').value = '';
+          document.getElementById('quick-message').value = '';
+          loadDashboard();
+        } else {
+          showNotification(data.error || 'Failed to send message', 'error');
+        }
+      } catch (error) {
+        console.error('Quick send error:', error);
+        showNotification('Failed to send message', 'error');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
     });
 
     async function loadDashboard() {
