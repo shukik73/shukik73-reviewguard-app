@@ -2,801 +2,841 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Review Manager – Techy Miramar</title>
+  <title>ReviewGuard SMS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📱</text></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .modal-backdrop {
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(4px);
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            sidebar: '#1e293b',
+            'sidebar-hover': '#334155',
+            'sidebar-active': '#6366f1',
+            accent: '#6366f1',
+          }
+        }
+      }
     }
+  </script>
+  <style>
+    .modal-backdrop { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); }
+    .nav-item { transition: all 0.15s ease; }
+    .nav-item:hover { background: #334155; }
+    .nav-item.active { background: #6366f1; }
+    .drag-area { transition: all 0.2s ease; }
+    .drag-area.dragover { border-color: #6366f1; background: rgba(99, 102, 241, 0.05); }
+    .stat-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1); }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body class="bg-gray-50 text-gray-900">
 
-  <header class="border-b border-slate-200 bg-white shadow-sm">
-    <div class="max-w-[1100px] mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <div class="h-8 w-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
-          TM
-        </div>
-        <div>
-          <div id="header-branding" class="text-sm font-semibold text-slate-900">
-            Loading...
+  <div class="flex min-h-screen">
+    <aside class="w-56 bg-sidebar fixed h-screen flex flex-col z-40">
+      <div class="p-5 border-b border-slate-700">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
           </div>
-          <div class="text-xs text-slate-500">
-            Reviews, pickup notifications & customer follow-ups
+          <div>
+            <div id="sidebar-brand" class="text-white font-semibold text-sm">ReviewGuard</div>
           </div>
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
-        <span class="hidden sm:inline text-sm text-slate-600">
-          Logged in as <span id="user-display-name" class="font-medium">Loading...</span>
-        </span>
-        <button
-          id="logout-btn"
-          class="text-sm px-3 py-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50"
-        >
-          Logout
+      <nav class="flex-1 p-3 space-y-1">
+        <div class="text-xs font-medium text-slate-400 uppercase tracking-wider px-3 py-2">Main Menu</div>
+        
+        <button data-section="dashboard" class="nav-item active w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white text-sm font-medium">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+          Dashboard
         </button>
-      </div>
-    </div>
 
-    <nav class="border-t border-slate-200 bg-white">
-      <div class="max-w-[1100px] mx-auto px-4">
-        <div class="flex flex-wrap gap-2 sm:gap-3 overflow-x-auto py-2.5">
-          <button
-            data-section="send-sms"
-            class="nav-tab inline-flex items-center gap-1 px-3 py-2 text-xs sm:text-sm rounded-md text-indigo-600 bg-indigo-50 font-medium"
-          >
-            📤 <span>Send SMS</span>
-          </button>
-          <button
-            data-section="dashboard"
-            class="nav-tab inline-flex items-center gap-1 px-3 py-2 text-xs sm:text-sm rounded-md text-slate-600 hover:bg-slate-50"
-          >
-            📊 <span>Dashboard</span>
-          </button>
-          <button
-            data-section="history"
-            class="nav-tab inline-flex items-center gap-1 px-3 py-2 text-xs sm:text-sm rounded-md text-slate-600 hover:bg-slate-50"
-          >
-            📜 <span>History</span>
-          </button>
-          <button
-            data-section="customers"
-            class="nav-tab inline-flex items-center gap-1 px-3 py-2 text-xs sm:text-sm rounded-md text-slate-600 hover:bg-slate-50"
-          >
-            👥 <span>Customers</span>
-          </button>
-          <button
-            data-section="reviews"
-            class="nav-tab inline-flex items-center gap-1 px-3 py-2 text-xs sm:text-sm rounded-md text-slate-600 hover:bg-slate-50"
-          >
-            🤖 <span>AI Reviews</span>
-          </button>
-          <button
-            data-section="billing"
-            class="nav-tab inline-flex items-center gap-1 px-3 py-2 text-xs sm:text-sm rounded-md text-slate-600 hover:bg-slate-50"
-          >
-            💳 <span>Billing</span>
-          </button>
-          <button
-            data-section="feedback"
-            class="nav-tab inline-flex items-center gap-1 px-3 py-2 text-xs sm:text-sm rounded-md text-slate-600 hover:bg-slate-50"
-          >
-            💬 <span>Feedback</span>
-          </button>
-          <button
-            data-section="settings"
-            class="nav-tab inline-flex items-center gap-1 px-3 py-2 text-xs sm:text-sm rounded-md text-slate-600 hover:bg-slate-50"
-          >
-            ⚙️ <span>Settings</span>
-          </button>
-        </div>
-      </div>
-    </nav>
-  </header>
-
-  <main class="max-w-[1100px] mx-auto px-4 py-5 space-y-5">
-
-    <div id="notification-container" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full px-4">
-      <div id="notification-message" class="rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-white flex items-center gap-2">
-        <span id="notification-icon"></span>
-        <span id="notification-text"></span>
-      </div>
-    </div>
-
-    <div id="sms-confirmation-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div class="modal-backdrop absolute inset-0" id="modal-backdrop"></div>
-      <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-        <h3 class="text-xl font-bold text-slate-900 mb-4">Confirm SMS</h3>
-        <div class="space-y-3 mb-6">
-          <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-            <span class="text-2xl">👤</span>
-            <div>
-              <div class="text-xs text-slate-500">Send to</div>
-              <div class="font-semibold text-slate-900" id="modal-customer-name">-</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-            <span class="text-2xl">📱</span>
-            <div>
-              <div class="text-xs text-slate-500">Phone number</div>
-              <div class="font-semibold text-slate-900" id="modal-customer-phone">-</div>
-            </div>
-          </div>
-          <div class="p-3 bg-slate-50 rounded-lg">
-            <div class="text-xs text-slate-500 mb-2">Message preview</div>
-            <div class="text-sm text-slate-700 leading-relaxed max-h-32 overflow-y-auto" id="modal-message-preview">-</div>
-          </div>
-        </div>
-        <div class="flex gap-3">
-          <button id="modal-cancel-btn" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-lg transition-all">
-            Cancel
-          </button>
-          <button id="modal-confirm-btn" class="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg">
-            ✓ Confirm & Send
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div id="camera-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/80">
-      <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4">
-        <div class="flex justify-between items-center mb-3">
-          <h3 class="text-lg font-bold text-slate-900">Take Photo</h3>
-          <button id="close-camera-btn" class="text-slate-500 hover:text-slate-700 text-2xl">&times;</button>
-        </div>
-        <video id="camera-video" autoplay playsinline class="w-full rounded-lg bg-slate-900"></video>
-        <canvas id="camera-canvas" class="hidden"></canvas>
-        <p id="camera-error" class="hidden text-red-500 text-sm mt-2"></p>
-        <button id="capture-photo-btn" class="mt-4 w-full inline-flex items-center justify-center gap-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-md px-3 py-2.5 shadow-sm hover:from-indigo-600 hover:to-indigo-700">
-          📸 Capture Photo
+        <button data-section="send-sms" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm font-medium">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+          </svg>
+          Send SMS
         </button>
+
+        <button data-section="history" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm font-medium">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          History
+        </button>
+
+        <button data-section="customers" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm font-medium">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          Customers
+        </button>
+
+        <button data-section="reviews" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm font-medium">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+          </svg>
+          Reviews
+        </button>
+
+        <div class="text-xs font-medium text-slate-400 uppercase tracking-wider px-3 py-2 mt-4">System</div>
+
+        <button data-section="billing" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm font-medium">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+          Billing
+        </button>
+
+        <button data-section="feedback" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm font-medium">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+          Feedback
+        </button>
+
+        <button data-section="settings" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm font-medium">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Settings
+        </button>
+      </nav>
+
+      <div class="p-4 border-t border-slate-700">
+        <div class="flex items-center gap-3">
+          <div id="user-avatar" class="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-white text-sm font-semibold">
+            U
+          </div>
+          <div class="flex-1 min-w-0">
+            <div id="user-display-name" class="text-white text-sm font-medium truncate">Loading...</div>
+            <div id="user-email" class="text-slate-400 text-xs truncate">user@example.com</div>
+          </div>
+          <button id="logout-btn" class="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors" title="Sign Out">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
       </div>
-    </div>
+    </aside>
 
-    <section id="send-sms" class="section">
-      <h1 class="text-lg sm:text-xl font-semibold text-slate-900 mb-3">
-        Send SMS
-      </h1>
+    <main class="flex-1 ml-56">
+      <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="flex items-center justify-between px-6 py-4">
+          <div>
+            <h1 id="page-title" class="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p id="page-subtitle" class="text-sm text-gray-500">Overview of your messaging and reviews.</p>
+            <p id="header-branding" class="hidden"></p>
+          </div>
+          <button id="new-message-btn" class="inline-flex items-center gap-2 px-4 py-2.5 bg-accent hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            New Message
+          </button>
+        </div>
+      </header>
 
-      <div class="grid gap-6 lg:grid-cols-3">
-        <div class="lg:col-span-1">
-          <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-            <h2 class="text-sm font-medium text-slate-900 mb-1">
-              Step 1 – Get customer details
-            </h2>
-            <p class="text-xs text-slate-500 mb-3">
-              Upload or take a photo of your repair order to auto-fill name & phone.
-            </p>
+      <div id="notification-container" class="hidden fixed top-4 right-4 z-50 max-w-sm">
+        <div id="notification-message" class="rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-white flex items-center gap-2">
+          <span id="notification-icon"></span>
+          <span id="notification-text"></span>
+        </div>
+      </div>
 
-            <div class="space-y-3">
-              <label class="block">
-                <span class="text-xs font-medium text-slate-700">Repair order photo</span>
-                <div class="mt-1 flex flex-col items-center justify-center gap-2 border border-dashed border-slate-300 rounded-lg px-3 py-4 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/40 transition">
-                  <span class="text-lg">📄</span>
-                  <span class="text-xs text-slate-600">
-                    Click to upload repair order photo
-                  </span>
-                  <input type="file" id="ocr-upload" accept="image/*" class="hidden" />
-                </div>
-              </label>
-
-              <button id="camera-btn" class="w-full inline-flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50">
-                📷 Take Photo
-              </button>
-
-              <div class="mt-3 rounded-md bg-slate-50 border border-slate-200 px-3 py-2 text-xs">
-                <div class="font-medium mb-1 text-slate-700">
-                  Detected from repair order
-                </div>
-                <div class="space-y-0.5 text-slate-600">
-                  <p>Name: <span id="ocr-name" class="text-slate-400">-</span></p>
-                  <p>Phone: <span id="ocr-phone" class="text-slate-400">-</span></p>
-                  <p>Device: <span id="ocr-device" class="text-slate-400">-</span></p>
-                  <p>Repair: <span id="ocr-repair" class="text-slate-400">-</span></p>
-                </div>
+      <div id="sms-confirmation-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div class="modal-backdrop absolute inset-0" id="modal-backdrop"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+          <h3 class="text-xl font-bold text-gray-900 mb-4">Confirm SMS</h3>
+          <div class="space-y-3 mb-6">
+            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <span class="text-2xl">👤</span>
+              <div>
+                <div class="text-xs text-gray-500">Send to</div>
+                <div class="font-semibold text-gray-900" id="modal-customer-name">-</div>
               </div>
             </div>
+            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <span class="text-2xl">📱</span>
+              <div>
+                <div class="text-xs text-gray-500">Phone number</div>
+                <div class="font-semibold text-gray-900" id="modal-customer-phone">-</div>
+              </div>
+            </div>
+            <div class="p-3 bg-gray-50 rounded-lg">
+              <div class="text-xs text-gray-500 mb-2">Message preview</div>
+              <div class="text-sm text-gray-700 leading-relaxed max-h-32 overflow-y-auto" id="modal-message-preview">-</div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <button id="modal-cancel-btn" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-lg transition-all">
+              Cancel
+            </button>
+            <button id="modal-confirm-btn" class="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg">
+              Confirm & Send
+            </button>
           </div>
         </div>
+      </div>
 
-        <div class="lg:col-span-2 space-y-4">
-          <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-4 space-y-4">
-            <h2 class="text-sm font-medium text-slate-900">
-              Step 2 – Compose & send SMS
-            </h2>
+      <div id="camera-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/80">
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="text-lg font-bold text-gray-900">Take Photo</h3>
+            <button id="close-camera-btn" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+          </div>
+          <video id="camera-video" autoplay playsinline class="w-full rounded-lg bg-gray-900"></video>
+          <canvas id="camera-canvas" class="hidden"></canvas>
+          <p id="camera-error" class="hidden text-red-500 text-sm mt-2"></p>
+          <button id="capture-photo-btn" class="mt-4 w-full inline-flex items-center justify-center gap-2 text-sm font-medium text-white bg-accent rounded-lg px-4 py-3 hover:bg-indigo-600 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Capture Photo
+          </button>
+        </div>
+      </div>
 
-            <div class="grid gap-4 md:grid-cols-2">
-              <div class="space-y-3">
-                <label class="block">
-                  <span class="text-xs font-medium text-slate-700">
-                    Message Type *
-                  </span>
-                  <select
-                    id="message-type"
-                    class="mt-1 block w-full text-sm rounded-md border border-slate-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="review">⭐ Google Review Request</option>
-                    <option value="ready">🔔 Device Ready for Pickup</option>
-                    <option value="follow_up">🔁 Follow-Up / Check-In</option>
-                    <option value="custom">💬 Custom Message</option>
-                  </select>
-                </label>
+      <div class="p-6 space-y-6">
 
-                <label class="block">
-                  <span class="text-xs font-medium text-slate-700">
-                    Recent Customers (Quick Select)
-                  </span>
-                  <input
-                    type="text"
-                    id="customer-search"
-                    placeholder="Type to search recent customers"
-                    class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                  <p class="mt-1 text-[11px] text-slate-500">
-                    Select a recent customer to auto-fill name and phone.
-                  </p>
-                </label>
-
-                <label class="block">
-                  <span class="text-xs font-medium text-slate-700">
-                    Customer Name *
-                  </span>
-                  <input
-                    type="text"
-                    id="customer-name"
-                    placeholder="John Doe"
-                    class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </label>
-
-                <label class="block">
-                  <span class="text-xs font-medium text-slate-700">
-                    Customer Phone Number *
-                  </span>
-                  <input
-                    type="tel"
-                    id="customer-phone"
-                    placeholder="+1 305 555 1234"
-                    class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                  <p class="mt-1 text-[11px] text-slate-500">
-                    Include country code (e.g., +1 for US). Spaces and dashes are OK.
-                  </p>
-                </label>
-
-                <label class="block">
-                  <span class="text-xs font-medium text-slate-700">Device</span>
-                  <input
-                    type="text"
-                    id="device"
-                    placeholder="iPhone 13 Pro"
-                    class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </label>
-
-                <label class="block">
-                  <span class="text-xs font-medium text-slate-700">Repair Type</span>
-                  <input
-                    type="text"
-                    id="repair"
-                    placeholder="Screen replacement"
-                    class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </label>
-
-                <label class="block">
-                  <span class="text-xs font-medium text-slate-700">
-                    Custom Message (Optional)
-                  </span>
-                  <textarea
-                    id="custom-message"
-                    rows="3"
-                    placeholder="Add any custom text here..."
-                    class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  ></textarea>
-                </label>
+        <section id="dashboard" class="section">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="stat-card bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                </div>
               </div>
+              <div id="stat-total-messages" class="text-3xl font-bold text-gray-900">0</div>
+              <div class="text-sm text-gray-500">Total SMS Sent</div>
+            </div>
 
+            <div class="stat-card bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </div>
+              </div>
+              <div id="stat-total-customers" class="text-3xl font-bold text-gray-900">0</div>
+              <div class="text-sm text-gray-500">Total Customers</div>
+            </div>
+
+            <div class="stat-card bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              </div>
+              <div id="stat-today" class="text-3xl font-bold text-gray-900">0</div>
+              <div class="text-sm text-gray-500">Sent Today</div>
+            </div>
+
+            <div class="stat-card bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+              </div>
+              <div id="stat-this-week" class="text-3xl font-bold text-gray-900">0</div>
+              <div class="text-sm text-gray-500">Sent This Week</div>
+            </div>
+          </div>
+
+          <div class="grid lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+              <div class="flex items-center justify-between p-5 border-b border-gray-100">
+                <div>
+                  <h3 class="font-semibold text-gray-900">Recent Activity</h3>
+                  <p class="text-sm text-gray-500">Real-time updates from your shop</p>
+                </div>
+                <button onclick="loadDashboard()" class="text-sm text-accent hover:text-indigo-700 font-medium">View All</button>
+              </div>
+              <div id="recent-messages" class="divide-y divide-gray-50 p-2 max-h-80 overflow-y-auto">
+                <div class="text-center py-12 text-gray-500">Loading...</div>
+              </div>
+            </div>
+
+            <div class="bg-accent rounded-xl p-5 text-white">
+              <div class="flex items-center gap-2 mb-4">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <h3 class="font-semibold">Quick Compose</h3>
+              </div>
+              <p class="text-indigo-100 text-sm mb-4">Instantly reach a customer without leaving the dashboard.</p>
+              
               <div class="space-y-3">
-                <div class="bg-slate-900 text-slate-50 rounded-lg p-4 text-sm shadow-sm">
-                  <div class="text-xs uppercase tracking-wide text-slate-400 mb-2">
-                    Message preview
-                  </div>
-                  <div id="message-preview" class="bg-slate-800 rounded-md p-3 text-xs text-slate-300 min-h-[100px]">
-                    Your message will appear here...
-                  </div>
-                  <p class="mt-3 text-[11px] text-slate-400">
-                    Character count: <span id="char-count">0</span>/160
-                  </p>
+                <div>
+                  <label class="text-xs font-medium text-indigo-100 block mb-1">Customer Phone</label>
+                  <input type="tel" id="quick-phone" placeholder="+1 (555) 000-0000" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-indigo-200 text-sm focus:outline-none focus:ring-2 focus:ring-white/30" />
                 </div>
-
-                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <label class="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      id="sms-consent-checkbox"
-                      class="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <span class="text-xs text-slate-700">
-                      <strong class="font-semibold text-amber-900">Required:</strong> 
-                      I confirm this customer has consented to receive SMS updates from my business. 
-                      <span class="text-slate-600">(TCPA Compliance)</span>
-                    </span>
-                  </label>
-                </div>
-
-                <button
-                  id="send-sms-btn"
-                  disabled
-                  class="w-full inline-flex items-center justify-center gap-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-md px-3 py-2.5 shadow-sm hover:from-indigo-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  📤 Send SMS
+                <button id="quick-compose-btn" class="w-full py-2.5 bg-white text-accent font-medium rounded-lg hover:bg-indigo-50 transition-colors text-sm">
+                  Go to Full SMS Form →
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
+        </section>
 
-    <section id="dashboard" class="section hidden">
-      <h1 class="text-lg sm:text-xl font-semibold text-slate-900 mb-4">
-        Dashboard
-      </h1>
-
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-          <p class="text-xs text-slate-500 mb-1">Total Messages</p>
-          <p id="stat-total-messages" class="text-xl font-semibold text-slate-900">0</p>
-        </div>
-        <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-          <p class="text-xs text-slate-500 mb-1">Total Customers</p>
-          <p id="stat-total-customers" class="text-xl font-semibold text-slate-900">0</p>
-        </div>
-        <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-          <p class="text-xs text-slate-500 mb-1">Last 24 Hours</p>
-          <p id="stat-today" class="text-xl font-semibold text-slate-900">0</p>
-        </div>
-        <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-          <p class="text-xs text-slate-500 mb-1">This Week</p>
-          <p id="stat-this-week" class="text-xl font-semibold text-slate-900">0</p>
-        </div>
-      </div>
-
-      <div class="mt-5 bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-        <h2 class="text-sm font-medium text-slate-900 mb-3">Recent Activity</h2>
-        <div id="recent-messages" class="divide-y divide-slate-100 text-sm">
-          <p class="text-sm text-slate-500 text-center py-8">No messages yet</p>
-        </div>
-      </div>
-    </section>
-
-    <section id="history" class="section hidden">
-      <h1 class="text-lg sm:text-xl font-semibold text-slate-900 mb-4">
-        Message History
-      </h1>
-
-      <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-          <div class="text-sm text-slate-600 font-medium">
-            Recent Messages
-          </div>
-          <div class="flex gap-2">
-            <button class="text-xs px-3 py-1.5 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50">
-              📥 Export to CSV
-            </button>
-            <input
-              type="text"
-              id="history-search"
-              placeholder="Search by name or phone"
-              class="text-xs rounded-md border border-slate-300 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-        </div>
-
-        <div class="mb-3">
-          <label class="block text-xs font-medium text-slate-700 mb-1">Filter Messages</label>
-          <select
-            id="history-filter"
-            class="block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="all">All Messages</option>
-            <option value="clicked">Clicked Link</option>
-            <option value="reviewed">Feedback Received</option>
-            <option value="needs-followup">Needs Follow-up</option>
-          </select>
-        </div>
-
-        <div id="history-list" class="divide-y divide-slate-100 text-sm">
-          <p class="text-sm text-slate-500 text-center py-8">No messages in history</p>
-        </div>
-      </div>
-    </section>
-
-    <section id="customers" class="section hidden">
-      <h1 class="text-lg sm:text-xl font-semibold text-slate-900 mb-4">
-        Customer Database
-      </h1>
-
-      <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-          <div class="text-sm text-slate-600 font-medium">
-            Click on a customer to auto-fill the send form
-          </div>
-          <div class="flex gap-2">
-            <button class="text-xs px-3 py-1.5 rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50">
-              📥 Export to CSV
-            </button>
-            <input
-              type="text"
-              id="customers-search"
-              placeholder="Search by name or phone"
-              class="text-xs rounded-md border border-slate-300 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-        </div>
-
-        <div id="customers-list" class="divide-y divide-slate-100 text-sm">
-          <p class="text-sm text-slate-500 text-center py-8">No customers yet</p>
-        </div>
-      </div>
-    </section>
-
-    <section id="reviews" class="section hidden">
-      <h1 class="text-lg sm:text-xl font-semibold text-slate-900 mb-4">
-        AI Review Reply Assistant
-      </h1>
-
-      <div class="grid gap-6 lg:grid-cols-2">
-        <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-          <h2 class="text-sm font-medium text-slate-900 mb-3">Enter Review Details</h2>
-          <div class="space-y-3">
-            <label class="block">
-              <span class="text-xs font-medium text-slate-700">Customer Name</span>
-              <input
-                type="text"
-                id="ai-customer-name"
-                placeholder="e.g., John Smith"
-                class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </label>
-
-            <label class="block">
-              <span class="text-xs font-medium text-slate-700">Star Rating</span>
-              <select
-                id="ai-star-rating"
-                class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">Select rating...</option>
-                <option value="5">⭐⭐⭐⭐⭐ 5 Stars</option>
-                <option value="4">⭐⭐⭐⭐ 4 Stars</option>
-                <option value="3">⭐⭐⭐ 3 Stars</option>
-                <option value="2">⭐⭐ 2 Stars</option>
-                <option value="1">⭐ 1 Star</option>
-              </select>
-            </label>
-
-            <label class="block">
-              <span class="text-xs font-medium text-slate-700">Review Text</span>
-              <textarea
-                id="ai-review-text"
-                rows="4"
-                placeholder="Paste the customer's review here..."
-                class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              ></textarea>
-            </label>
-
-            <button
-              id="generate-reply-btn"
-              onclick="generateAIReply()"
-              class="w-full inline-flex items-center justify-center gap-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-md px-3 py-2.5 shadow-sm hover:from-indigo-600 hover:to-indigo-700"
-            >
-              ✨ Generate AI Reply
-            </button>
-          </div>
-        </div>
-
-        <div id="ai-reply-container" class="hidden bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-          <h2 class="text-sm font-medium text-slate-900 mb-3">Generated Reply</h2>
-          <div class="bg-slate-50 rounded-lg p-4 text-sm text-slate-700">
-            <p id="ai-reply-text"></p>
-          </div>
-          <button
-            id="copy-reply-btn"
-            class="mt-3 w-full inline-flex items-center justify-center gap-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-md px-3 py-2 hover:bg-indigo-100"
-          >
-            📋 Copy to Clipboard
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <section id="billing" class="section hidden">
-      <h1 class="text-lg sm:text-xl font-semibold text-slate-900 mb-4">
-        Subscription & Billing
-      </h1>
-
-      <div class="grid gap-4 lg:grid-cols-3">
-        <div class="lg:col-span-1 space-y-4">
-          <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-            <h2 class="text-sm font-medium text-slate-900 mb-2">
-              Current Plan & Usage
-            </h2>
-            <p id="billing-status" class="text-sm text-slate-600">
-              Loading subscription status...
-            </p>
-          </div>
-        </div>
-
-        <div class="lg:col-span-2 grid gap-4 sm:grid-cols-2">
-          <div id="starter-plan-card" class="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-            <div class="text-xs font-semibold text-slate-500 uppercase mb-1">
-              Starter
-            </div>
-            <div class="text-2xl font-semibold text-slate-900 mb-1">
-              $49 <span class="text-sm text-slate-500">/ month</span>
-            </div>
-            <ul class="mt-3 space-y-1 text-xs text-slate-600">
-              <li>✅ 300 SMS per month</li>
-              <li>✅ Review tracking</li>
-              <li>✅ Automatic follow-ups</li>
-              <li>✅ Customer database</li>
-              <li>✅ OCR text extraction</li>
-            </ul>
-            <button id="subscribe-starter-btn" class="mt-4 w-full text-sm font-medium px-3 py-2 rounded-md border border-indigo-200 text-indigo-700 hover:bg-indigo-50">
-              Subscribe to Starter
-            </button>
-          </div>
-
-          <div id="pro-plan-card" class="bg-white rounded-lg shadow-sm border border-indigo-200 p-4 relative">
-            <span class="absolute -top-2 right-3 text-[10px] font-semibold bg-indigo-600 text-white px-2 py-0.5 rounded-full">
-              POPULAR
-            </span>
-            <div class="text-xs font-semibold text-slate-500 uppercase mb-1">
-              Pro
-            </div>
-            <div class="text-2xl font-semibold text-slate-900 mb-1">
-              $99 <span class="text-sm text-slate-500">/ month</span>
-            </div>
-            <ul class="mt-3 space-y-1 text-xs text-slate-600">
-              <li>✅ 1,000 SMS per month</li>
-              <li>✅ Review tracking</li>
-              <li>✅ Automatic follow-ups</li>
-              <li>✅ Customer database</li>
-              <li>✅ OCR text extraction</li>
-              <li>✅ Priority support</li>
-            </ul>
-            <button id="subscribe-pro-btn" class="mt-4 w-full text-sm font-medium px-3 py-2 rounded-md bg-gradient-to-r from-indigo-500 to-indigo-600 text-white hover:from-indigo-600 hover:to-indigo-700">
-              Subscribe to Pro
-            </button>
-            <p class="mt-3 text-[11px] text-slate-500">
-              Test mode: use card 4242 4242 4242 4242 with any future expiry & CVC.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="feedback" class="section hidden">
-      <h1 class="text-lg sm:text-xl font-semibold text-slate-900 mb-4">
-        Customer Feedback Inbox
-      </h1>
-
-      <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-        <div id="feedback-list" class="divide-y divide-slate-100">
-          <p class="text-sm text-slate-500 text-center py-8">No feedback received yet</p>
-        </div>
-      </div>
-    </section>
-
-    <section id="settings" class="section hidden">
-      <h1 class="text-lg sm:text-xl font-semibold text-slate-900 mb-4">
-        Settings
-      </h1>
-
-      <div class="grid gap-6 lg:grid-cols-2">
-        <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-4 space-y-4">
-          <h2 class="text-sm font-medium text-slate-900">Business Settings</h2>
-          
-          <label class="block">
-            <span class="text-xs font-medium text-slate-700">Business Name</span>
-            <input
-              type="text"
-              id="settings-business-name"
-              placeholder="Your Business Name"
-              class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </label>
-
-          <label class="block">
-            <span class="text-xs font-medium text-slate-700">Google Review Link</span>
-            <input
-              type="url"
-              id="settings-review-link"
-              placeholder="https://g.page/r/your-google-review-link"
-              class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-            <p class="mt-1 text-[11px] text-slate-500">
-              This link will be automatically added to all review requests.
-            </p>
-          </label>
-
-          <label class="block">
-            <span class="text-xs font-medium text-slate-700">SMS Template</span>
-            <textarea
-              id="settings-sms-template"
-              rows="3"
-              placeholder="Hi {name}, thanks for visiting {business}! Please review us here: {link}"
-              class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            ></textarea>
-          </label>
-
-          <button
-            id="save-settings-btn"
-            class="inline-flex items-center gap-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-md px-4 py-2 shadow-sm hover:from-indigo-600 hover:to-indigo-700"
-          >
-            💾 Save Settings
-          </button>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-4 space-y-4">
-          <div class="flex items-center justify-between">
-            <h2 class="text-sm font-medium text-slate-900">Telegram Bot Integration</h2>
-            <span id="telegram-status-badge" class="px-2 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">
-              Not Configured
-            </span>
-          </div>
-
-          <label class="block">
-            <span class="text-xs font-medium text-slate-700">Bot Token</span>
-            <input
-              type="password"
-              id="telegram-bot-token"
-              placeholder="Enter your Telegram Bot Token from @BotFather"
-              autocomplete="new-password"
-              class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </label>
-
-          <label class="block">
-            <span class="text-xs font-medium text-slate-700">Chat ID</span>
-            <input
-              type="text"
-              id="telegram-chat-id"
-              placeholder="Your Telegram Chat ID"
-              class="mt-1 block w-full text-sm rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </label>
-
-          <div class="flex gap-2">
-            <button
-              id="save-telegram-btn"
-              class="inline-flex items-center gap-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-md px-4 py-2 shadow-sm hover:from-indigo-600 hover:to-indigo-700"
-            >
-              💾 Save Telegram Settings
-            </button>
-            <button
-              id="test-telegram-btn"
-              disabled
-              class="inline-flex items-center gap-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-md px-4 py-2 hover:bg-indigo-100 disabled:opacity-50"
-            >
-              🔔 Send Test Message
-            </button>
-          </div>
-          <button
-            id="disconnect-telegram-btn"
-            class="hidden text-sm text-red-600 hover:text-red-700"
-          >
-            Disconnect Telegram Bot
-          </button>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <script>
-    const tabs = document.querySelectorAll('.nav-tab');
-    const sections = document.querySelectorAll('.section');
-    let businessName = 'Our Store';
-
-    function showSection(id) {
-      sections.forEach(sec => {
-        sec.classList.toggle('hidden', sec.id !== id);
-      });
-      tabs.forEach(btn => {
-        const isActive = btn.getAttribute('data-section') === id;
-        btn.classList.toggle('bg-indigo-50', isActive);
-        btn.classList.toggle('text-indigo-600', isActive);
-        btn.classList.toggle('font-medium', isActive);
-        btn.classList.toggle('text-slate-600', !isActive);
-      });
-      
-      if (id === 'dashboard') loadDashboard();
-      if (id === 'history') loadHistory();
-      if (id === 'customers') loadCustomers();
-      if (id === 'settings') { loadSettings(); loadTelegramConfig(); }
-      if (id === 'billing') updateSubscriptionDisplay();
-      if (id === 'feedback') loadFeedback();
-      if (id === 'reviews') clearAIReviewForm();
-    }
-
-    tabs.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-section');
-        showSection(id);
-      });
-    });
-
-    let notificationTimeout;
-    function showNotification(message, type = 'success') {
-      const container = document.getElementById('notification-container');
-      const messageDiv = document.getElementById('notification-message');
-      const iconSpan = document.getElementById('notification-icon');
-      const textSpan = document.getElementById('notification-text');
-      
-      if (notificationTimeout) clearTimeout(notificationTimeout);
-      
-      if (type === 'success') {
-        iconSpan.textContent = '✓';
-        messageDiv.className = 'rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-white flex items-center gap-2 bg-green-500';
-      } else if (type === 'error') {
-        iconSpan.textContent = '✕';
-        messageDiv.className = 'rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-white flex items-center gap-2 bg-red-500';
-      } else if (type === 'info') {
-        iconSpan.textContent = 'ℹ';
-        messageDiv.className = 'rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-white flex items-center gap-2 bg-blue-500';
-      }
-      
-      textSpan.textContent = message;
-      container.classList.remove('hidden');
-      
-      if (type === 'success') {
-        notificationTimeout = setTimeout(() => {
-          container.classList.add('hidden');
-        }, 4000);
-      }
-    }
-
-    async function loadDashboard() {
-      try {
-        const response = await fetch('/api/dashboard');
-        const data = await response.json();
-        
-        if (data.success) {
-          document.getElementById('stat-total-messages').textContent = data.stats.totalMessages || 0;
-          document.getElementById('stat-total-customers').textContent = data.stats.totalCustomers || 0;
-          document.getElementById('stat-today').textContent = data.stats.today || 0;
-          document.getElementById('stat-this-week').textContent = data.stats.thisWeek || 0;
-          
-          const container = document.getElementById('recent-messages');
-          if (data.recentMessages && data.recentMessages.length > 0) {
-            container.innerHTML = data.recentMessages.map(msg => `
-              <div class="py-3 flex items-start justify-between gap-3">
-                <div>
-                  <div class="font-medium text-slate-900">
-                    ${msg.customer_name}
-                    <span class="ml-1 text-xs rounded-full bg-indigo-50 text-indigo-700 px-2 py-0.5">${getMessageTypeLabel(msg.message_type)}</span>
+        <section id="send-sms" class="section hidden">
+          <div class="grid lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+              <div class="text-center mb-6">
+                <div 
+                  id="drop-zone"
+                  class="drag-area border-2 border-dashed border-gray-300 rounded-xl p-10 cursor-pointer hover:border-accent transition-colors"
+                >
+                  <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
                   </div>
-                  <div class="text-xs text-slate-500">
-                    📞 ${msg.customer_phone} • ${new Date(msg.sent_at).toLocaleString()}
+                  <h3 class="font-semibold text-gray-900 mb-1">Drag & Drop Receipt</h3>
+                  <p class="text-sm text-gray-500 mb-4">Supports JPG, HEIC, PNG</p>
+                  <button id="browse-files-btn" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                    Browse Files
+                  </button>
+                  <input type="file" id="ocr-upload" accept="image/*" class="hidden" />
+                </div>
+              </div>
+
+              <button id="camera-btn" class="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors mb-4">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Take Photo with Camera
+              </button>
+
+              <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                <div class="flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-blue-900">Privacy First</p>
+                    <p class="text-xs text-blue-700">Receipts are processed securely by OpenAI and are discarded immediately after extraction.</p>
                   </div>
                 </div>
               </div>
+
+              <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Detected from Receipt</div>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                  <div><span class="text-gray-500">Name:</span> <span id="ocr-name" class="text-gray-900 font-medium">-</span></div>
+                  <div><span class="text-gray-500">Phone:</span> <span id="ocr-phone" class="text-gray-900 font-medium">-</span></div>
+                  <div><span class="text-gray-500">Device:</span> <span id="ocr-device" class="text-gray-900 font-medium">-</span></div>
+                  <div><span class="text-gray-500">Repair:</span> <span id="ocr-repair" class="text-gray-900 font-medium">-</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+              <div class="flex items-center gap-2 mb-1">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <h3 class="font-semibold text-gray-900">Customer Profile</h3>
+              </div>
+              <p class="text-xs text-gray-500 mb-5">Editable • Review carefully</p>
+
+              <div class="space-y-4">
+                <div>
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Customer Name</label>
+                  <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </span>
+                    <input type="text" id="customer-name" placeholder="Identify from receipt..." class="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Phone Number</label>
+                  <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </span>
+                    <input type="tel" id="customer-phone" placeholder="+1..." class="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Device</label>
+                    <input type="text" id="device" placeholder="Device Model" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
+                  </div>
+                  <div>
+                    <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Cost</label>
+                    <input type="text" id="cost" placeholder="$0.00" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Repair Type</label>
+                  <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      </svg>
+                    </span>
+                    <input type="text" id="repair" placeholder="Service description..." class="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Message Type</label>
+                  <select id="message-type" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent bg-white">
+                    <option value="review">⭐ Google Review Request</option>
+                    <option value="ready">🔔 Device Ready for Pickup</option>
+                    <option value="follow_up">🔁 Follow-up Check-in</option>
+                    <option value="custom">💬 Custom Message</option>
+                  </select>
+                </div>
+
+                <div id="custom-message-container" class="hidden">
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Custom Message</label>
+                  <textarea id="custom-message" rows="3" placeholder="Write your custom message..." class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent resize-none"></textarea>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Message Preview</div>
+                  <p id="message-preview" class="text-sm text-gray-700 leading-relaxed">Your message will appear here...</p>
+                  <div class="text-xs text-gray-400 mt-2">Character count: <span id="char-count">0</span>/160</div>
+                </div>
+
+                <label class="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer">
+                  <input type="checkbox" id="sms-consent-checkbox" class="mt-0.5 rounded border-amber-300 text-amber-600 focus:ring-amber-500" />
+                  <span class="text-xs text-amber-800">
+                    <strong>Required:</strong> I confirm this customer has consented to receive SMS updates from my business. (TCPA Compliance)
+                  </span>
+                </label>
+
+                <button id="send-sms-btn" disabled class="w-full py-3 bg-accent text-white font-medium rounded-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  Save & Send Welcome SMS
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="history" class="section hidden">
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between p-5 border-b border-gray-100">
+              <div>
+                <h3 class="font-semibold text-gray-900">Message History</h3>
+                <p class="text-sm text-gray-500">Track all sent messages and follow-ups</p>
+              </div>
+              <select id="history-filter" class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+                <option value="all">All Messages</option>
+                <option value="clicked">Clicked Links</option>
+                <option value="reviewed">With Feedback</option>
+                <option value="needs-followup">Needs Follow-up</option>
+              </select>
+            </div>
+            <div id="history-list" class="divide-y divide-gray-50 max-h-[500px] overflow-y-auto p-2">
+              <div class="text-center py-12 text-gray-500">Loading...</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="customers" class="section hidden">
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between p-5 border-b border-gray-100">
+              <div>
+                <h3 class="font-semibold text-gray-900">Customer Database</h3>
+                <p class="text-sm text-gray-500">Manage your customer contacts</p>
+              </div>
+            </div>
+            <div id="customers-list" class="divide-y divide-gray-50 max-h-[500px] overflow-y-auto p-2">
+              <div class="text-center py-12 text-gray-500">Loading...</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="reviews" class="section hidden">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex gap-2">
+              <button class="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg">All</button>
+              <button class="px-4 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50">Pending</button>
+              <button class="px-4 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50">Intercepted</button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
+            <h3 class="font-semibold text-gray-900 mb-1">AI Review Reply Assistant</h3>
+            <p class="text-sm text-gray-500 mb-4">Generate professional, SEO-optimized responses for Google Reviews</p>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+              <div class="space-y-4">
+                <div>
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Customer Name</label>
+                  <input type="text" id="ai-customer-name" placeholder="Enter reviewer name..." class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Star Rating</label>
+                  <select id="ai-star-rating" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white">
+                    <option value="">Select rating...</option>
+                    <option value="5">⭐⭐⭐⭐⭐ 5 Stars</option>
+                    <option value="4">⭐⭐⭐⭐ 4 Stars</option>
+                    <option value="3">⭐⭐⭐ 3 Stars</option>
+                    <option value="2">⭐⭐ 2 Stars</option>
+                    <option value="1">⭐ 1 Star</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Review Text</label>
+                  <textarea id="ai-review-text" rows="4" placeholder="Paste the customer's review text here..." class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none"></textarea>
+                </div>
+                <button id="generate-reply-btn" onclick="generateAIReply()" class="w-full py-3 bg-accent text-white font-medium rounded-lg hover:bg-indigo-600 transition-colors flex items-center justify-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Generate AI Reply
+                </button>
+              </div>
+
+              <div id="ai-reply-container" class="hidden">
+                <div class="bg-gray-900 rounded-xl p-5 h-full">
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-medium text-green-400 uppercase tracking-wide">AI Drafted Response</span>
+                    <div class="flex gap-2">
+                      <button id="copy-reply-btn" class="p-1.5 rounded-lg bg-gray-700 text-gray-300 hover:text-white transition-colors" title="Copy to clipboard">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <p id="ai-reply-text" class="text-white text-sm leading-relaxed"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="billing" class="section hidden">
+          <div class="grid md:grid-cols-2 gap-6">
+            <div id="starter-plan-card" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+              <h3 class="font-semibold text-gray-900 mb-1">Starter Plan</h3>
+              <div class="flex items-baseline gap-1 mb-4">
+                <span class="text-3xl font-bold text-gray-900">$29</span>
+                <span class="text-gray-500">/month</span>
+              </div>
+              <ul class="space-y-2 mb-6 text-sm text-gray-600">
+                <li class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  500 SMS per month
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  OCR Receipt Scanning
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Review Link Tracking
+                </li>
+              </ul>
+              <button id="subscribe-starter-btn" class="w-full py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                Subscribe to Starter
+              </button>
+            </div>
+
+            <div id="pro-plan-card" class="bg-white rounded-xl border-2 border-accent shadow-sm p-6 relative">
+              <span class="absolute -top-3 left-4 px-3 py-1 bg-accent text-white text-xs font-medium rounded-full">Popular</span>
+              <h3 class="font-semibold text-gray-900 mb-1">Pro Plan</h3>
+              <div class="flex items-baseline gap-1 mb-4">
+                <span class="text-3xl font-bold text-gray-900">$79</span>
+                <span class="text-gray-500">/month</span>
+              </div>
+              <ul class="space-y-2 mb-6 text-sm text-gray-600">
+                <li class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  2,000 SMS per month
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  AI Review Reply Assistant
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Telegram Bot Integration
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Priority Support
+                </li>
+              </ul>
+              <button id="subscribe-pro-btn" class="w-full py-2.5 bg-accent text-white font-medium rounded-lg hover:bg-indigo-600 transition-colors">
+                Subscribe to Pro
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="feedback" class="section hidden">
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between p-5 border-b border-gray-100">
+              <div>
+                <h3 class="font-semibold text-gray-900">Feedback Inbox</h3>
+                <p class="text-sm text-gray-500">Internal feedback from customers (1-3 star ratings)</p>
+              </div>
+            </div>
+            <div id="feedback-list" class="divide-y divide-gray-50 max-h-[500px] overflow-y-auto p-2">
+              <div class="text-center py-12 text-gray-500">Loading...</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="settings" class="section hidden">
+          <div class="grid lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+              <h3 class="font-semibold text-gray-900 mb-1">Business Settings</h3>
+              <p class="text-sm text-gray-500 mb-5">Configure your business profile and SMS templates</p>
+
+              <div class="space-y-4">
+                <div>
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Business Name</label>
+                  <input type="text" id="settings-business-name" placeholder="Your Business Name" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Google Review Link</label>
+                  <input type="url" id="settings-review-link" placeholder="https://g.page/r/..." class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">SMS Template</label>
+                  <textarea id="settings-sms-template" rows="3" placeholder="Hi {name}, thanks for visiting {business}! Please review us here: {link}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none"></textarea>
+                </div>
+                <button id="save-settings-btn" class="w-full py-2.5 bg-accent text-white font-medium rounded-lg hover:bg-indigo-600 transition-colors">
+                  Save Settings
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+              <div class="flex items-center justify-between mb-1">
+                <h3 class="font-semibold text-gray-900">Telegram Bot</h3>
+                <span id="telegram-status-badge" class="px-2 py-1 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600">
+                  Not Configured
+                </span>
+              </div>
+              <p class="text-sm text-gray-500 mb-5">Connect your Telegram bot for review approval notifications</p>
+
+              <div class="space-y-4">
+                <div>
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Bot Token</label>
+                  <input type="password" id="telegram-bot-token" placeholder="Enter your Telegram Bot Token from @BotFather" autocomplete="new-password" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Chat ID</label>
+                  <input type="text" id="telegram-chat-id" placeholder="Your Telegram Chat ID" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
+                </div>
+                <div class="flex gap-2">
+                  <button id="save-telegram-btn" class="flex-1 py-2.5 bg-accent text-white font-medium rounded-lg hover:bg-indigo-600 transition-colors">
+                    Save Telegram Settings
+                  </button>
+                  <button id="test-telegram-btn" disabled class="px-4 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50">
+                    Test
+                  </button>
+                </div>
+                <button id="disconnect-telegram-btn" class="hidden w-full py-2 text-sm text-red-600 hover:text-red-700 font-medium">
+                  Disconnect Telegram Bot
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let businessName = 'Our Store';
+
+    function showNotification(message, type = 'info') {
+      const container = document.getElementById('notification-container');
+      const messageEl = document.getElementById('notification-message');
+      const textEl = document.getElementById('notification-text');
+      const iconEl = document.getElementById('notification-icon');
+
+      const colors = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        info: 'bg-blue-500',
+        warning: 'bg-amber-500'
+      };
+
+      const icons = {
+        success: '✓',
+        error: '✕',
+        info: 'ℹ',
+        warning: '⚠'
+      };
+
+      messageEl.className = `rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-white flex items-center gap-2 ${colors[type] || colors.info}`;
+      iconEl.textContent = icons[type] || icons.info;
+      textEl.textContent = message;
+
+      container.classList.remove('hidden');
+      setTimeout(() => container.classList.add('hidden'), 4000);
+    }
+
+    const navItems = document.querySelectorAll('.nav-item');
+    const sections = document.querySelectorAll('.section');
+    const pageTitle = document.getElementById('page-title');
+    const pageSubtitle = document.getElementById('page-subtitle');
+
+    const pageTitles = {
+      'dashboard': { title: 'Dashboard', subtitle: 'Overview of your messaging and reviews.' },
+      'send-sms': { title: 'New Customer Onboarding', subtitle: 'Upload a receipt to auto-fill details. Review and correct AI data before saving.' },
+      'history': { title: 'Message History', subtitle: 'Track all sent messages and customer interactions.' },
+      'customers': { title: 'Customer Database', subtitle: 'Manage your customer contacts and profiles.' },
+      'reviews': { title: 'Review Inbox', subtitle: 'Manage incoming reviews and approve AI responses.' },
+      'billing': { title: 'Billing & Plans', subtitle: 'Manage your subscription and billing details.' },
+      'feedback': { title: 'Feedback Inbox', subtitle: 'Internal feedback from customers requiring attention.' },
+      'settings': { title: 'Settings', subtitle: 'Configure your business profile and integrations.' }
+    };
+
+    function showSection(sectionId) {
+      sections.forEach(s => s.classList.add('hidden'));
+      navItems.forEach(n => {
+        n.classList.remove('active');
+        n.classList.add('text-slate-300');
+        n.classList.remove('text-white');
+      });
+
+      const targetSection = document.getElementById(sectionId);
+      const targetNav = document.querySelector(`[data-section="${sectionId}"]`);
+
+      if (targetSection) targetSection.classList.remove('hidden');
+      if (targetNav) {
+        targetNav.classList.add('active');
+        targetNav.classList.remove('text-slate-300');
+        targetNav.classList.add('text-white');
+      }
+
+      const pageInfo = pageTitles[sectionId] || { title: 'Page', subtitle: '' };
+      pageTitle.textContent = pageInfo.title;
+      pageSubtitle.textContent = pageInfo.subtitle;
+
+      if (sectionId === 'dashboard') loadDashboard();
+      if (sectionId === 'history') loadHistory();
+      if (sectionId === 'customers') loadCustomers();
+      if (sectionId === 'feedback') loadFeedback();
+      if (sectionId === 'settings') { loadSettings(); loadTelegramConfig(); }
+      if (sectionId === 'billing') updateSubscriptionDisplay();
+    }
+
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const sectionId = item.dataset.section;
+        showSection(sectionId);
+      });
+    });
+
+    document.getElementById('new-message-btn').addEventListener('click', () => showSection('send-sms'));
+    document.getElementById('quick-compose-btn').addEventListener('click', () => {
+      const phone = document.getElementById('quick-phone').value;
+      if (phone) document.getElementById('customer-phone').value = phone;
+      showSection('send-sms');
+    });
+
+    async function loadDashboard() {
+      try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        
+        if (data.success && data.stats) {
+          document.getElementById('stat-total-messages').textContent = data.stats.totalMessages || 0;
+          document.getElementById('stat-total-customers').textContent = data.stats.totalCustomers || 0;
+          document.getElementById('stat-today').textContent = data.stats.todayMessages || 0;
+          document.getElementById('stat-this-week').textContent = data.stats.weekMessages || 0;
+          
+          const container = document.getElementById('recent-messages');
+          if (data.stats.recentMessages && data.stats.recentMessages.length > 0) {
+            container.innerHTML = data.stats.recentMessages.map(msg => `
+              <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <div class="w-10 h-10 rounded-full ${msg.message_type === 'review' ? 'bg-amber-100' : 'bg-green-100'} flex items-center justify-center flex-shrink-0">
+                  ${msg.message_type === 'review' ? '<span class="text-amber-600">⭐</span>' : '<span class="text-green-600">📱</span>'}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-gray-900 truncate">${getMessageTypeTitle(msg.message_type)}</div>
+                  <div class="text-sm text-gray-500 truncate">${msg.customer_name}</div>
+                </div>
+                <div class="text-xs text-gray-400">${getTimeAgo(msg.sent_at)}</div>
+              </div>
             `).join('');
           } else {
-            container.innerHTML = '<p class="text-sm text-slate-500 text-center py-8">No messages yet</p>';
+            container.innerHTML = '<p class="text-sm text-gray-500 text-center py-8">No recent activity</p>';
           }
         }
       } catch (error) {
         console.error('Error loading dashboard:', error);
+        document.getElementById('recent-messages').innerHTML = '<p class="text-sm text-gray-500 text-center py-8">No recent activity</p>';
       }
+    }
+
+    function getMessageTypeTitle(type) {
+      const titles = {
+        'review': 'New Review Request',
+        'ready': 'Pickup Notification',
+        'follow_up': 'Follow-up Sent',
+        'custom': 'Custom Message'
+      };
+      return titles[type] || 'SMS Sent';
+    }
+
+    function getTimeAgo(dateStr) {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diff = Math.floor((now - date) / 1000);
+      
+      if (diff < 60) return 'Just now';
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      return `${Math.floor(diff / 86400)}d ago`;
     }
 
     function getMessageTypeLabel(type) {
@@ -829,28 +869,24 @@
         
         if (messages.length > 0) {
           container.innerHTML = messages.map(msg => `
-            <div class="py-3 flex items-start justify-between gap-3">
-              <div>
-                <div class="font-medium text-slate-900">
-                  ${msg.customer_name}
-                  <span class="ml-1 text-xs rounded-full bg-indigo-50 text-indigo-700 px-2 py-0.5">${getMessageTypeLabel(msg.message_type)}</span>
-                  ${msg.review_link_clicked_at ? '<span class="ml-1 text-xs rounded-full bg-green-50 text-green-700 px-2 py-0.5">👆 Clicked</span>' : ''}
-                  ${msg.feedback_rating ? `<span class="ml-1 text-xs rounded-full bg-amber-50 text-amber-700 px-2 py-0.5">${'⭐'.repeat(msg.feedback_rating)}</span>` : ''}
-                </div>
-                <div class="text-xs text-slate-500">
-                  📞 ${msg.customer_phone} • ${new Date(msg.sent_at).toLocaleString()}
-                </div>
+            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+              <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <span class="text-gray-600">${msg.customer_name.charAt(0).toUpperCase()}</span>
               </div>
-              <div class="flex gap-2">
-                ${msg.review_link_clicked_at && !msg.feedback_rating && !msg.follow_up_sent_at ? `
-                  <button 
-                    onclick="sendReminder(${msg.id}, '${msg.customer_name.replace(/'/g, "\\'")}', '${msg.customer_phone}', '${msg.review_link || ''}')"
-                    class="px-2 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700"
-                  >
-                    🔔 Send Reminder
-                  </button>
-                ` : ''}
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-gray-900">${msg.customer_name}</span>
+                  <span class="text-xs rounded-full bg-indigo-50 text-indigo-700 px-2 py-0.5">${getMessageTypeLabel(msg.message_type)}</span>
+                  ${msg.review_link_clicked_at ? '<span class="text-xs rounded-full bg-green-50 text-green-700 px-2 py-0.5">Clicked</span>' : ''}
+                  ${msg.feedback_rating ? `<span class="text-xs rounded-full bg-amber-50 text-amber-700 px-2 py-0.5">${'⭐'.repeat(msg.feedback_rating)}</span>` : ''}
+                </div>
+                <div class="text-sm text-gray-500">${msg.customer_phone} • ${new Date(msg.sent_at).toLocaleString()}</div>
               </div>
+              ${msg.review_link_clicked_at && !msg.feedback_rating && !msg.follow_up_sent_at ? `
+                <button onclick="sendReminder(${msg.id}, '${msg.customer_name.replace(/'/g, "\\'")}', '${msg.customer_phone}', '${msg.review_link || ''}')" class="px-3 py-1.5 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">
+                  Send Reminder
+                </button>
+              ` : ''}
             </div>
           `).join('');
         } else {
@@ -858,20 +894,16 @@
             all: 'No messages in history',
             clicked: 'No messages with clicked links',
             reviewed: 'No messages with feedback received',
-            'needs-followup': 'No messages need follow-up at this time'
+            'needs-followup': 'No messages need follow-up'
           };
-          container.innerHTML = `<p class="text-sm text-slate-500 text-center py-8">${filterLabels[filterValue]}</p>`;
+          container.innerHTML = `<p class="text-sm text-gray-500 text-center py-12">${filterLabels[filterValue]}</p>`;
         }
       } catch (error) {
         console.error('Error loading history:', error);
       }
     }
 
-    function applyHistoryFilter() {
-      loadHistory();
-    }
-
-    document.getElementById('history-filter').addEventListener('change', applyHistoryFilter);
+    document.getElementById('history-filter').addEventListener('change', loadHistory);
 
     async function loadCustomers() {
       try {
@@ -881,23 +913,21 @@
         const container = document.getElementById('customers-list');
         if (data.success && data.customers && data.customers.length > 0) {
           container.innerHTML = data.customers.map(customer => `
-            <div class="py-3 flex items-center justify-between gap-3">
-              <div>
-                <div class="font-medium text-slate-900">${customer.name}</div>
-                <div class="text-xs text-slate-500">
-                  📞 ${customer.phone} • 💬 ${customer.message_count || 0} messages
-                </div>
+            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+              <div class="w-10 h-10 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
+                <span class="text-white font-medium">${customer.name.charAt(0).toUpperCase()}</span>
               </div>
-              <button 
-                onclick="loadCustomerData('${customer.name}', '${customer.phone}')"
-                class="text-xs px-2.5 py-1 rounded-md border border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-              >
-                Use in Send Form
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-gray-900">${customer.name}</div>
+                <div class="text-sm text-gray-500">${customer.phone} • ${customer.message_count || 0} messages</div>
+              </div>
+              <button onclick="loadCustomerData('${customer.name}', '${customer.phone}')" class="px-3 py-1.5 text-xs border border-accent text-accent rounded-lg hover:bg-indigo-50 transition-colors">
+                Use in Form
               </button>
             </div>
           `).join('');
         } else {
-          container.innerHTML = '<p class="text-sm text-slate-500 text-center py-8">No customers yet</p>';
+          container.innerHTML = '<p class="text-sm text-gray-500 text-center py-12">No customers yet</p>';
         }
       } catch (error) {
         console.error('Error loading customers:', error);
@@ -919,25 +949,27 @@
         const container = document.getElementById('feedback-list');
         if (data.success && data.feedback && data.feedback.length > 0) {
           container.innerHTML = data.feedback.map(fb => `
-            <div class="py-3 ${fb.status === 'unread' ? 'border-l-4 border-l-amber-500 pl-3' : ''}">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="font-medium text-sm text-slate-900">${fb.customer_name}</span>
-                    <span class="text-xs px-2 py-1 rounded-full ${fb.rating <= 3 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
-                      ${'⭐'.repeat(fb.rating)} ${fb.rating} star${fb.rating !== 1 ? 's' : ''}
-                    </span>
-                    ${fb.status === 'unread' ? '<span class="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">New</span>' : ''}
+            <div class="p-4 rounded-lg ${fb.status === 'unread' ? 'bg-amber-50 border-l-4 border-l-amber-500' : 'hover:bg-gray-50'}">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex gap-3">
+                  <div class="w-10 h-10 rounded-full ${fb.rating <= 3 ? 'bg-red-100' : 'bg-green-100'} flex items-center justify-center flex-shrink-0">
+                    <span class="${fb.rating <= 3 ? 'text-red-600' : 'text-green-600'}">${fb.rating <= 3 ? '😞' : '😊'}</span>
                   </div>
-                  <p class="text-xs text-slate-600">${fb.customer_phone}</p>
-                  ${fb.feedback_text ? `<p class="text-sm text-slate-700 mt-2 p-3 bg-slate-50 rounded">"${fb.feedback_text}"</p>` : ''}
-                  <p class="text-[11px] text-slate-500 mt-2">${new Date(fb.created_at).toLocaleString()}</p>
+                  <div>
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="font-medium text-gray-900">${fb.customer_name}</span>
+                      <span class="text-xs px-2 py-1 rounded-full ${fb.rating <= 3 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                        ${'⭐'.repeat(fb.rating)}
+                      </span>
+                      ${fb.status === 'unread' ? '<span class="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">New</span>' : ''}
+                    </div>
+                    <div class="text-sm text-gray-500">${fb.customer_phone}</div>
+                    ${fb.feedback_text ? `<div class="mt-2 p-3 bg-white rounded-lg border border-gray-100 text-sm text-gray-700">"${fb.feedback_text}"</div>` : ''}
+                    <div class="text-xs text-gray-400 mt-2">${new Date(fb.created_at).toLocaleString()}</div>
+                  </div>
                 </div>
                 ${fb.status === 'unread' ? `
-                  <button 
-                    onclick="markFeedbackRead(${fb.id})"
-                    class="px-3 py-1.5 text-xs bg-slate-600 text-white rounded hover:bg-slate-700"
-                  >
+                  <button onclick="markFeedbackRead(${fb.id})" class="px-3 py-1.5 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
                     Mark Read
                   </button>
                 ` : ''}
@@ -945,7 +977,7 @@
             </div>
           `).join('');
         } else {
-          container.innerHTML = '<p class="text-sm text-slate-500 text-center py-8">No feedback received yet</p>';
+          container.innerHTML = '<p class="text-sm text-gray-500 text-center py-12">No feedback received yet</p>';
         }
       } catch (error) {
         console.error('Error loading feedback:', error);
@@ -1004,10 +1036,15 @@
 
         if (data.success) {
           showNotification('Settings saved!', 'success');
+          businessName = businessNameVal || 'Our Store';
+          
+          const sidebarBrand = document.getElementById('sidebar-brand');
           const headerBranding = document.getElementById('header-branding');
-          if (headerBranding && businessNameVal) {
-            headerBranding.textContent = `${businessNameVal} SMS Manager`;
-          }
+          
+          if (sidebarBrand) sidebarBrand.textContent = businessNameVal || 'ReviewGuard';
+          if (headerBranding) headerBranding.textContent = businessNameVal ? `${businessNameVal} SMS Manager` : 'SMS Manager';
+          
+          updatePreview();
         } else {
           showNotification(data.error || 'Failed to save settings', 'error');
         }
@@ -1030,14 +1067,14 @@
         
         if (data.success && data.configured) {
           statusBadge.textContent = 'Connected';
-          statusBadge.className = 'ml-auto px-2 py-1 rounded-full text-[10px] font-medium bg-green-100 text-green-700';
+          statusBadge.className = 'px-2 py-1 rounded-full text-[10px] font-medium bg-green-100 text-green-700';
           testBtn.disabled = false;
           disconnectBtn.classList.remove('hidden');
           chatIdInput.value = data.config.chatId || '';
-          tokenInput.placeholder = 'Bot token configured (hidden for security)';
+          tokenInput.placeholder = 'Bot token configured (hidden)';
         } else {
           statusBadge.textContent = 'Not Configured';
-          statusBadge.className = 'ml-auto px-2 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600';
+          statusBadge.className = 'px-2 py-1 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600';
           testBtn.disabled = true;
           disconnectBtn.classList.add('hidden');
           chatIdInput.value = '';
@@ -1082,14 +1119,14 @@
         showNotification('Failed to save Telegram settings', 'error');
       } finally {
         saveBtn.disabled = false;
-        saveBtn.textContent = '💾 Save Telegram Settings';
+        saveBtn.textContent = 'Save Telegram Settings';
       }
     }
 
     async function testTelegramConnection() {
       const testBtn = document.getElementById('test-telegram-btn');
       testBtn.disabled = true;
-      testBtn.textContent = 'Sending...';
+      testBtn.textContent = 'Testing...';
       
       try {
         const response = await fetch('/api/settings/telegram/test', {
@@ -1109,7 +1146,7 @@
         showNotification('Failed to send test message', 'error');
       } finally {
         testBtn.disabled = false;
-        testBtn.textContent = '🔔 Send Test Message';
+        testBtn.textContent = 'Test';
       }
     }
 
@@ -1175,7 +1212,7 @@
       }
 
       generateBtn.disabled = true;
-      generateBtn.textContent = '⏳ Generating...';
+      generateBtn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...';
 
       try {
         const response = await fetch('/api/generate-reply', {
@@ -1198,7 +1235,7 @@
         showNotification('Failed to generate reply', 'error');
       } finally {
         generateBtn.disabled = false;
-        generateBtn.textContent = '✨ Generate AI Reply';
+        generateBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Generate AI Reply';
       }
     }
 
@@ -1216,8 +1253,18 @@
     const deviceInput = document.getElementById('device');
     const repairInput = document.getElementById('repair');
     const customMessageInput = document.getElementById('custom-message');
+    const customMessageContainer = document.getElementById('custom-message-container');
     const messagePreview = document.getElementById('message-preview');
     const charCount = document.getElementById('char-count');
+
+    messageTypeSelect.addEventListener('change', function() {
+      if (this.value === 'custom') {
+        customMessageContainer.classList.remove('hidden');
+      } else {
+        customMessageContainer.classList.add('hidden');
+      }
+      updatePreview();
+    });
 
     function updatePreview() {
       const type = messageTypeSelect.value;
@@ -1246,7 +1293,6 @@
       charCount.textContent = message.length;
     }
 
-    messageTypeSelect.addEventListener('change', updatePreview);
     customerNameInput.addEventListener('input', updatePreview);
     deviceInput.addEventListener('input', updatePreview);
     repairInput.addEventListener('input', updatePreview);
@@ -1296,7 +1342,7 @@
       }
 
       sendSmsBtn.disabled = true;
-      sendSmsBtn.textContent = '📤 Sending...';
+      sendSmsBtn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sending...';
 
       try {
         const formData = new FormData();
@@ -1336,7 +1382,7 @@
         showNotification('Failed to send SMS. Please try again.', 'error');
       } finally {
         sendSmsBtn.disabled = !smsConsentCheckbox.checked;
-        sendSmsBtn.textContent = '📤 Send SMS';
+        sendSmsBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg> Save & Send Welcome SMS';
       }
     }
 
@@ -1389,15 +1435,44 @@
     document.getElementById('modal-backdrop').addEventListener('click', window.closeSmsConfirmationModal);
 
     const ocrUploadInput = document.getElementById('ocr-upload');
+    const dropZone = document.getElementById('drop-zone');
+    const browseFilesBtn = document.getElementById('browse-files-btn');
     const ocrNameDisplay = document.getElementById('ocr-name');
     const ocrPhoneDisplay = document.getElementById('ocr-phone');
     const ocrDeviceDisplay = document.getElementById('ocr-device');
     const ocrRepairDisplay = document.getElementById('ocr-repair');
 
-    ocrUploadInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+    browseFilesBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      ocrUploadInput.click();
+    });
 
+    dropZone.addEventListener('click', () => ocrUploadInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        processOCRFile(files[0]);
+      }
+    });
+
+    ocrUploadInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) processOCRFile(file);
+    });
+
+    async function processOCRFile(file) {
       ocrNameDisplay.textContent = 'Processing...';
       ocrPhoneDisplay.textContent = 'Processing...';
       ocrDeviceDisplay.textContent = 'Processing...';
@@ -1444,7 +1519,7 @@
         showNotification('Failed to process image', 'error');
         ocrUploadInput.value = '';
       }
-    });
+    }
 
     const cameraBtn = document.getElementById('camera-btn');
     const cameraModal = document.getElementById('camera-modal');
@@ -1497,54 +1572,11 @@
             return;
           }
 
-          ocrNameDisplay.textContent = 'Processing...';
-          ocrPhoneDisplay.textContent = 'Processing...';
-          ocrDeviceDisplay.textContent = 'Processing...';
-          ocrRepairDisplay.textContent = 'Processing...';
-
-          try {
-            const formData = new FormData();
-            formData.append('image', blob, 'camera-photo.jpg');
-
-            const response = await fetch('/api/ocr/process', {
-              method: 'POST',
-              body: formData
-            });
-
-            const data = await response.json();
-
-            if (data.success && data.data) {
-              ocrNameDisplay.textContent = data.data.customerName || '-';
-              ocrPhoneDisplay.textContent = data.data.customerPhone || '-';
-              ocrDeviceDisplay.textContent = data.data.device || '-';
-              ocrRepairDisplay.textContent = data.data.repair || '-';
-
-              if (data.data.customerName) customerNameInput.value = data.data.customerName;
-              if (data.data.customerPhone) document.getElementById('customer-phone').value = data.data.customerPhone;
-              if (data.data.device) deviceInput.value = data.data.device;
-              if (data.data.repair) repairInput.value = data.data.repair;
-
-              updatePreview();
-              showNotification('Information extracted successfully!', 'success');
-            } else {
-              ocrNameDisplay.textContent = '-';
-              ocrPhoneDisplay.textContent = '-';
-              ocrDeviceDisplay.textContent = '-';
-              ocrRepairDisplay.textContent = '-';
-              showNotification('Error: ' + (data.error || 'Failed to process photo'), 'error');
-            }
-          } catch (error) {
-            console.error('OCR processing error:', error);
-            ocrNameDisplay.textContent = '-';
-            ocrPhoneDisplay.textContent = '-';
-            ocrDeviceDisplay.textContent = '-';
-            ocrRepairDisplay.textContent = '-';
-            showNotification('Failed to process photo', 'error');
-          } finally {
-            stopCamera();
-            cameraModal.classList.add('hidden');
-            cameraError.classList.add('hidden');
-          }
+          stopCamera();
+          cameraModal.classList.add('hidden');
+          
+          const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+          processOCRFile(file);
         }, 'image/jpeg', 0.95);
       } catch (error) {
         console.error('Photo capture error:', error);
@@ -1563,7 +1595,7 @@
     async function createCheckout(planId, button, originalText) {
       try {
         button.disabled = true;
-        button.textContent = 'Creating checkout session...';
+        button.textContent = 'Creating checkout...';
 
         const authResponse = await fetch('/api/auth/session');
         if (!authResponse.ok) {
@@ -1622,19 +1654,19 @@
 
         starterCard.classList.remove('border-green-500', 'border-2');
         proCard.classList.remove('border-green-500', 'border-2');
-        starterCard.classList.add('border-slate-100');
-        proCard.classList.add('border-indigo-200');
+        starterCard.classList.add('border-gray-100');
+        proCard.classList.add('border-accent');
 
         if (data.subscription_status === 'active') {
           const planId = data.plan;
           
           if (planId === 'starter') {
-            starterCard.classList.remove('border-slate-100');
+            starterCard.classList.remove('border-gray-100');
             starterCard.classList.add('border-green-500', 'border-2');
             starterBtn.textContent = '✓ Active Plan';
             starterBtn.disabled = true;
           } else if (planId === 'pro') {
-            proCard.classList.remove('border-indigo-200');
+            proCard.classList.remove('border-accent');
             proCard.classList.add('border-green-500', 'border-2');
             proBtn.textContent = '✓ Active Plan';
             proBtn.disabled = true;
@@ -1711,11 +1743,20 @@
           const user = data.user;
           
           const userDisplay = document.getElementById('user-display-name');
+          const userEmail = document.getElementById('user-email');
+          const userAvatar = document.getElementById('user-avatar');
+          const sidebarBrand = document.getElementById('sidebar-brand');
+          const headerBranding = document.getElementById('header-branding');
+          
           if (userDisplay) userDisplay.textContent = user.first_name || 'User';
+          if (userEmail) userEmail.textContent = user.email || 'user@example.com';
+          if (userAvatar && user.first_name) userAvatar.textContent = user.first_name.charAt(0).toUpperCase();
           
           businessName = user.business_name || 'Our Store';
           
-          const headerBranding = document.getElementById('header-branding');
+          if (sidebarBrand) {
+            sidebarBrand.textContent = user.business_name || 'ReviewGuard';
+          }
           if (headerBranding) {
             headerBranding.textContent = user.business_name ? `${user.business_name} SMS Manager` : 'SMS Manager';
           }
@@ -1724,12 +1765,10 @@
         }
       } catch (error) {
         console.error('Error loading user:', error);
-        const headerBranding = document.getElementById('header-branding');
-        if (headerBranding) headerBranding.textContent = 'SMS Manager';
       }
     }
 
-    showSection('send-sms');
+    showSection('dashboard');
     loadUserOnPageLoad();
     updatePreview();
   </script>

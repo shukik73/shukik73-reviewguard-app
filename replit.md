@@ -64,11 +64,27 @@ Database schema changes are managed separately from application startup for prod
 
 ## Frontend Architecture
 
-A static HTML/CSS/JavaScript frontend with a modern, purple gradient design and a tabbed interface:
--   **Send SMS**: Main interface for sending messages, featuring an OCR section, message type dropdown, customer details input (OCR/database auto-fill), Google review link auto-population, and photo upload with preview.
--   **Dashboard**: Displays real-time analytics (messages, customers, activity).
--   **History**: Chronological log of sent messages with search/filter and CSV export.
--   **Customers**: Lists customer contact info, message counts, search/filter, and a "Load Customer" button.
+A static HTML/CSS/JavaScript frontend with a modern, professional design featuring a **fixed dark navy sidebar navigation** (#1e293b):
+
+**Layout Structure:**
+-   **Fixed Sidebar (w-56)**: Dark navy sidebar with ReviewGuard branding, main menu navigation, system menu, and user profile at bottom with logout button.
+-   **Main Content Area**: White background with sticky header showing page title, subtitle, and "+ New Message" button.
+-   **Responsive Cards**: Stats cards with hover effects, activity feeds, and Quick Compose panels.
+
+**Main Sections:**
+-   **Dashboard**: Stats cards (Total SMS Sent, Total Customers, Sent Today, Sent This Week), Recent Activity feed with time-ago formatting, Quick Compose panel.
+-   **Send SMS** (New Customer Onboarding): Drag-and-drop receipt upload with OCR, camera capture, Customer Profile form with device/cost/repair fields, message preview, TCPA consent checkbox.
+-   **History**: Message history with filtering (All, Clicked, Reviewed, Needs Follow-up), reminder buttons.
+-   **Customers**: Customer database with avatar initials, message counts, "Use in Form" quick-load.
+-   **Reviews**: AI Review Reply Assistant with input form and dark-themed response preview.
+-   **Billing**: Subscription plan cards (Starter $29/mo, Pro $79/mo) with Stripe checkout.
+-   **Feedback**: Internal feedback inbox for 1-3 star ratings with read/unread status.
+-   **Settings**: Business settings form and Telegram bot configuration.
+
+**Dynamic Branding:**
+-   Business name updates in sidebar (#sidebar-brand) when user logs in or saves settings.
+-   Hidden #header-branding element maintained for backward compatibility.
+-   User avatar with initials displayed in sidebar footer.
 
 **UI/UX Decisions**: Emphasizes real-time validation, notifications, responsiveness, dynamic adaptation, one-click customer selection, automatic data refresh, drag-and-drop file upload, smart template generation, searchable tables, automatic form reset, and a mandatory TCPA consent checkbox.
 
