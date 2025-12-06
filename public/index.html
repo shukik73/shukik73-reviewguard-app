@@ -1831,10 +1831,29 @@
     updatePreview();
 
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+      window.addEventListener('load', async () => {
+        // Clear all old caches first
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.filter(name => name !== 'reviewguard-v3').map(name => caches.delete(name))
+        );
+        
+        // Register service worker with update check
+        navigator.serviceWorker.register('/sw.js?v=3')
           .then(registration => {
             console.log('ServiceWorker registered:', registration.scope);
+            // Force update check
+            registration.update();
+            
+            // Reload when new service worker activates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'activated') {
+                  window.location.reload();
+                }
+              });
+            });
           })
           .catch(error => {
             console.log('ServiceWorker registration failed:', error);
