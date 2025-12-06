@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TechyMiramar - Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f9fafb;
+    }
+
+    .sidebar-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .sidebar-scroll::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+
+    .sidebar-scroll::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+
+    .sidebar-transition {
+      transition: transform 0.3s ease-in-out;
+    }
+
+    /* Modal Backdrop */
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+    }
+  </style>
+</head>
+
+<body class="text-slate-600 bg-gray-50">
+
+  <!-- Global Notification Container -->
+  <div id="notification-container"
+    class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 z-[60] max-w-md w-full px-4">
+    <div id="notification-message"
+      class="rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-white flex items-center gap-2">
+      <span id="notification-icon"></span>
+      <span id="notification-text"></span>
+    </div>
+  </div>
+
+  <!-- Mobile Header -->
+  <div class="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-40 shadow-md">
+    <div class="flex items-center gap-2">
+      <div
+        class="w-8 h-8 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 flex items-center justify-center font-bold text-lg">
+        T</div>
+      <span class="font-bold text-lg" id="header-branding-mobile">TechyMiramar</span>
+    </div>
+    <button id="mobile-menu-btn" class="text-white p-2 focus:outline-none">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar"
+    class="fixed inset-y-0 left-0 w-[250px] bg-slate-900 text-white z-50 transform -translate-x-full md:translate-x-0 sidebar-transition flex flex-col h-full shadow-2xl md:shadow-none">
+    <div class="p-6 flex items-center gap-3 border-b border-slate-800">
+      <div
+        class="w-8 h-8 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 flex items-center justify-center font-bold text-lg shadow-lg shadow-indigo-900/50">
+        T</div>
+      <span class="font-bold text-xl tracking-tight" id="header-branding">TechyMiramar</span>
+      <button id="close-sidebar-btn" class="md:hidden ml-auto text-slate-400 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto sidebar-scroll p-4 space-y-1">
+      <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-4 mt-4">Main Menu</div>
+
+      <a href="#" data-section="dashboard"
+        class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600/10 text-indigo-400 border border-indigo-600/20 font-medium transition-all">
+        <span>📊</span> Dashboard
+      </a>
+      <a href="#" data-section="send-sms"
+        class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all font-medium">
+        <span>📤</span> Send SMS
+      </a>
+      <a href="#" data-section="history"
+        class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all font-medium">
+        <span>📜</span> History
+      </a>
+      <a href="#" data-section="customers"
+        class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all font-medium">
+        <span>👥</span> Customers
+      </a>
+      <a href="#" data-section="reviews"
+        class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all font-medium">
+        <span>🤖</span> AI Reviews
+      </a>
+      <a href="#" data-section="feedback"
+        class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all font-medium">
+        <span>💬</span> Feedback
+      </a>
+
+      <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-4 mt-8">System</div>
+
+      <a href="#" data-section="billing"
+        class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all font-medium">
+        <span>💳</span> Billing
+      </a>
+      <a href="#" data-section="settings"
+        class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all font-medium">
+        <span>⚙️</span> Settings
+      </a>
+    </nav>
+
+    <div class="p-4 border-t border-slate-800">
+      <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+        id="logout-btn">
+        <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-sm font-bold text-white"
+          id="user-initials">U</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-white truncate" id="user-display-name">Loading...</div>
+          <div class="text-xs text-slate-400 truncate" id="user-email-display">user@example.com</div>
+        </div>
+        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Overlay -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden glass-panel"></div>
+
+  <!-- Main Content -->
+  <main class="md:ml-[250px] p-6 md:p-8 min-h-screen">
+
+    <!-- DASHBOARD SECTION -->
+    <section id="dashboard" class="section">
+      <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Dashboard</h1>
+          <p class="text-slate-500 mt-1">Overview of your messaging and reviews.</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="showSection('send-sms')"
+            class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg hover:shadow-indigo-500/30 transition-all font-medium flex items-center gap-2">
+            <span>+ New Message</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <div class="flex justify-between items-start mb-4">
+            <div class="p-2.5 bg-indigo-50 rounded-lg text-indigo-600"><span>📨</span></div>
+          </div>
+          <div class="text-3xl font-bold text-slate-900 mb-1" id="stat-total-messages">0</div>
+          <div class="text-sm text-slate-500 font-medium">Total SMS Sent</div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <div class="flex justify-between items-start mb-4">
+            <div class="p-2.5 bg-purple-50 rounded-lg text-purple-600"><span>👥</span></div>
+          </div>
+          <div class="text-3xl font-bold text-slate-900 mb-1" id="stat-total-customers">0</div>
+          <div class="text-sm text-slate-500 font-medium">Total Customers</div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <div class="flex justify-between items-start mb-4">
+            <div class="p-2.5 bg-blue-50 rounded-lg text-blue-600"><span>📅</span></div>
+          </div>
+          <div class="text-3xl font-bold text-slate-900 mb-1" id="stat-today">0</div>
+          <div class="text-sm text-slate-500 font-medium">Sent Today</div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <div class="flex justify-between items-start mb-4">
+            <div class="p-2.5 bg-amber-50 rounded-lg text-amber-600"><span>📈</span></div>
+          </div>
+          <div class="text-3xl font-bold text-slate-900 mb-1" id="stat-this-week">0</div>
+          <div class="text-sm text-slate-500 font-medium">Sent This Week</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Recent Activity -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+          <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h2 class="text-lg font-bold text-slate-900">Recent Activity</h2>
+          </div>
+          <div id="recent-activity-list" class="divide-y divide-slate-50">
+            <p class="text-sm text-slate-500 text-center py-8">Loading...</p>
+          </div>
+        </div>
+
+        <!-- Quick Send Box (With Purple Header Tweak) -->
+        <div class="bg-white rounded-xl shadow-sm border border-indigo-100 overflow-hidden">
+          <!-- The Tweak: Purple Header Bar -->
+          <div class="bg-indigo-600 p-4">
+            <div class="flex items-center gap-2 text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z">
+                </path>
+              </svg>
+              <h2 class="text-lg font-bold">Quick Compose</h2>
+            </div>
+          </div>
+
+          <div class="p-6">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Customer Phone</label>
+                <input type="text" id="quick-phone" placeholder="+1 (555) 000-0000"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+              </div>
+              <button onclick="showSection('send-sms')"
+                class="w-full bg-indigo-50 text-indigo-600 font-bold py-2.5 rounded-lg hover:bg-indigo-100 transition-all">
+                Go to Full SMS Form →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEND SMS SECTION -->
+    <section id="send-sms" class="section hidden">
+      <h1 class="text-2xl font-bold text-slate-900 mb-6">Send New Message</h1>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Left: Form -->
+        <div class="space-y-6">
+          <!-- Step 1: OCR -->
+          <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+            <h2 class="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wide">Step 1: Customer Info</h2>
+            <div class="flex gap-3 mb-4">
+              <label
+                class="flex-1 cursor-pointer border-2 border-dashed border-slate-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50/30 transition-all p-4 flex flex-col items-center justify-center gap-2">
+                <span class="text-2xl">📄</span>
+                <span class="text-xs font-bold text-slate-600">Upload Receipt</span>
+                <input type="file" class="hidden" id="ocr-upload" accept="image/*" />
+              </label>
+              <button id="camera-btn"
+                class="flex-1 border-2 border-slate-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50/30 transition-all p-4 flex flex-col items-center justify-center gap-2">
+                <span class="text-2xl">📷</span>
+                <span class="text-xs font-bold text-slate-600">Use Camera</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 2: Details -->
+          <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+            <h2 class="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wide">Step 2: Message Details</h2>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Message Type</label>
+                <select id="message-type"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option value="review">⭐ Google Review Request</option>
+                  <option value="ready">🔔 Device Ready for Pickup</option>
+                  <option value="follow_up">🔁 Follow-Up</option>
+                  <option value="custom">💬 Custom Message</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Customer Name</label>
+                <input type="text" id="customer-name"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Phone Number</label>
+                <input type="tel" id="customer-phone"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Device</label>
+                  <input type="text" id="device"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Repair</label>
+                  <input type="text" id="repair"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Custom Message</label>
+                <textarea id="custom-message" rows="3"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+              </div>
+
+              <div class="bg-amber-50 border border-amber-100 rounded-lg p-3 flex gap-3 items-start">
+                <input type="checkbox" id="sms-consent-checkbox" class="mt-1">
+                <span class="text-xs text-amber-900">I confirm this customer has consented to receive SMS
+                  updates.</span>
+              </div>
+
+              <button id="send-sms-btn" disabled
+                class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold py-3 rounded-xl shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                Send SMS 🚀
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Preview -->
+        <div>
+          <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 sticky top-24">
+            <h2 class="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wide">Preview</h2>
+            <div class="bg-slate-100 rounded-xl p-4 min-h-[200px] flex flex-col justify-center">
+              <div class="bg-white p-4 rounded-lg shadow-sm text-sm text-slate-800 leading-relaxed"
+                id="message-preview">
+                Message preview will appear here...
+              </div>
+            </div>
+            <div class="mt-2 text-xs text-slate-400 text-right">
+              <span id="char-count">0</span>/160 chars
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORY SECTION -->
+    <section id="history" class="section hidden">
+      <h1 class="text-2xl font-bold text-slate-900 mb-6">Message History</h1>
+      <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+        <input type="text" id="history-search" placeholder="Search history..."
+          class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <select id="history-filter"
+          class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 mb-6 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="all">All Messages</option>
+          <option value="clicked">Clicked Link</option>
+          <option value="reviewed">Feedback Received</option>
+        </select>
+        <div id="history-list" class="space-y-4">
+          <p class="text-center text-slate-500 py-8">Loading history...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CUSTOMERS SECTION -->
+    <section id="customers" class="section hidden">
+      <h1 class="text-2xl font-bold text-slate-900 mb-6">Customers</h1>
+      <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+        <div id="customers-list" class="space-y-4">
+          <p class="text-center text-slate-500 py-8">Loading customers...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI REVIEWS SECTION -->
+    <section id="reviews" class="section hidden">
+      <h1 class="text-2xl font-bold text-slate-900 mb-6">AI Review Assistant</h1>
+      <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 max-w-2xl">
+        <div class="space-y-4">
+          <input type="text" id="ai-customer-name" placeholder="Customer Name"
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <select id="ai-star-rating"
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">Select Rating...</option>
+            <option value="5">⭐⭐⭐⭐⭐ 5 Stars</option>
+            <option value="4">⭐⭐⭐⭐ 4 Stars</option>
+          </select>
+          <textarea id="ai-review-text" rows="4" placeholder="Paste review here..."
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+          <button id="generate-reply-btn"
+            class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-md hover:bg-indigo-700 transition-all">Generate
+            Reply ✨</button>
+        </div>
+        <div id="ai-reply-container" class="hidden mt-6 pt-6 border-t border-slate-100">
+          <div class="bg-indigo-50 p-4 rounded-xl text-sm text-slate-800" id="ai-reply-text"></div>
+          <button id="copy-reply-btn" class="mt-3 text-indigo-600 text-sm font-bold hover:underline">Copy to
+            Clipboard</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS SECTION -->
+    <section id="settings" class="section hidden">
+      <h1 class="text-2xl font-bold text-slate-900 mb-6">Settings</h1>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 space-y-4">
+          <h2 class="font-bold text-lg">General</h2>
+          <input type="text" id="settings-business-name" placeholder="Business Name"
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+          <input type="text" id="settings-review-link" placeholder="Google Review Link"
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+          <button id="save-settings-btn" class="bg-indigo-600 text-white font-bold px-6 py-2 rounded-lg">Save</button>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 space-y-4">
+          <h2 class="font-bold text-lg">Telegram Integration</h2>
+          <input type="password" id="telegram-bot-token" placeholder="Bot Token"
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+          <input type="text" id="telegram-chat-id" placeholder="Chat ID"
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+          <div class="flex gap-2">
+            <button id="save-telegram-btn" class="bg-indigo-600 text-white font-bold px-6 py-2 rounded-lg">Save</button>
+            <button id="test-telegram-btn"
+              class="bg-slate-200 text-slate-700 font-bold px-6 py-2 rounded-lg">Test</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modals -->
+  <div id="sms-confirmation-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center px-4">
+    <div class="modal-backdrop absolute inset-0"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+      <h3 class="text-xl font-bold text-slate-900 mb-4">Confirm SMS</h3>
+      <div class="space-y-3 mb-6 bg-slate-50 p-4 rounded-xl">
+        <div class="flex justify-between"><span class="text-slate-500">To:</span> <span class="font-bold"
+            id="modal-customer-name"></span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Phone:</span> <span class="font-bold"
+            id="modal-customer-phone"></span></div>
+        <div class="mt-2 text-sm text-slate-700 border-t border-slate-200 pt-2" id="modal-message-preview"></div>
+      </div>
+      <div class="flex gap-3">
+        <button id="modal-cancel-btn"
+          class="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl">Cancel</button>
+        <button id="modal-confirm-btn"
+          class="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg">Confirm & Send</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="camera-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[80]">
+    <div class="bg-white rounded-xl p-6 max-w-lg w-full">
+      <h2 class="text-2xl font-bold mb-4">Camera</h2>
+      <div class="bg-black h-64 rounded-lg mb-4"></div> <!-- Placeholder for video -->
+      <button id="close-camera-btn" class="w-full bg-slate-200 font-bold py-3 rounded-xl">Close</button>
+    </div>
+  </div>
+
+  <!-- App Logic -->
+  <script src="/js/app.js"></script>
+</body>
+
+</html>

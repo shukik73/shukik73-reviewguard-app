@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Option 3: Vibrant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #FFF5F5;
+        }
+
+        .sidebar-link.active {
+            background-color: #FF6B6B;
+            color: white;
+            box-shadow: 0 4px 0 #E04F4F;
+            transform: translateY(-2px);
+        }
+
+        .sidebar-link:hover:not(.active) {
+            background-color: #FFE3E3;
+            color: #FF6B6B;
+        }
+
+        .fun-card {
+            border-bottom: 4px solid #f0f0f0;
+        }
+
+        .fun-button {
+            transition: all 0.1s;
+            border-bottom: 4px solid #cc5555;
+        }
+
+        .fun-button:active {
+            border-bottom: 0px solid #cc5555;
+            transform: translateY(4px);
+        }
+    </style>
+</head>
+
+<body class="text-gray-800 flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-72 bg-white m-4 rounded-3xl shadow-xl flex flex-col p-6">
+        <div class="flex items-center gap-3 mb-10 px-2">
+            <div
+                class="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-2xl border-2 border-yellow-500">
+                📱</div>
+            <h1 class="text-2xl font-bold text-gray-800">Techy<span class="text-red-500">App</span></h1>
+        </div>
+
+        <nav class="space-y-3 flex-1">
+            <a href="#"
+                class="sidebar-link active flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-lg transition-all">
+                <span>🏠</span> Dashboard
+            </a>
+            <a href="#"
+                class="sidebar-link flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-gray-500 transition-all">
+                <span>💬</span> Messages
+            </a>
+            <a href="#"
+                class="sidebar-link flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-gray-500 transition-all">
+                <span>⭐</span> Reviews
+            </a>
+            <a href="#"
+                class="sidebar-link flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-gray-500 transition-all">
+                <span>🎁</span> Rewards
+            </a>
+        </nav>
+
+        <div class="bg-blue-50 p-4 rounded-2xl border-2 border-blue-100">
+            <div class="font-bold text-blue-800 mb-1">Pro Plan 🚀</div>
+            <div class="text-sm text-blue-600 mb-3">You have 500 SMS left!</div>
+            <div class="w-full bg-blue-200 rounded-full h-2.5">
+                <div class="bg-blue-500 h-2.5 rounded-full" style="width: 70%"></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 p-4 pl-0 overflow-y-auto">
+        <div class="h-full flex flex-col">
+            <!-- Header -->
+            <header class="flex justify-between items-center mb-8 px-4 pt-4">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-800">Hello, Friend! 👋</h2>
+                    <p class="text-gray-500 font-semibold mt-1">Ready to make customers happy?</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button
+                        class="w-12 h-12 bg-white rounded-2xl shadow-md flex items-center justify-center text-xl hover:scale-110 transition-transform">
+                        🔔
+                    </button>
+                    <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl shadow-md">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User"
+                            class="w-8 h-8 rounded-full bg-gray-100">
+                        <span class="font-bold text-gray-700">Felix</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Stats Row -->
+            <div class="grid grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-3xl shadow-lg fun-card border-b-green-100">
+                    <div class="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center text-2xl mb-4">🚀
+                    </div>
+                    <div class="text-4xl font-bold text-gray-800 mb-1">1.2k</div>
+                    <div class="font-bold text-gray-400">Messages Sent</div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl shadow-lg fun-card border-b-yellow-100">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-2xl flex items-center justify-center text-2xl mb-4">⭐
+                    </div>
+                    <div class="text-4xl font-bold text-gray-800 mb-1">4.9</div>
+                    <div class="font-bold text-gray-400">Star Rating</div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl shadow-lg fun-card border-b-purple-100">
+                    <div class="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center text-2xl mb-4">👯
+                    </div>
+                    <div class="text-4xl font-bold text-gray-800 mb-1">856</div>
+                    <div class="font-bold text-gray-400">Happy Customers</div>
+                </div>
+                <div
+                    class="bg-gradient-to-br from-red-400 to-pink-500 p-6 rounded-3xl shadow-lg text-white flex flex-col justify-between">
+                    <div class="font-bold text-xl">Boost Sales! 🔥</div>
+                    <button
+                        class="bg-white text-red-500 font-bold py-3 px-6 rounded-xl shadow-lg hover:scale-105 transition-transform">
+                        Start Campaign
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="grid grid-cols-3 gap-6 flex-1">
+                <!-- Feed -->
+                <div class="col-span-2 bg-white rounded-3xl shadow-lg p-8 fun-card">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6">Live Feed 🔴</h3>
+                    <div class="space-y-4">
+                        <div
+                            class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border-2 border-transparent hover:border-gray-200 transition-colors">
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-xl">💬
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-bold text-gray-800">New SMS Reply</div>
+                                <div class="text-sm text-gray-500">"Thanks! I'll be there in 10 mins."</div>
+                            </div>
+                            <button class="bg-blue-500 text-white px-4 py-2 rounded-xl font-bold text-sm">Reply</button>
+                        </div>
+                        <div
+                            class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border-2 border-transparent hover:border-gray-200 transition-colors">
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-xl">⭐
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-bold text-gray-800">5-Star Review!</div>
+                                <div class="text-sm text-gray-500">Sarah just left a review on Google.</div>
+                            </div>
+                            <button class="bg-green-500 text-white px-4 py-2 rounded-xl font-bold text-sm">View</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action -->
+                <div class="bg-white rounded-3xl shadow-lg p-8 fun-card">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6">Quick Actions ⚡</h3>
+                    <div class="space-y-3">
+                        <button
+                            class="w-full bg-indigo-50 text-indigo-600 font-bold py-4 rounded-2xl hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2">
+                            <span>📸</span> Scan Receipt
+                        </button>
+                        <button
+                            class="w-full bg-teal-50 text-teal-600 font-bold py-4 rounded-2xl hover:bg-teal-100 transition-colors flex items-center justify-center gap-2">
+                            <span>➕</span> Add Customer
+                        </button>
+                        <button
+                            class="w-full bg-orange-50 text-orange-600 font-bold py-4 rounded-2xl hover:bg-orange-100 transition-colors flex items-center justify-center gap-2">
+                            <span>📢</span> Blast SMS
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>
