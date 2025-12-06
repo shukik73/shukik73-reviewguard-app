@@ -1832,32 +1832,41 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
-        // Clear all old caches first
-        const cacheNames = await caches.keys();
-        await Promise.all(
-          cacheNames.filter(name => name !== 'reviewguard-v3').map(name => caches.delete(name))
-        );
-        
-        // Register service worker with update check
-        navigator.serviceWorker.register('/sw.js?v=3')
-          .then(registration => {
-            console.log('ServiceWorker registered:', registration.scope);
-            // Force update check
-            registration.update();
-            
-            // Reload when new service worker activates
-            registration.addEventListener('updatefound', () => {
-              const newWorker = registration.installing;
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'activated') {
-                  window.location.reload();
-                }
-              });
-            });
-          })
-          .catch(error => {
-            console.log('ServiceWorker registration failed:', error);
+        try {
+          // Unregister ALL old service workers first
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const registration of registrations) {
+            if (!registration.active || !registration.active.scriptURL.includes('sw-v4.js')) {
+              console.log('Unregistering old service worker:', registration.scope);
+              await registration.unregister();
+            }
+          }
+          
+          // Clear all old caches
+          const cacheNames = await caches.keys();
+          await Promise.all(
+            cacheNames.filter(name => name !== 'reviewguard-v4').map(name => {
+              console.log('Deleting old cache:', name);
+              return caches.delete(name);
+            })
+          );
+          
+          // Register the new v4 service worker
+          const registration = await navigator.serviceWorker.register('/sw-v4.js?t=' + Date.now());
+          console.log('ServiceWorker v4 registered:', registration.scope);
+          
+          // Listen for updates from service worker
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'SW_UPDATED') {
+              console.log('Service worker updated to:', event.data.version);
+            }
           });
+          
+          // Force update check
+          registration.update();
+        } catch (error) {
+          console.log('ServiceWorker error:', error);
+        }
       });
     }
   </script>
