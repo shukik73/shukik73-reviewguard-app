@@ -88,6 +88,14 @@ A static HTML/CSS/JavaScript frontend with a modern, professional design featuri
 
 **UI/UX Decisions**: Emphasizes real-time validation, notifications, responsiveness, dynamic adaptation, one-click customer selection, automatic data refresh, drag-and-drop file upload, smart template generation, searchable tables, automatic form reset, and a mandatory TCPA consent checkbox.
 
+**Progressive Web App (PWA)**:
+-   **Installable**: Staff can install the app on their phones for quick access from home screen.
+-   **Manifest**: `public/manifest.json` defines app name, icons, theme colors, and shortcuts.
+-   **Service Worker**: `public/sw.js` caches static assets for offline capability and faster loading.
+-   **Icons**: Full icon set in `public/icons/` (72x72 to 512x512) with dark navy theme and shield logo.
+-   **Mobile-First**: Optimized viewport with `maximum-scale=1, user-scalable=no` for touch interfaces.
+-   **Apple Support**: Apple-specific meta tags for iOS home screen installation.
+
 **Feedback Landing Page (`/feedback.html`)**: A mobile-optimized, standalone 5-star rating page.
 -   **Google TOS-Compliant Routing**: 4-5 star ratings are directed to leave a Google Review. 1-3 star ratings are routed to an internal feedback form, with a compliant "Or post a public review" link. Internal feedback is stored in `internal_feedback` table and alerts business owners.
 -   **TCPA Consent Protection**: A prominent, amber-highlighted checkbox confirms customer SMS consent, disabling the send button until checked. Consent status is tracked in the `sms_consent_confirmed` column of the `messages` table.
