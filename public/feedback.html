@@ -119,32 +119,12 @@
   </div>
 
   <script>
-    // CRITICAL: Track link click immediately on page load
-    (function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token');
-      
-      if (token) {
-        console.log('[LINK CLICK] Tracking click for token:', token);
-        fetch('/api/track-link-click', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: token })
-        })
-        .then(response => response.json())
-        .then(data => {
-          console.log('[LINK CLICK] Tracking response:', data);
-        })
-        .catch(error => {
-          console.error('[LINK CLICK] Tracking failed:', error);
-        });
-      }
-    })();
-
     const urlParams = new URLSearchParams(window.location.search);
     const feedbackToken = urlParams.get('token');
     
     let selectedRating = 0;
+    let googleReviewLink = null;
+    let businessName = 'Our Store';
 
     const ratingScreen = document.getElementById('rating-screen');
     const internalFeedbackScreen = document.getElementById('internal-feedback-screen');
@@ -154,6 +134,21 @@
 
     if (!feedbackToken) {
       document.body.innerHTML = '<div class="text-white text-center p-8"><h1 class="text-2xl font-bold mb-2">Invalid Link</h1><p>This feedback link is invalid or has expired.</p></div>';
+    } else {
+      // Fetch customer info including Google review link on page load
+      fetch(`/api/customer-info/${feedbackToken}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            googleReviewLink = data.googleReviewLink;
+            businessName = data.businessName || 'Our Store';
+            console.log('[FEEDBACK] Loaded customer info:', { businessName, hasGoogleLink: !!googleReviewLink });
+          } else {
+            console.error('[FEEDBACK] Invalid token');
+            document.body.innerHTML = '<div class="text-white text-center p-8"><h1 class="text-2xl font-bold mb-2">Invalid Link</h1><p>This feedback link is invalid or has expired.</p></div>';
+          }
+        })
+        .catch(err => console.error('[FEEDBACK] Error loading customer info:', err));
     }
 
     stars.forEach(star => {
@@ -168,10 +163,12 @@
           }
         });
 
-        // For 4-5 stars: INSTANT redirect to Google (fire & forget API call)
+        // For 4-5 stars: Show thank you and redirect to Google
         if (selectedRating >= 4) {
-          // Use fallback Google link (speed is priority over custom link)
-          const googleLink = 'https://g.page/r/CXmh-C0UxHgqEBM/review';
+          if (!googleReviewLink) {
+            alert('Google Review link not configured. Please contact the business.');
+            return;
+          }
           
           // STEP 1: Show thank you modal immediately
           ratingScreen.classList.add('hidden');
@@ -188,11 +185,11 @@
             })
           }).catch(err => console.log('[FEEDBACK] Background API error (ignored):', err));
           
-          // STEP 3 (CRITICAL): Redirect in 50ms (basically instant, just ensures browser registers click)
-          console.log(`[FEEDBACK] Redirecting to Google in 50ms...`);
+          // STEP 3: Redirect to Google after short delay
+          console.log(`[FEEDBACK] Redirecting to Google Review...`);
           setTimeout(() => {
-            window.location.href = googleLink;
-          }, 50);
+            window.location.href = googleReviewLink;
+          }, 1500);
           
           return;
         }

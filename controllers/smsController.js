@@ -494,10 +494,11 @@ export const trackCustomerClick = (pool) => async (req, res) => {
     
     // Use secure token lookup instead of predictable customer ID
     const result = await pool.query(
-      `SELECT c.id, c.name, c.user_id, s.google_review_link 
+      `SELECT c.id, c.name, c.phone, c.user_id, s.google_review_link, us.business_name
        FROM customers c
        LEFT JOIN users u ON c.user_id = u.id
        LEFT JOIN subscriptions s ON u.company_email = s.email
+       LEFT JOIN user_settings us ON u.company_email = us.user_email
        WHERE c.tracking_token = $1`,
       [token]
     );
@@ -515,18 +516,9 @@ export const trackCustomerClick = (pool) => async (req, res) => {
     
     console.log(`📊 Link clicked by customer: ${customer.name} (Token: ${token.substring(0, 8)}...)`);
     
-    if (customer.google_review_link) {
-      res.redirect(302, customer.google_review_link);
-    } else {
-      res.send(`
-        <!DOCTYPE html>
-        <html><head><title>Thank You!</title>
-        <style>body{font-family:system-ui;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f0f9ff;}
-        .card{text-align:center;padding:40px;background:white;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);}
-        h1{color:#1e293b;margin-bottom:10px;}p{color:#64748b;}</style></head>
-        <body><div class="card"><h1>Thank You!</h1><p>We appreciate your time.</p></div></body></html>
-      `);
-    }
+    // Redirect to feedback page with token for the two-step experience
+    // (1-3 stars = internal feedback, 4-5 stars = Google Review)
+    res.redirect(302, `/feedback.html?token=${token}`);
   } catch (error) {
     console.error('Error tracking customer click:', error);
     res.status(500).send('Error processing link');

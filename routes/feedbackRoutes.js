@@ -9,6 +9,7 @@ export default function createFeedbackRoutes(pool, requireAuth) {
   router.get('/api/feedback', requireAuth, feedbackController.getFeedback(pool));
   router.post('/api/feedback/mark-read', requireAuth, feedbackController.markFeedbackAsRead(pool));
   router.post('/api/track-link-click', feedbackController.trackLinkClick(pool));
+  router.get('/api/customer-info/:token', feedbackController.getCustomerInfoByToken(pool));
 
   return router;
 }

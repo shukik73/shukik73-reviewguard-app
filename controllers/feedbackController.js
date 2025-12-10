@@ -346,3 +346,39 @@ export const markFeedbackAsRead = (pool) => async (req, res) => {
     });
   }
 };
+
+export const getCustomerInfoByToken = (pool) => async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    if (!token) {
+      return res.status(400).json({ success: false, error: 'Token is required' });
+    }
+    
+    const result = await pool.query(
+      `SELECT c.id, c.name, c.phone, s.google_review_link, us.business_name
+       FROM customers c
+       LEFT JOIN users u ON c.user_id = u.id
+       LEFT JOIN subscriptions s ON u.company_email = s.email
+       LEFT JOIN user_settings us ON u.company_email = us.user_email
+       WHERE c.tracking_token = $1`,
+      [token]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Invalid or expired link' });
+    }
+    
+    const customer = result.rows[0];
+    
+    res.json({
+      success: true,
+      customerName: customer.name,
+      businessName: customer.business_name || 'Our Store',
+      googleReviewLink: customer.google_review_link
+    });
+  } catch (error) {
+    console.error('Error getting customer info by token:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+};
