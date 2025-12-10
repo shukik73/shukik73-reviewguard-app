@@ -6,12 +6,22 @@ export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhon
 
   router.post('/api/send-review-request', smsLimiter, requireAuth, upload.single('photo'), smsController.sendReviewRequest(pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone, upload));
   router.post('/api/feedback/submit', smsController.submitFeedback(pool, getTwilioClient, getTwilioFromPhoneNumber));
-  router.get('/r/:token', smsController.trackReviewClick(pool));
+  
+  // Secure token-based tracking route (Smart Follow-up)
+  router.get('/r/:token', smsController.trackCustomerClick(pool));
+  
+  // Legacy token-based tracking (for old messages)
+  router.get('/review/:token', smsController.trackReviewClick(pool));
+  
   router.patch('/api/messages/:id/review-status', smsController.updateReviewStatus(pool));
   router.get('/api/messages/needs-followup', smsController.getMessagesNeedingFollowup(pool));
   router.post('/api/follow-ups/send', smsLimiter, smsController.sendFollowups(pool, getTwilioClient, getTwilioFromPhoneNumber));
   router.post('/api/send-reminder', smsLimiter, requireAuth, smsController.sendReminder(pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone));
   router.post('/api/sms/webhook', smsController.handleIncomingSMS(pool, validateAndFormatPhone));
+  
+  // Smart Follow-up endpoints
+  router.get('/api/customers/needs-followup', requireAuth, smsController.getCustomersNeedingFollowup(pool));
+  router.post('/api/customers/send-followups', smsLimiter, requireAuth, smsController.sendCustomerFollowups(pool, getTwilioClient, getTwilioFromPhoneNumber));
 
   return router;
 }

@@ -170,6 +170,46 @@ async function runMigrations() {
     } catch (e) {}
     console.log('[MIGRATION] ✅ Customers table updated');
 
+    console.log('[MIGRATION] Adding Smart Follow-up columns to customers table...');
+    try {
+      await pool.query(`
+        ALTER TABLE customers 
+        ADD COLUMN IF NOT EXISTS link_clicked BOOLEAN DEFAULT FALSE
+      `);
+    } catch (e) {}
+
+    try {
+      await pool.query(`
+        ALTER TABLE customers 
+        ADD COLUMN IF NOT EXISTS follow_up_sent BOOLEAN DEFAULT FALSE
+      `);
+    } catch (e) {}
+
+    try {
+      await pool.query(`
+        ALTER TABLE customers 
+        ADD COLUMN IF NOT EXISTS last_sms_sent_at TIMESTAMP
+      `);
+    } catch (e) {}
+
+    try {
+      await pool.query(`
+        ALTER TABLE customers 
+        ADD COLUMN IF NOT EXISTS tracking_token TEXT UNIQUE
+      `);
+    } catch (e) {}
+
+    try {
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_customers_link_clicked ON customers(link_clicked)`);
+    } catch (e) {}
+    try {
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_customers_follow_up_sent ON customers(follow_up_sent)`);
+    } catch (e) {}
+    try {
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_customers_tracking_token ON customers(tracking_token)`);
+    } catch (e) {}
+    console.log('[MIGRATION] ✅ Smart Follow-up columns added to customers table');
+
     console.log('[MIGRATION] Adding columns to messages table...');
     try {
       await pool.query(`

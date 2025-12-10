@@ -106,13 +106,40 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
     if (feedbackToken) {
       console.log(`📋 Generated Token for ${formattedPhone}:`, feedbackToken);
     }
+
+    // Create or update customer FIRST to get the customer ID for tracking link
+    let customerId = null;
+    let trackingToken = null;
+    const customerCheck = await pool.query(
+      'SELECT id, tracking_token FROM customers WHERE user_id = $1 AND phone = $2',
+      [userId, formattedPhone]
+    );
+
+    if (customerCheck.rows.length > 0) {
+      customerId = customerCheck.rows[0].id;
+      // Generate a new secure tracking token for each SMS send
+      trackingToken = crypto.randomBytes(16).toString('hex');
+      await pool.query(
+        'UPDATE customers SET name = $1, updated_at = CURRENT_TIMESTAMP, last_sms_sent_at = CURRENT_TIMESTAMP, link_clicked = FALSE, follow_up_sent = FALSE, tracking_token = $2 WHERE id = $3',
+        [customerName, trackingToken, customerId]
+      );
+    } else {
+      trackingToken = crypto.randomBytes(16).toString('hex');
+      const newCustomer = await pool.query(
+        'INSERT INTO customers (user_id, name, phone, last_sms_sent_at, link_clicked, follow_up_sent, tracking_token) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, FALSE, FALSE, $4) RETURNING id',
+        [userId, customerName, formattedPhone, trackingToken]
+      );
+      customerId = newCustomer.rows[0].id;
+    }
     
+    // Build message with secure token-based tracking link
     let message = (additionalInfo || '').replace(/{business}/g, businessName);
     
-    if (messageType === 'review' && feedbackToken) {
-      const feedbackLink = `${appHost}/feedback.html?token=${feedbackToken}`;
-      message += `\n\n${feedbackLink}\n\nReply STOP to opt out.`;
-      console.log(`📱 SMS Link: ${feedbackLink}`);
+    if (messageType === 'review') {
+      // Use secure tracking token instead of predictable customer ID
+      const trackingLink = `${appHost}/r/${trackingToken}`;
+      message += `\n\n${trackingLink}\n\nReply STOP to opt out.`;
+      console.log(`📱 Secure Tracking Link: ${trackingLink}`);
     } else {
       message += `\n\nReply STOP to opt out.`;
     }
@@ -210,26 +237,6 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
 
     let dbSaved = false;
     try {
-      let customerId = null;
-      const customerCheck = await pool.query(
-        'SELECT id FROM customers WHERE user_id = $1 AND phone = $2',
-        [userId, formattedPhone]
-      );
-
-      if (customerCheck.rows.length > 0) {
-        customerId = customerCheck.rows[0].id;
-        await pool.query(
-          'UPDATE customers SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-          [customerName, customerId]
-        );
-      } else {
-        const newCustomer = await pool.query(
-          'INSERT INTO customers (user_id, name, phone) VALUES ($1, $2, $3) RETURNING id',
-          [userId, customerName, formattedPhone]
-        );
-        customerId = newCustomer.rows[0].id;
-      }
-
       const followUpDueAt = messageType === 'review' ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) : null;
 
       const photoPath = req.file ? (req.file.path || req.file.secure_url) : null;
@@ -478,6 +485,179 @@ export const trackReviewClick = (pool) => async (req, res) => {
   } catch (error) {
     console.error('Error tracking review link click:', error);
     res.status(500).send('Error processing review link');
+  }
+};
+
+export const trackCustomerClick = (pool) => async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    // Use secure token lookup instead of predictable customer ID
+    const result = await pool.query(
+      `SELECT c.id, c.name, c.user_id, s.google_review_link 
+       FROM customers c
+       LEFT JOIN users u ON c.user_id = u.id
+       LEFT JOIN subscriptions s ON u.company_email = s.email
+       WHERE c.tracking_token = $1`,
+      [token]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).send('Invalid or expired link');
+    }
+    
+    const customer = result.rows[0];
+    
+    await pool.query(
+      'UPDATE customers SET link_clicked = TRUE WHERE id = $1',
+      [customer.id]
+    );
+    
+    console.log(`📊 Link clicked by customer: ${customer.name} (Token: ${token.substring(0, 8)}...)`);
+    
+    if (customer.google_review_link) {
+      res.redirect(302, customer.google_review_link);
+    } else {
+      res.send(`
+        <!DOCTYPE html>
+        <html><head><title>Thank You!</title>
+        <style>body{font-family:system-ui;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f0f9ff;}
+        .card{text-align:center;padding:40px;background:white;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);}
+        h1{color:#1e293b;margin-bottom:10px;}p{color:#64748b;}</style></head>
+        <body><div class="card"><h1>Thank You!</h1><p>We appreciate your time.</p></div></body></html>
+      `);
+    }
+  } catch (error) {
+    console.error('Error tracking customer click:', error);
+    res.status(500).send('Error processing link');
+  }
+};
+
+export const getCustomersNeedingFollowup = (pool) => async (req, res) => {
+  try {
+    const userEmail = req.session.userEmail;
+    if (!userEmail) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const userResult = await pool.query('SELECT id FROM users WHERE company_email = $1', [userEmail]);
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ success: false, error: 'User not found' });
+    }
+    const userId = userResult.rows[0].id;
+
+    const result = await pool.query(
+      `SELECT id, name, phone, last_sms_sent_at, created_at
+       FROM customers 
+       WHERE user_id = $1
+         AND last_sms_sent_at IS NOT NULL
+         AND link_clicked = FALSE
+         AND follow_up_sent = FALSE
+         AND last_sms_sent_at < NOW() - INTERVAL '24 hours'
+       ORDER BY last_sms_sent_at ASC`,
+      [userId]
+    );
+    
+    res.json({ success: true, customers: result.rows });
+  } catch (error) {
+    console.error('Error fetching customers needing follow-up:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const sendCustomerFollowups = (pool, getTwilioClient, getTwilioFromPhoneNumber) => async (req, res) => {
+  try {
+    const { customerIds } = req.body;
+    const userEmail = req.session.userEmail;
+    
+    if (!userEmail) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    if (!customerIds || customerIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'No customers selected' });
+    }
+
+    if (customerIds.length > 5) {
+      return res.status(400).json({ success: false, error: 'Maximum 5 customers at a time' });
+    }
+
+    const userResult = await pool.query('SELECT id FROM users WHERE company_email = $1', [userEmail]);
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ success: false, error: 'User not found' });
+    }
+    const userId = userResult.rows[0].id;
+
+    const client = await getTwilioClient();
+    const fromNumber = await getTwilioFromPhoneNumber();
+    const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
+    
+    let successCount = 0;
+    let errors = [];
+    
+    for (const customerId of customerIds) {
+      try {
+        const custResult = await pool.query(
+          'SELECT id, name, phone, tracking_token FROM customers WHERE id = $1 AND user_id = $2',
+          [customerId, userId]
+        );
+        
+        if (custResult.rows.length === 0) {
+          errors.push({ customerId, error: 'Customer not found' });
+          continue;
+        }
+        
+        const customer = custResult.rows[0];
+        
+        const isOptedOut = await checkOptOut(pool, customer.phone);
+        if (isOptedOut) {
+          errors.push({ customerId, error: 'Phone has opted out' });
+          continue;
+        }
+        
+        // Use existing tracking token or generate new one
+        let trackingToken = customer.tracking_token;
+        if (!trackingToken) {
+          trackingToken = crypto.randomBytes(16).toString('hex');
+          await pool.query('UPDATE customers SET tracking_token = $1 WHERE id = $2', [trackingToken, customer.id]);
+        }
+        
+        const trackingLink = `${appHost}/r/${trackingToken}`;
+        const reminderMessage = `Hi ${customer.name}, just checking if you had a chance to rate your repair? It really helps us out! ${trackingLink}\n\nReply STOP to opt out.`;
+        
+        const result = await client.messages.create({
+          body: reminderMessage,
+          from: fromNumber,
+          to: customer.phone
+        });
+        
+        await pool.query(
+          'UPDATE customers SET follow_up_sent = TRUE WHERE id = $1',
+          [customer.id]
+        );
+        
+        await pool.query(
+          `INSERT INTO messages (user_id, customer_id, customer_name, customer_phone, message_type, twilio_sid, user_email)
+           VALUES ($1, $2, $3, $4, 'follow_up_reminder', $5, $6)`,
+          [userId, customer.id, customer.name, customer.phone, result.sid, userEmail]
+        );
+        
+        successCount++;
+        console.log(`✅ Follow-up sent to ${customer.name} (${customer.phone})`);
+      } catch (error) {
+        console.error(`Error sending follow-up to customer ${customerId}:`, error);
+        errors.push({ customerId, error: error.message });
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      sent: successCount,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (error) {
+    console.error('Error sending customer follow-ups:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 

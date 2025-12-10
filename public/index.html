@@ -613,9 +613,22 @@
             <div class="flex items-center justify-between mb-4">
               <div>
                 <h3 class="font-semibold text-gray-900">Bulk Review Sender</h3>
-                <p class="text-sm text-gray-500">Send review requests to multiple customers from RepairDesk</p>
+                <p class="text-sm text-gray-500">Send review requests to multiple customers</p>
               </div>
-              <div class="flex items-center gap-3">
+            </div>
+
+            <div class="flex border-b border-gray-200 mb-4">
+              <button id="bulk-tab-tickets" class="px-4 py-2 text-sm font-medium text-purple-600 border-b-2 border-purple-600 -mb-px" onclick="switchBulkTab('tickets')">
+                RepairDesk Tickets
+              </button>
+              <button id="bulk-tab-followup" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700" onclick="switchBulkTab('followup')">
+                Needs Follow-up
+                <span id="followup-count-badge" class="ml-1 px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full hidden">0</span>
+              </button>
+            </div>
+
+            <div id="bulk-tickets-panel">
+              <div class="flex items-center gap-3 mb-4">
                 <label class="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" id="bulk-completed-toggle" class="sr-only peer">
                   <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -627,7 +640,6 @@
                   </svg>
                 </button>
               </div>
-            </div>
 
             <div id="bulk-tickets-loading" class="text-center py-8">
               <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -657,6 +669,45 @@
                 </svg>
                 Send Review Requests
               </button>
+            </div>
+            </div>
+
+            <div id="bulk-followup-panel" class="hidden">
+              <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p class="text-sm text-amber-800">
+                  <span class="font-medium">Smart Follow-up:</span> Customers who received SMS 24+ hours ago but haven't clicked the review link.
+                </p>
+              </div>
+
+              <div id="followup-loading" class="text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
+                <p class="mt-2 text-gray-500">Loading customers needing follow-up...</p>
+              </div>
+
+              <div id="followup-empty" class="hidden text-center py-8">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 flex items-center justify-center">
+                  <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p class="text-gray-600 font-medium">All caught up!</p>
+                <p class="text-sm text-gray-500 mt-1">No customers need follow-up right now.</p>
+              </div>
+
+              <div id="followup-list" class="hidden space-y-2 max-h-[600px] overflow-y-auto">
+              </div>
+
+              <div id="followup-selection-bar" class="hidden mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-amber-700 font-medium"><span id="followup-selected-count">0</span>/5 selected</span>
+                </div>
+                <button id="followup-send-btn" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  Send Reminders
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -2000,6 +2051,184 @@
     // Bulk Review Sender
     let bulkTicketsData = [];
     let bulkSelectedTickets = new Set();
+    let followupCustomersData = [];
+    let followupSelectedCustomers = new Set();
+    let currentBulkTab = 'tickets';
+
+    function switchBulkTab(tab) {
+      currentBulkTab = tab;
+      const ticketsTab = document.getElementById('bulk-tab-tickets');
+      const followupTab = document.getElementById('bulk-tab-followup');
+      const ticketsPanel = document.getElementById('bulk-tickets-panel');
+      const followupPanel = document.getElementById('bulk-followup-panel');
+
+      if (tab === 'tickets') {
+        ticketsTab.className = 'px-4 py-2 text-sm font-medium text-purple-600 border-b-2 border-purple-600 -mb-px';
+        followupTab.className = 'px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700';
+        ticketsPanel.classList.remove('hidden');
+        followupPanel.classList.add('hidden');
+      } else {
+        ticketsTab.className = 'px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700';
+        followupTab.className = 'px-4 py-2 text-sm font-medium text-amber-600 border-b-2 border-amber-600 -mb-px';
+        ticketsPanel.classList.add('hidden');
+        followupPanel.classList.remove('hidden');
+        loadFollowupCustomers();
+      }
+    }
+    window.switchBulkTab = switchBulkTab;
+
+    async function loadFollowupCustomers() {
+      const loading = document.getElementById('followup-loading');
+      const empty = document.getElementById('followup-empty');
+      const list = document.getElementById('followup-list');
+      const selectionBar = document.getElementById('followup-selection-bar');
+      const badge = document.getElementById('followup-count-badge');
+
+      loading.classList.remove('hidden');
+      empty.classList.add('hidden');
+      list.classList.add('hidden');
+      selectionBar.classList.add('hidden');
+
+      try {
+        const response = await fetch('/api/customers/needs-followup');
+        const data = await response.json();
+
+        loading.classList.add('hidden');
+
+        if (!data.success) {
+          empty.classList.remove('hidden');
+          return;
+        }
+
+        followupCustomersData = data.customers || [];
+        followupSelectedCustomers.clear();
+
+        if (followupCustomersData.length > 0) {
+          badge.textContent = followupCustomersData.length;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+
+        renderFollowupCustomers();
+
+      } catch (err) {
+        loading.classList.add('hidden');
+        empty.classList.remove('hidden');
+      }
+    }
+
+    function renderFollowupCustomers() {
+      const list = document.getElementById('followup-list');
+      const empty = document.getElementById('followup-empty');
+
+      if (followupCustomersData.length === 0) {
+        empty.classList.remove('hidden');
+        list.classList.add('hidden');
+        return;
+      }
+
+      list.innerHTML = followupCustomersData.map(customer => {
+        const isSelected = followupSelectedCustomers.has(customer.id);
+        const selectedClass = isSelected ? 'bg-amber-50 border-amber-300' : 'border-gray-200';
+        const sentDate = new Date(customer.last_sms_sent_at);
+        const daysAgo = Math.floor((Date.now() - sentDate) / (1000 * 60 * 60 * 24));
+
+        return `
+          <div class="followup-row p-3 border ${selectedClass} rounded-lg hover:bg-amber-50 cursor-pointer transition-colors flex items-center gap-3" 
+               data-id="${customer.id}"
+               data-name="${customer.name}"
+               data-phone="${customer.phone}">
+            <input type="checkbox" class="followup-checkbox w-5 h-5 text-amber-600 rounded border-gray-300 focus:ring-amber-500" ${isSelected ? 'checked' : ''}>
+            <div class="flex-1">
+              <div class="font-medium text-gray-900">${customer.name}</div>
+              <div class="text-sm text-gray-500">${customer.phone}</div>
+            </div>
+            <div class="text-right">
+              <span class="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">${daysAgo}d ago</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      list.classList.remove('hidden');
+
+      document.querySelectorAll('.followup-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+          if (e.target.type === 'checkbox') return;
+          const checkbox = row.querySelector('.followup-checkbox');
+          checkbox.checked = !checkbox.checked;
+          handleFollowupSelection(row, checkbox.checked);
+        });
+
+        row.querySelector('.followup-checkbox').addEventListener('change', (e) => {
+          handleFollowupSelection(row, e.target.checked);
+        });
+      });
+    }
+
+    function handleFollowupSelection(row, isChecked) {
+      const customerId = parseInt(row.dataset.id);
+      const selectionBar = document.getElementById('followup-selection-bar');
+      const countEl = document.getElementById('followup-selected-count');
+
+      if (isChecked && followupSelectedCustomers.size < 5) {
+        followupSelectedCustomers.add(customerId);
+        row.classList.add('bg-amber-50', 'border-amber-300');
+        row.classList.remove('border-gray-200');
+      } else if (!isChecked) {
+        followupSelectedCustomers.delete(customerId);
+        row.classList.remove('bg-amber-50', 'border-amber-300');
+        row.classList.add('border-gray-200');
+      } else {
+        row.querySelector('.followup-checkbox').checked = false;
+        showNotification('Maximum 5 customers can be selected', 'error');
+      }
+
+      countEl.textContent = followupSelectedCustomers.size;
+      selectionBar.classList.toggle('hidden', followupSelectedCustomers.size === 0);
+    }
+
+    async function sendFollowupReminders() {
+      if (followupSelectedCustomers.size === 0) {
+        showNotification('Please select at least one customer', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('followup-send-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="animate-spin">&#9696;</span> Sending...';
+
+      try {
+        const response = await fetch('/api/customers/send-followups', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customerIds: Array.from(followupSelectedCustomers) })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showNotification(`Follow-up reminders sent to ${data.sent} customers!`, 'success');
+          followupSelectedCustomers.clear();
+          loadFollowupCustomers();
+        } else {
+          showNotification(data.error || 'Failed to send reminders', 'error');
+        }
+      } catch (err) {
+        showNotification('Network error sending reminders', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+          </svg>
+          Send Reminders
+        `;
+      }
+    }
+
+    document.getElementById('followup-send-btn')?.addEventListener('click', sendFollowupReminders);
 
     async function loadBulkTickets() {
       const loading = document.getElementById('bulk-tickets-loading');

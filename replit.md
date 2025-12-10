@@ -37,7 +37,7 @@ Database schema changes are managed separately from application startup for prod
 
 -   **Phone Number Validation**: Normalizes phone numbers to E.164 format, handling international prefixes and auto-adding US country codes.
 -   **OCR Text Extraction**: Integrates **Google Cloud Vision API** for professional-grade text extraction from repair order photos (customer name, phone, device, repair issue). Uses Sharp for image preprocessing and smart parsing for keyword-based extraction.
--   **Review Tracking & Follow-up**: A hybrid system tracks review link clicks, monitors review status, automatically flags customers for follow-up, and provides dashboard analytics with bulk follow-up options.
+-   **Review Tracking & Smart Follow-up**: Customer-based link tracking system using `/r/:customerId` routes. Tracks `link_clicked` and `follow_up_sent` status per customer. "Needs Follow-up" tab in Bulk SMS shows customers who received SMS 24+ hours ago but haven't clicked the review link, with bulk reminder sending (max 5 at a time).
 -   **User Authentication**: Production-ready, multi-tenant authentication with secure sign-up, bcrypt password hashing, PostgreSQL-backed sessions with CSRF protection, and email-based password reset.
 -   **Multi-Tenant Data Isolation**: Enterprise-grade tenant isolation with automated migration system:
     -   **Staged Migration**: Removes DEFAULT 1 from user_id columns, backfills using FK relationships, audits orphaned rows, and enforces NOT NULL constraints after preflight verification.
@@ -141,7 +141,7 @@ A static HTML/CSS/JavaScript frontend with a modern, professional design featuri
 -   **Key Tables**: 
     -   `internal_feedback` (customer feedback with user_id for tenant isolation, status column for read tracking)
     -   `messages` (includes `sms_consent_confirmed` for TCPA, user_id NOT NULL for tenant isolation)
-    -   `customers` (user_id NOT NULL for tenant isolation, UNIQUE constraint on (user_id, phone))
+    -   `customers` (user_id NOT NULL for tenant isolation, UNIQUE constraint on (user_id, phone), `link_clicked` and `follow_up_sent` booleans for Smart Follow-up, `last_sms_sent_at` timestamp)
     -   `pending_reviews` (AI-generated review replies awaiting Telegram approval: id, customer_name, star_rating, review_text, ai_proposed_reply, status, user_id, created_at)
     -   `telegram_configs` (per-user Telegram bot credentials: id, user_id, bot_token, chat_id, is_active, created_at, updated_at)
 -   **Multi-Tenant Schema**: All tables use user_id foreign keys with NOT NULL constraints. Migration system automatically backfills legacy data and enforces constraints.
