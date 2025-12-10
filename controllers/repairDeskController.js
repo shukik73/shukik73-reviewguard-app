@@ -15,8 +15,12 @@ export async function getRecentTickets(req, res) {
     const response = await axios.get(url, { timeout: 10000 });
 
     console.log('[RepairDesk] Raw API response keys:', Object.keys(response.data || {}));
+    console.log('[RepairDesk] data field type:', typeof response.data?.data);
+    console.log('[RepairDesk] data field keys:', response.data?.data ? Object.keys(response.data.data) : 'N/A');
+    console.log('[RepairDesk] Full data structure:', JSON.stringify(response.data, null, 2).substring(0, 1000));
     
-    const tickets = response.data?.data || response.data?.tickets || response.data || [];
+    const rawData = response.data?.data;
+    const tickets = rawData?.tickets || rawData?.data || (Array.isArray(rawData) ? rawData : []);
     
     console.log('[RepairDesk] Tickets found:', Array.isArray(tickets) ? tickets.length : 'not an array');
     
