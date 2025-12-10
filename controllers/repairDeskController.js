@@ -5,21 +5,14 @@ export async function getRecentTickets(req, res) {
     const apiKey = process.env.REPAIRDESK_API_KEY;
     
     if (!apiKey) {
-      return res.status(500).json({ 
-        success: false, 
-        error: 'RepairDesk API key not configured' 
-      });
+      throw new Error('Missing API Key in Secrets');
     }
 
-    console.log('[RepairDesk] Fetching tickets...');
+    const url = `https://api.repairdesk.co/api/web/v1/tickets?api_key=${apiKey}&limit=20`;
     
-    const response = await axios.get('https://api.repairdesk.co/api/web/v1/tickets', {
-      params: {
-        api_key: apiKey,
-        limit: 20
-      },
-      timeout: 10000
-    });
+    console.log('[RepairDesk] Fetching from:', url.replace(apiKey, '****'));
+    
+    const response = await axios.get(url, { timeout: 10000 });
 
     console.log('[RepairDesk] Raw API response keys:', Object.keys(response.data || {}));
     
