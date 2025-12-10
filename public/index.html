@@ -865,6 +865,11 @@
   <script>
     let businessName = 'Our Store';
     
+    // Forward declarations for onclick handlers - these get defined later but need to be callable
+    window.sendReminder = async function() { console.error('sendReminder not yet loaded'); };
+    window.loadCustomerData = function() { console.error('loadCustomerData not yet loaded'); };
+    window.markFeedbackRead = async function() { console.error('markFeedbackRead not yet loaded'); };
+    
     // Tab switching for Bulk SMS - defined early for onclick handlers
     let currentBulkTab = 'tickets';
     window.switchBulkTab = function(tab) {
@@ -1180,7 +1185,7 @@
       }
     }
 
-    function loadCustomerData(name, phone) {
+    window.loadCustomerData = function loadCustomerData(name, phone) {
       document.getElementById('customer-name').value = name;
       document.getElementById('customer-phone').value = phone;
       showSection('send-sms');
@@ -1230,7 +1235,7 @@
       }
     }
 
-    async function markFeedbackRead(feedbackId) {
+    window.markFeedbackRead = async function markFeedbackRead(feedbackId) {
       try {
         const response = await fetch('/api/feedback/mark-read', {
           method: 'POST',
@@ -1415,7 +1420,7 @@
       }
     }
 
-    async function sendReminder(messageId, customerName, customerPhone, reviewLink) {
+    window.sendReminder = async function sendReminder(messageId, customerName, customerPhone, reviewLink) {
       if (!confirm(`Send reminder to ${customerName}?`)) return;
       
       try {
