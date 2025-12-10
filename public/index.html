@@ -214,6 +214,43 @@
         </div>
       </div>
 
+      <div id="repairdesk-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div id="repairdesk-modal-backdrop" class="absolute inset-0 bg-black/50"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+          <div class="flex justify-between items-center p-4 border-b border-gray-100">
+            <div>
+              <h3 class="text-lg font-bold text-gray-900">Import from RepairDesk</h3>
+              <p class="text-sm text-gray-500">Select a ticket to auto-fill customer details</p>
+            </div>
+            <button id="close-repairdesk-btn" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+          </div>
+          <div id="repairdesk-tickets-container" class="flex-1 overflow-y-auto p-4">
+            <div id="repairdesk-loading" class="text-center py-8">
+              <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+              <p class="mt-2 text-gray-500">Loading tickets...</p>
+            </div>
+            <div id="repairdesk-error" class="hidden text-center py-8">
+              <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-red-100 flex items-center justify-center">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p class="text-red-600 font-medium">Failed to load tickets</p>
+              <p id="repairdesk-error-msg" class="text-sm text-gray-500 mt-1"></p>
+            </div>
+            <div id="repairdesk-tickets" class="hidden space-y-2"></div>
+            <div id="repairdesk-empty" class="hidden text-center py-8">
+              <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <p class="text-gray-500">No tickets in the last 7 days</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="p-6 space-y-6">
 
         <section id="dashboard" class="section">
@@ -332,13 +369,21 @@
                 </div>
               </div>
 
-              <button id="camera-btn" class="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors mb-4">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Take Photo with Camera
-              </button>
+              <div class="flex gap-2 mb-4">
+                <button id="camera-btn" class="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Camera
+                </button>
+                <button id="repairdesk-import-btn" class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium text-white transition-colors">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  Import from POS
+                </button>
+              </div>
 
               <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
                 <div class="flex items-start gap-3">
@@ -1649,6 +1694,98 @@
         cameraVideo.srcObject = null;
       }
     }
+
+    const repairDeskBtn = document.getElementById('repairdesk-import-btn');
+    const repairDeskModal = document.getElementById('repairdesk-modal');
+    const repairDeskBackdrop = document.getElementById('repairdesk-modal-backdrop');
+    const closeRepairDeskBtn = document.getElementById('close-repairdesk-btn');
+    const repairDeskLoading = document.getElementById('repairdesk-loading');
+    const repairDeskError = document.getElementById('repairdesk-error');
+    const repairDeskErrorMsg = document.getElementById('repairdesk-error-msg');
+    const repairDeskTickets = document.getElementById('repairdesk-tickets');
+    const repairDeskEmpty = document.getElementById('repairdesk-empty');
+
+    function closeRepairDeskModal() {
+      repairDeskModal.classList.add('hidden');
+    }
+
+    repairDeskBtn.addEventListener('click', async () => {
+      repairDeskModal.classList.remove('hidden');
+      repairDeskLoading.classList.remove('hidden');
+      repairDeskError.classList.add('hidden');
+      repairDeskTickets.classList.add('hidden');
+      repairDeskEmpty.classList.add('hidden');
+
+      try {
+        const response = await fetch('/api/repairdesk/tickets');
+        const data = await response.json();
+
+        repairDeskLoading.classList.add('hidden');
+
+        if (!data.success) {
+          repairDeskError.classList.remove('hidden');
+          repairDeskErrorMsg.textContent = data.error || 'Unknown error';
+          return;
+        }
+
+        if (data.tickets.length === 0) {
+          repairDeskEmpty.classList.remove('hidden');
+          return;
+        }
+
+        repairDeskTickets.innerHTML = data.tickets.map(ticket => `
+          <div class="ticket-row p-3 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 cursor-pointer transition-colors" 
+               data-name="${ticket.customer_name}" 
+               data-phone="${ticket.customer_phone}" 
+               data-device="${ticket.device_name}">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-xs font-mono text-gray-500">#${ticket.id}</span>
+                  <span class="text-xs px-2 py-0.5 rounded-full ${ticket.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">${ticket.status}</span>
+                </div>
+                <div class="font-medium text-gray-900">${ticket.customer_name}</div>
+                <div class="text-sm text-gray-500">${ticket.device_name}</div>
+              </div>
+              <div class="text-right text-sm text-gray-500">
+                ${ticket.customer_phone}
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+        repairDeskTickets.classList.remove('hidden');
+
+        document.querySelectorAll('.ticket-row').forEach(row => {
+          row.addEventListener('click', () => {
+            const name = row.dataset.name;
+            const phone = row.dataset.phone;
+            const device = row.dataset.device;
+
+            document.getElementById('customer-name').value = name || '';
+            document.getElementById('customer-phone').value = phone || '';
+            document.getElementById('device').value = device || '';
+
+            document.getElementById('ocr-name').textContent = name || '-';
+            document.getElementById('ocr-phone').textContent = phone || '-';
+            document.getElementById('ocr-device').textContent = device || '-';
+
+            updatePreview();
+            closeRepairDeskModal();
+            showNotification(`Imported: ${name}`, 'success');
+          });
+        });
+
+      } catch (error) {
+        console.error('RepairDesk fetch error:', error);
+        repairDeskLoading.classList.add('hidden');
+        repairDeskError.classList.remove('hidden');
+        repairDeskErrorMsg.textContent = error.message || 'Network error';
+      }
+    });
+
+    closeRepairDeskBtn.addEventListener('click', closeRepairDeskModal);
+    repairDeskBackdrop.addEventListener('click', closeRepairDeskModal);
 
     async function createCheckout(planId, button, originalText) {
       try {
