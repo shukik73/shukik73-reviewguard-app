@@ -24,7 +24,42 @@ export const submitInternalFeedback = (pool) => async (req, res) => {
       });
     }
 
-    // Get the message details (including user_id)
+    // First try to find by tracking_token in customers table (new flow)
+    const customerResult = await pool.query(
+      `SELECT c.id, c.name, c.phone, c.user_id, u.company_email as user_email
+       FROM customers c
+       LEFT JOIN users u ON c.user_id = u.id
+       WHERE c.tracking_token = $1`,
+      [feedbackToken]
+    );
+
+    if (customerResult.rows.length > 0) {
+      const customer = customerResult.rows[0];
+      console.log(`[INTERNAL FEEDBACK] Found customer by tracking_token: ${customer.name}`);
+      
+      if (!customer.user_id) {
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Unable to process feedback due to data integrity issue.' 
+        });
+      }
+
+      // Save internal feedback with customer data
+      await pool.query(
+        `INSERT INTO internal_feedback 
+         (customer_name, customer_phone, rating, feedback_text, user_email, user_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [customer.name, customer.phone, ratingNum, feedbackText || '', customer.user_email, customer.user_id]
+      );
+
+      console.log(`[INTERNAL FEEDBACK] ✅ Saved feedback for customer ${customer.name}`);
+      return res.json({ 
+        success: true, 
+        message: 'Thank you for your feedback. We\'ll use this to improve!' 
+      });
+    }
+
+    // Fallback: Get the message details (including user_id) from legacy token
     const messageResult = await pool.query(
       `SELECT id, customer_name, customer_phone, user_email, user_id 
        FROM messages 
@@ -146,7 +181,27 @@ export const submitPublicReview = (pool) => async (req, res) => {
       });
     }
 
-    // Get the message and user's Google review link
+    // First try to find by tracking_token in customers table (new flow)
+    let customerResult = await pool.query(
+      `SELECT c.id, c.name, c.user_id, s.google_review_link 
+       FROM customers c
+       LEFT JOIN users u ON c.user_id = u.id
+       LEFT JOIN subscriptions s ON u.company_email = s.email
+       WHERE c.tracking_token = $1`,
+      [feedbackToken]
+    );
+
+    if (customerResult.rows.length > 0) {
+      // New tracking token flow - just log and return success (redirect already happened)
+      console.log(`[PUBLIC REVIEW] Customer ${customerResult.rows[0].name} rated ${ratingNum} stars`);
+      return res.json({ 
+        success: true, 
+        message: 'Rating recorded',
+        reviewLink: customerResult.rows[0].google_review_link
+      });
+    }
+
+    // Fallback: try legacy feedback_token in messages table
     const result = await pool.query(
       `SELECT m.id, m.user_email, s.google_review_link 
        FROM messages m
@@ -155,15 +210,8 @@ export const submitPublicReview = (pool) => async (req, res) => {
       [feedbackToken]
     );
 
-    console.log(`[DEBUG] Token lookup result: ${result.rows.length} rows found for token: ${feedbackToken}`);
-    
-    // Debug: check all tokens in DB if none found
     if (result.rows.length === 0) {
-      const allTokens = await pool.query(
-        `SELECT id, feedback_token, customer_phone FROM messages WHERE feedback_token IS NOT NULL LIMIT 5`
-      );
-      console.log(`[DEBUG] Sample tokens in DB:`, allTokens.rows.map(r => ({ id: r.id, token: r.feedback_token, phone: r.customer_phone })));
-      
+      console.log(`[DEBUG] Token not found in customers or messages table: ${feedbackToken}`);
       return res.status(404).json({ 
         success: false, 
         error: 'Invalid feedback token' 
@@ -171,7 +219,6 @@ export const submitPublicReview = (pool) => async (req, res) => {
     }
 
     const { id: messageId, google_review_link } = result.rows[0];
-    const reviewLink = google_review_link || 'https://g.page/r/CXmh-C0UxHgqEBM/review';
 
     // Update message feedback info
     await pool.query(
@@ -181,10 +228,9 @@ export const submitPublicReview = (pool) => async (req, res) => {
       [ratingNum, messageId]
     );
 
-    // Return the Google review link
     res.json({ 
       success: true, 
-      reviewLink: reviewLink
+      reviewLink: google_review_link
     });
 
   } catch (error) {
