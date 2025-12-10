@@ -168,42 +168,31 @@
           }
         });
 
-        // For 4-5 stars: show thank you modal, then ALWAYS redirect to Google (fail-safe)
+        // For 4-5 stars: INSTANT redirect to Google (fire & forget API call)
         if (selectedRating >= 4) {
+          // Use fallback Google link (speed is priority over custom link)
+          const googleLink = 'https://g.page/r/CXmh-C0UxHgqEBM/review';
+          
           // STEP 1: Show thank you modal immediately
           ratingScreen.classList.add('hidden');
           document.getElementById('thank-you-modal').classList.remove('hidden');
 
-          // STEP 2: Try to submit rating to backend in background (don't block on errors)
-          let googleLink = 'https://g.page/r/CXmh-C0UxHgqEBM/review'; // Fallback link
+          // STEP 2: Fire & Forget - Submit to backend in background (NO await)
+          console.log(`[FEEDBACK] Rating ${selectedRating} stars - Firing API call (not waiting)...`);
+          fetch('/api/feedback/public', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              feedbackToken: feedbackToken,
+              rating: selectedRating
+            })
+          }).catch(err => console.log('[FEEDBACK] Background API error (ignored):', err));
           
-          try {
-            console.log(`[FEEDBACK] Rating ${selectedRating} stars - Submitting to backend...`);
-            const response = await fetch('/api/feedback/public', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                feedbackToken: feedbackToken,
-                rating: selectedRating
-              })
-            });
-
-            const data = await response.json();
-            console.log(`[FEEDBACK] Backend response:`, data);
-
-            if (data.success && data.reviewLink) {
-              googleLink = data.reviewLink;
-              console.log(`[FEEDBACK] Got custom Google link: ${googleLink}`);
-            }
-          } catch (error) {
-            console.log(`[FEEDBACK] API failed, using fallback link:`, error);
-          }
-          
-          // STEP 3 (CRITICAL): ALWAYS redirect after 0.15 seconds, regardless of API success/failure
-          console.log(`[FEEDBACK] Redirecting to: ${googleLink} in 0.15 seconds...`);
+          // STEP 3 (CRITICAL): Redirect in 50ms (basically instant, just ensures browser registers click)
+          console.log(`[FEEDBACK] Redirecting to Google in 50ms...`);
           setTimeout(() => {
             window.location.href = googleLink;
-          }, 150);
+          }, 50);
           
           return;
         }
