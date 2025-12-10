@@ -864,6 +864,37 @@
 
   <script>
     let businessName = 'Our Store';
+    
+    // Tab switching for Bulk SMS - defined early for onclick handlers
+    let currentBulkTab = 'tickets';
+    window.switchBulkTab = function(tab) {
+      console.log('[DEBUG] switchBulkTab called with:', tab);
+      currentBulkTab = tab;
+      const ticketsTab = document.getElementById('bulk-tab-tickets');
+      const followupTab = document.getElementById('bulk-tab-followup');
+      const ticketsPanel = document.getElementById('bulk-tickets-panel');
+      const followupPanel = document.getElementById('bulk-followup-panel');
+      
+      if (!ticketsTab || !followupTab || !ticketsPanel || !followupPanel) {
+        console.error('[ERROR] Tab elements not found');
+        return;
+      }
+
+      if (tab === 'tickets') {
+        ticketsTab.className = 'px-4 py-2 text-sm font-medium text-purple-600 border-b-2 border-purple-600 -mb-px';
+        followupTab.className = 'px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700';
+        ticketsPanel.classList.remove('hidden');
+        followupPanel.classList.add('hidden');
+      } else {
+        ticketsTab.className = 'px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700';
+        followupTab.className = 'px-4 py-2 text-sm font-medium text-amber-600 border-b-2 border-amber-600 -mb-px';
+        ticketsPanel.classList.add('hidden');
+        followupPanel.classList.remove('hidden');
+        if (typeof loadFollowupCustomers === 'function') {
+          loadFollowupCustomers();
+        }
+      }
+    };
 
     function showNotification(message, type = 'info') {
       const container = document.getElementById('notification-container');
@@ -2053,37 +2084,6 @@
     let bulkSelectedTickets = new Set();
     let followupCustomersData = [];
     let followupSelectedCustomers = new Set();
-    let currentBulkTab = 'tickets';
-
-    function switchBulkTab(tab) {
-      console.log('[DEBUG] switchBulkTab called with:', tab);
-      currentBulkTab = tab;
-      const ticketsTab = document.getElementById('bulk-tab-tickets');
-      const followupTab = document.getElementById('bulk-tab-followup');
-      const ticketsPanel = document.getElementById('bulk-tickets-panel');
-      const followupPanel = document.getElementById('bulk-followup-panel');
-      
-      console.log('[DEBUG] Elements found:', { 
-        ticketsTab: !!ticketsTab, 
-        followupTab: !!followupTab, 
-        ticketsPanel: !!ticketsPanel, 
-        followupPanel: !!followupPanel 
-      });
-
-      if (tab === 'tickets') {
-        ticketsTab.className = 'px-4 py-2 text-sm font-medium text-purple-600 border-b-2 border-purple-600 -mb-px';
-        followupTab.className = 'px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700';
-        ticketsPanel.classList.remove('hidden');
-        followupPanel.classList.add('hidden');
-      } else {
-        ticketsTab.className = 'px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700';
-        followupTab.className = 'px-4 py-2 text-sm font-medium text-amber-600 border-b-2 border-amber-600 -mb-px';
-        ticketsPanel.classList.add('hidden');
-        followupPanel.classList.remove('hidden');
-        loadFollowupCustomers();
-      }
-    }
-    window.switchBulkTab = switchBulkTab;
 
     async function loadFollowupCustomers() {
       const loading = document.getElementById('followup-loading');
