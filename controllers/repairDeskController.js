@@ -18,17 +18,32 @@ export async function getRecentTickets(req, res) {
     
     console.log('[RepairDesk] Tickets found:', ticketData.length);
     
+    if (ticketData.length > 0) {
+      console.log('[RepairDesk] Raw Ticket Data:', JSON.stringify(ticketData[0], null, 2));
+    }
+    
     let cleanTickets = ticketData.map(ticket => {
       const summary = ticket.summary || {};
       const customer = summary.customer || {};
       const devices = ticket.devices || [];
       const firstDevice = devices[0] || {};
+      const ticketItems = ticket.ticket_items || [];
+      const firstItem = ticketItems[0] || {};
+      
+      const manufacturer = firstDevice.manufacturer_name || firstDevice.manufacturer || firstItem.manufacturer_name || '';
+      const model = firstDevice.name || firstDevice.device_name || firstDevice.model || 
+                    firstItem.device_name || firstItem.model_name || firstItem.name ||
+                    summary.device_name || summary.model || '';
+      
+      const deviceName = manufacturer && model 
+        ? `${manufacturer} ${model}`.trim()
+        : (model || manufacturer || 'Unknown Device');
       
       return {
         id: summary.order_id || summary.id,
         customer_name: customer.fullName || customer.firstName || 'Unknown',
         customer_phone: customer.mobile || customer.phone || '',
-        device_name: firstDevice.name || firstDevice.device_name || firstDevice.model || 'Unknown Device',
+        device_name: deviceName,
         status: summary.status || ticket.status || 'Open',
         created_at: summary.created_date ? new Date(summary.created_date * 1000).toISOString() : null
       };
