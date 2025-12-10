@@ -2410,9 +2410,10 @@
           try {
             const formData = new FormData();
             formData.append('customerName', customer.name);
-            formData.append('phone', customer.phone);
-            formData.append('device', customer.device);
-            formData.append('smsConsent', 'true');
+            formData.append('customerPhone', customer.phone);
+            formData.append('messageType', 'review');
+            formData.append('additionalInfo', `Hi ${customer.name}! Thank you for choosing {business} for your ${customer.device} repair. We'd love to hear about your experience!`);
+            formData.append('smsConsentConfirmed', 'true');
 
             const response = await fetch('/api/send-review-request', {
               method: 'POST',
