@@ -1134,7 +1134,7 @@
                 <div class="text-sm text-gray-500">${msg.customer_phone} • ${new Date(msg.sent_at).toLocaleString()}</div>
               </div>
               ${msg.review_link_clicked_at && !msg.feedback_rating && !msg.follow_up_sent_at ? `
-                <button onclick="sendReminder(${msg.id}, '${msg.customer_name.replace(/'/g, "\\'")}', '${msg.customer_phone}', '${msg.review_link || ''}')" class="px-3 py-1.5 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">
+                <button data-action="sendReminder" data-id="${msg.id}" data-name="${msg.customer_name.replace(/"/g, '&quot;')}" data-phone="${msg.customer_phone}" data-link="${msg.review_link || ''}" class="px-3 py-1.5 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">
                   Send Reminder
                 </button>
               ` : ''}
@@ -1172,7 +1172,7 @@
                 <div class="font-medium text-gray-900">${customer.name}</div>
                 <div class="text-sm text-gray-500">${customer.phone} • ${customer.message_count || 0} messages</div>
               </div>
-              <button onclick="loadCustomerData('${customer.name}', '${customer.phone}')" class="px-3 py-1.5 text-xs border border-accent text-accent rounded-lg hover:bg-indigo-50 transition-colors">
+              <button data-action="loadCustomerData" data-name="${customer.name.replace(/"/g, '&quot;')}" data-phone="${customer.phone}" class="px-3 py-1.5 text-xs border border-accent text-accent rounded-lg hover:bg-indigo-50 transition-colors">
                 Use in Form
               </button>
             </div>
@@ -1220,7 +1220,7 @@
                   </div>
                 </div>
                 ${fb.status === 'unread' ? `
-                  <button onclick="markFeedbackRead(${fb.id})" class="px-3 py-1.5 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                  <button data-action="markFeedbackRead" data-id="${fb.id}" class="px-3 py-1.5 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
                     Mark Read
                   </button>
                 ` : ''}
@@ -2501,6 +2501,63 @@
         console.error('Error loading user:', error);
       }
     }
+
+    // Event delegation for dynamically created buttons
+    document.addEventListener('click', async function(e) {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      
+      const action = btn.dataset.action;
+      console.log('[EVENT] Button clicked:', action, btn.dataset);
+      
+      if (action === 'sendReminder') {
+        const { id, name, phone, link } = btn.dataset;
+        if (!confirm(`Send reminder to ${name}?`)) return;
+        try {
+          const response = await fetch('/api/send-reminder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messageId: parseInt(id), customerName: name, customerPhone: phone, reviewLink: link })
+          });
+          const data = await response.json();
+          if (data.success) {
+            showNotification('Reminder sent successfully!', 'success');
+            loadHistory();
+          } else {
+            showNotification(data.error || 'Failed to send reminder', 'error');
+          }
+        } catch (error) {
+          console.error('Error sending reminder:', error);
+          showNotification('Failed to send reminder', 'error');
+        }
+      }
+      
+      else if (action === 'loadCustomerData') {
+        const { name, phone } = btn.dataset;
+        document.getElementById('customer-name').value = name;
+        document.getElementById('customer-phone').value = phone;
+        showSection('send-sms');
+        showNotification('Customer data loaded!', 'success');
+      }
+      
+      else if (action === 'markFeedbackRead') {
+        const feedbackId = parseInt(btn.dataset.id);
+        try {
+          const response = await fetch('/api/feedback/mark-read', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ feedbackId })
+          });
+          const data = await response.json();
+          if (data.success) {
+            loadFeedback();
+            showNotification('Feedback marked as read', 'success');
+          }
+        } catch (error) {
+          console.error('Error marking feedback as read:', error);
+        }
+      }
+    });
 
     showSection('dashboard');
     loadUserOnPageLoad();
