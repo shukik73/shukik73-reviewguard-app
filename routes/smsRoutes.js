@@ -5,7 +5,6 @@ export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhon
   const router = Router();
 
   router.post('/api/send-review-request', smsLimiter, requireAuth, upload.single('photo'), smsController.sendReviewRequest(pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone, upload));
-  router.post('/api/feedback/submit', smsController.submitFeedback(pool, getTwilioClient, getTwilioFromPhoneNumber));
   
   // Secure token-based tracking route (Smart Follow-up)
   router.get('/r/:token', smsController.trackCustomerClick(pool));

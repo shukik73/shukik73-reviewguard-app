@@ -22,13 +22,21 @@
     <div class="bg-white rounded-2xl shadow-2xl p-8 text-center">
       <div class="text-6xl mb-6">🙏</div>
       <h1 class="text-2xl font-bold text-slate-800 mb-4">Thank You!</h1>
-      <p class="text-slate-600 mb-6">
-        We appreciate you taking the time to visit us.
+      <p class="text-slate-600 mb-6" id="message">
+        Thank you for visiting <span id="business-name" class="font-semibold">our business</span>!
       </p>
       <p class="text-slate-500 text-sm">
-        If you'd like to leave a review, please find us on Google Maps.
+        Please find us on Google Maps to leave a review.
       </p>
     </div>
   </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const businessName = urlParams.get('business');
+    if (businessName) {
+      document.getElementById('business-name').textContent = businessName;
+    }
+  </script>
 </body>
 </html>

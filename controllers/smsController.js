@@ -509,6 +509,7 @@ export const trackCustomerClick = (pool) => async (req, res) => {
     
     const customer = result.rows[0];
     
+    // Track the click
     await pool.query(
       'UPDATE customers SET link_clicked = TRUE WHERE id = $1',
       [customer.id]
@@ -516,9 +517,17 @@ export const trackCustomerClick = (pool) => async (req, res) => {
     
     console.log(`📊 Link clicked by customer: ${customer.name} (Token: ${token.substring(0, 8)}...)`);
     
-    // Redirect to feedback page with token for the two-step experience
-    // (1-3 stars = internal feedback, 4-5 stars = Google Review)
-    res.redirect(302, `/feedback.html?token=${token}`);
+    // Direct redirect to Google Review (no gating screen - 100% Google compliant)
+    const googleLink = customer.google_review_link;
+    
+    if (googleLink && googleLink.trim()) {
+      console.log(`🚀 Redirecting ${customer.name} directly to Google Review`);
+      res.redirect(302, googleLink);
+    } else {
+      // Fallback: Show thank you page when Google link is not configured
+      console.log(`⚠️ No Google Review link configured for user_id: ${customer.user_id}`);
+      res.redirect(302, `/thank-you.html?business=${encodeURIComponent(customer.business_name || 'our business')}`);
+    }
   } catch (error) {
     console.error('Error tracking customer click:', error);
     res.status(500).send('Error processing link');

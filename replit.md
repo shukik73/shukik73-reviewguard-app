@@ -55,13 +55,14 @@ A static HTML/CSS/JavaScript frontend with a modern, professional design, featur
 -   **Installable**: Manifest and Service Worker for offline capability and faster loading.
 -   **Mobile-First**: Optimized viewport and Apple-specific meta tags for iOS.
 
-**Feedback Landing Page (`/feedback.html`)**: A mobile-optimized, standalone 5-star rating page.
--   **Google TOS-Compliant Routing**: Directs 4-5 star ratings to Google Reviews and 1-3 star ratings to an internal feedback form.
--   **TCPA Consent Protection**: Prominent checkbox for explicit SMS consent, tracked in the `messages` table.
+**Direct Google Review Flow**: Simplified, 100% Google-compliant review collection.
+-   **No Gating**: The `/r/:token` tracking link redirects customers directly to Google Reviews (no star rating screen).
+-   **Fallback Page**: `/thank-you.html` displayed when Google Review link is not configured.
+-   **TCPA Consent Protection**: Explicit SMS consent tracked in the `messages` table.
 
 ## System Design Choices
 
--   **Google TOS-Compliant Feedback Routing**: Ensures adherence to Google's policies for review collection.
+-   **100% Google TOS Compliant**: Direct redirect to Google Reviews without any rating gating screen.
 -   **TCPA Consent Protection**: Mandates explicit user consent for SMS, enforced via UI and database tracking.
 
 # External Dependencies
