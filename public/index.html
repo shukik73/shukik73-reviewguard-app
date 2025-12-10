@@ -2056,11 +2056,19 @@
     let currentBulkTab = 'tickets';
 
     function switchBulkTab(tab) {
+      console.log('[DEBUG] switchBulkTab called with:', tab);
       currentBulkTab = tab;
       const ticketsTab = document.getElementById('bulk-tab-tickets');
       const followupTab = document.getElementById('bulk-tab-followup');
       const ticketsPanel = document.getElementById('bulk-tickets-panel');
       const followupPanel = document.getElementById('bulk-followup-panel');
+      
+      console.log('[DEBUG] Elements found:', { 
+        ticketsTab: !!ticketsTab, 
+        followupTab: !!followupTab, 
+        ticketsPanel: !!ticketsPanel, 
+        followupPanel: !!followupPanel 
+      });
 
       if (tab === 'tickets') {
         ticketsTab.className = 'px-4 py-2 text-sm font-medium text-purple-600 border-b-2 border-purple-600 -mb-px';
