@@ -185,11 +185,11 @@
             })
           }).catch(err => console.log('[FEEDBACK] Background API error (ignored):', err));
           
-          // STEP 3: Redirect to Google after short delay
+          // STEP 3: Redirect to Google after brief flash
           console.log(`[FEEDBACK] Redirecting to Google Review...`);
           setTimeout(() => {
             window.location.href = googleReviewLink;
-          }, 1500);
+          }, 150);
           
           return;
         }
