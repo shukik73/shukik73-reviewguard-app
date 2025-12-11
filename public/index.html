@@ -1566,11 +1566,18 @@
       let message = '';
 
       if (type === 'review') {
-        message = `Hi ${name}! Thank you for choosing ${businessName} for your ${device} ${repair}. How was your experience? Please rate us: [Feedback Link]`;
+        const serviceDesc = device && repair ? `${device} ${repair}` : device || repair || 'service';
+        message = `Hi ${name}! Thank you for choosing ${businessName} for your ${serviceDesc}. How was your experience? Please rate us: [Feedback Link]`;
       } else if (type === 'ready') {
-        message = `Hi ${name}! Great news - your ${device} is ready for pickup! We've completed the ${repair}. Stop by anytime during business hours. See you soon!`;
+        message = repair 
+          ? `Hi ${name}! Great news - your ${device} is ready for pickup! We've completed the ${repair}. Stop by anytime during business hours. See you soon!`
+          : `Hi ${name}! Great news - your ${device} is ready for pickup! Stop by anytime during business hours. See you soon!`;
       } else if (type === 'follow_up') {
-        message = `Hi ${name}! Just checking in on your ${device}. Is everything working well after the ${repair}? Let us know if you need anything!`;
+        message = device 
+          ? (repair 
+            ? `Hi ${name}! Just checking in on your ${device}. Is everything working well after the ${repair}? Let us know if you need anything!`
+            : `Hi ${name}! Just checking in on your ${device}. Is everything working well? Let us know if you need anything!`)
+          : `Hi ${name}! Just checking in. Is everything working well? Let us know if you need anything!`;
       } else {
         message = custom || '';
       }
@@ -1618,11 +1625,18 @@
 
       let additionalInfo = '';
       if (messageType === 'review') {
-        additionalInfo = `Hi ${customerName}! Thank you for choosing ${businessName} for your ${device} ${repair}. How was your experience? Please rate us:`;
+        const serviceDesc = device && repair ? `${device} ${repair}` : device || repair || 'service';
+        additionalInfo = `Hi ${customerName}! Thank you for choosing ${businessName} for your ${serviceDesc}. How was your experience? Please rate us:`;
       } else if (messageType === 'ready') {
-        additionalInfo = `Hi ${customerName}! Great news - your ${device} is ready for pickup! We've completed the ${repair}. Stop by anytime during business hours. See you soon!`;
+        additionalInfo = repair 
+          ? `Hi ${customerName}! Great news - your ${device} is ready for pickup! We've completed the ${repair}. Stop by anytime during business hours. See you soon!`
+          : `Hi ${customerName}! Great news - your ${device} is ready for pickup! Stop by anytime during business hours. See you soon!`;
       } else if (messageType === 'follow_up') {
-        additionalInfo = `Hi ${customerName}! Just checking in on your ${device}. Is everything working well after the ${repair}? Let us know if you need anything!`;
+        additionalInfo = device 
+          ? (repair 
+            ? `Hi ${customerName}! Just checking in on your ${device}. Is everything working well after the ${repair}? Let us know if you need anything!`
+            : `Hi ${customerName}! Just checking in on your ${device}. Is everything working well? Let us know if you need anything!`)
+          : `Hi ${customerName}! Just checking in. Is everything working well? Let us know if you need anything!`;
       } else if (messageType === 'custom') {
         additionalInfo = customMessage;
       }
@@ -1692,11 +1706,18 @@
 
       let msgPreview = '';
       if (messageType === 'review') {
-        msgPreview = `Hi ${customerName}! Thank you for choosing ${businessName} for your ${device} ${repair}. How was your experience? Please rate us:`;
+        const serviceDesc = device && repair ? `${device} ${repair}` : device || repair || 'service';
+        msgPreview = `Hi ${customerName}! Thank you for choosing ${businessName} for your ${serviceDesc}. How was your experience? Please rate us:`;
       } else if (messageType === 'ready') {
-        msgPreview = `Hi ${customerName}! Great news - your ${device} is ready for pickup! We've completed the ${repair}. Stop by anytime during business hours.`;
+        msgPreview = repair 
+          ? `Hi ${customerName}! Great news - your ${device} is ready for pickup! We've completed the ${repair}. Stop by anytime during business hours.`
+          : `Hi ${customerName}! Great news - your ${device} is ready for pickup! Stop by anytime during business hours.`;
       } else if (messageType === 'follow_up') {
-        msgPreview = `Hi ${customerName}! Just checking in on your ${device}. Is everything working well after the ${repair}?`;
+        msgPreview = device 
+          ? (repair 
+            ? `Hi ${customerName}! Just checking in on your ${device}. Is everything working well after the ${repair}?`
+            : `Hi ${customerName}! Just checking in on your ${device}. Is everything working well?`)
+          : `Hi ${customerName}! Just checking in. Is everything working well?`;
       } else if (messageType === 'custom') {
         msgPreview = customMessage;
       }
