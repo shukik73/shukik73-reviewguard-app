@@ -11,7 +11,7 @@ async function checkOptOut(pool, phone) {
 
 export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone, upload) => async (req, res) => {
   try {
-    const { customerName, customerPhone, messageType, additionalInfo, feedbackRating, smsConsentConfirmed } = req.body;
+    const { customerName, customerPhone, messageType, additionalInfo, feedbackRating, smsConsentConfirmed, device } = req.body;
     const userEmail = req.session.userEmail;
     const feedbackScore = feedbackRating ? parseInt(feedbackRating) : null;
     const consentConfirmed = smsConsentConfirmed === 'true' || smsConsentConfirmed === true;
@@ -120,14 +120,14 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
       // Generate a new secure tracking token for each SMS send
       trackingToken = crypto.randomBytes(16).toString('hex');
       await pool.query(
-        'UPDATE customers SET name = $1, updated_at = CURRENT_TIMESTAMP, last_sms_sent_at = CURRENT_TIMESTAMP, link_clicked = FALSE, follow_up_sent = FALSE, tracking_token = $2 WHERE id = $3',
-        [customerName, trackingToken, customerId]
+        'UPDATE customers SET name = $1, device = $2, updated_at = CURRENT_TIMESTAMP, last_sms_sent_at = CURRENT_TIMESTAMP, link_clicked = FALSE, follow_up_sent = FALSE, tracking_token = $3 WHERE id = $4',
+        [customerName, device || null, trackingToken, customerId]
       );
     } else {
       trackingToken = crypto.randomBytes(16).toString('hex');
       const newCustomer = await pool.query(
-        'INSERT INTO customers (user_id, name, phone, last_sms_sent_at, link_clicked, follow_up_sent, tracking_token) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, FALSE, FALSE, $4) RETURNING id',
-        [userId, customerName, formattedPhone, trackingToken]
+        'INSERT INTO customers (user_id, name, phone, device, last_sms_sent_at, link_clicked, follow_up_sent, tracking_token) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, FALSE, FALSE, $5) RETURNING id',
+        [userId, customerName, formattedPhone, device || null, trackingToken]
       );
       customerId = newCustomer.rows[0].id;
     }

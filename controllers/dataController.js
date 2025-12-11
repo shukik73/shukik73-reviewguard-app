@@ -14,7 +14,8 @@ export const getMessages = (pool) => async (req, res) => {
     const result = await pool.query(
       `SELECT m.id, m.customer_name, m.customer_phone, m.message_type, m.review_link, m.additional_info, 
               m.photo_path, m.sent_at, m.review_status, m.review_link_clicked_at, m.review_received_at, 
-              m.follow_up_sent_at, m.feedback_rating, m.status, c.name as customer_name_db, c.phone as customer_phone_db
+              m.follow_up_sent_at, m.feedback_rating, m.status, c.name as customer_name_db, c.phone as customer_phone_db,
+              c.device as customer_device
        FROM messages m
        LEFT JOIN customers c ON m.customer_id = c.id
        WHERE m.user_id = $1

@@ -657,11 +657,17 @@
             </div>
 
             <div id="bulk-tickets-panel">
-              <div class="flex items-center gap-3 mb-4">
+              <div class="flex items-center gap-3 mb-4 flex-wrap">
+                <div class="relative flex-1 min-w-[200px]">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input type="text" id="bulk-search-input" placeholder="Search device or name..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" />
+                </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" id="bulk-completed-toggle" class="sr-only peer">
                   <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                  <span class="ml-2 text-sm font-medium text-gray-700">Show Completed Only</span>
+                  <span class="ml-2 text-sm font-medium text-gray-700">Completed Only</span>
                 </label>
                 <button id="bulk-refresh-btn" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Refresh tickets">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1149,14 +1155,17 @@
         }
         
         if (messages.length > 0) {
-          container.innerHTML = messages.map(msg => `
+          container.innerHTML = messages.map(msg => {
+            const deviceDisplay = msg.customer_device ? `<span class="text-xs rounded-full bg-slate-100 text-slate-600 px-2 py-0.5">${msg.customer_device}</span>` : '';
+            return `
             <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
               <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                 <span class="text-gray-600">${msg.customer_name.charAt(0).toUpperCase()}</span>
               </div>
               <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                   <span class="font-medium text-gray-900">${msg.customer_name}</span>
+                  ${deviceDisplay}
                   <span class="text-xs rounded-full bg-indigo-50 text-indigo-700 px-2 py-0.5">${getMessageTypeLabel(msg.message_type)}</span>
                   ${msg.review_link_clicked_at ? '<span class="text-xs rounded-full bg-green-50 text-green-700 px-2 py-0.5">Clicked</span>' : ''}
                   ${msg.feedback_rating ? `<span class="text-xs rounded-full bg-amber-50 text-amber-700 px-2 py-0.5">${'⭐'.repeat(msg.feedback_rating)}</span>` : ''}
@@ -1169,7 +1178,7 @@
                 </button>
               ` : ''}
             </div>
-          `).join('');
+          `;}).join('');
         } else {
           const filterLabels = {
             all: 'No messages in history',
@@ -1629,6 +1638,7 @@
         const formData = new FormData();
         formData.append('customerName', customerName);
         formData.append('customerPhone', customerPhone);
+        formData.append('device', device || '');
         formData.append('messageType', messageType);
         formData.append('additionalInfo', additionalInfo);
         formData.append('smsConsentConfirmed', 'true');
@@ -2311,20 +2321,34 @@
     function renderBulkTickets() {
       const list = document.getElementById('bulk-tickets-list');
       const toggle = document.getElementById('bulk-completed-toggle');
+      const searchInput = document.getElementById('bulk-search-input');
       const showCompletedOnly = toggle?.checked || false;
+      const searchTerm = (searchInput?.value || '').toLowerCase().trim();
 
       let filteredTickets = bulkTicketsData;
+      
+      // Apply completed filter
       if (showCompletedOnly) {
-        filteredTickets = bulkTicketsData.filter(t => 
+        filteredTickets = filteredTickets.filter(t => 
           t.status === 'Repaired & Collected' || 
           t.status === 'Collected' || 
           t.status === 'Closed' ||
           t.status === 'Complete'
         );
       }
+      
+      // Apply search filter (match against customer name OR device name)
+      if (searchTerm) {
+        filteredTickets = filteredTickets.filter(t => {
+          const customerName = (t.customer_name || '').toLowerCase();
+          const deviceName = (t.device_name || '').toLowerCase();
+          return customerName.includes(searchTerm) || deviceName.includes(searchTerm);
+        });
+      }
 
       if (filteredTickets.length === 0) {
-        list.innerHTML = '<div class="text-center py-8 text-gray-500">No tickets found</div>';
+        const message = searchTerm ? `No tickets matching "${searchInput.value}"` : 'No tickets found';
+        list.innerHTML = `<div class="text-center py-8 text-gray-500">${message}</div>`;
         list.classList.remove('hidden');
         return;
       }
@@ -2419,6 +2443,11 @@
       bulkCompletedToggle.addEventListener('change', renderBulkTickets);
     }
 
+    const bulkSearchInput = document.getElementById('bulk-search-input');
+    if (bulkSearchInput) {
+      bulkSearchInput.addEventListener('input', renderBulkTickets);
+    }
+
     const bulkRefreshBtn = document.getElementById('bulk-refresh-btn');
     if (bulkRefreshBtn) {
       bulkRefreshBtn.addEventListener('click', loadBulkTickets);
@@ -2454,6 +2483,7 @@
             const formData = new FormData();
             formData.append('customerName', customer.name);
             formData.append('customerPhone', customer.phone);
+            formData.append('device', customer.device || '');
             formData.append('messageType', 'review');
             formData.append('additionalInfo', `Hi ${customer.name}! Thank you for choosing {business} for your ${customer.device} repair. We'd love to hear about your experience!`);
             formData.append('smsConsentConfirmed', 'true');
