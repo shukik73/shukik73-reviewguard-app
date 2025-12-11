@@ -135,6 +135,27 @@ async function runMigrations() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
+      CREATE TABLE IF NOT EXISTS google_reviews (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        review_id VARCHAR(255) NOT NULL,
+        reviewer_name VARCHAR(255) NOT NULL,
+        star_rating INTEGER NOT NULL CHECK (star_rating BETWEEN 1 AND 5),
+        comment TEXT,
+        ai_reply_draft TEXT,
+        status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'posted', 'ignored')),
+        review_date TIMESTAMP,
+        posted_reply TEXT,
+        posted_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, review_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_google_reviews_user_id ON google_reviews(user_id);
+      CREATE INDEX IF NOT EXISTS idx_google_reviews_status ON google_reviews(status);
+      CREATE INDEX IF NOT EXISTS idx_google_reviews_review_date ON google_reviews(review_date DESC);
+
       CREATE INDEX IF NOT EXISTS idx_event_logs_email ON event_logs(email);
       CREATE INDEX IF NOT EXISTS idx_event_logs_type ON event_logs(event_type);
       CREATE INDEX IF NOT EXISTS idx_event_logs_created ON event_logs(created_at DESC);
