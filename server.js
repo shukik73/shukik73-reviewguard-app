@@ -45,6 +45,7 @@ import createFeedbackRoutes from './routes/feedbackRoutes.js';
 import createAIRoutes from './routes/aiRoutes.js';
 import { createTelegramRoutes } from './routes/telegramRoutes.js';
 import createRepairDeskRoutes from './routes/repairDeskRoutes.js';
+import createReviewsRoutes from './routes/reviewsRoutes.js';
 import { initializeTelegramBot } from './controllers/telegramController.js';
 import requireAuth from './middleware/requireAuth.js';
 import { createRateLimiters } from './middleware/rateLimiter.js';
@@ -128,6 +129,7 @@ async function startServer() {
     app.use(createAIRoutes(pool, requireAuth));
     app.use('/api', createTelegramRoutes(pool));
     app.use(createRepairDeskRoutes(requireAuth));
+    app.use(createReviewsRoutes(pool, requireAuth));
 
     initializeTelegramBot(pool);
     

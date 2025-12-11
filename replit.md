@@ -30,6 +30,7 @@ The application follows an **MVC (Model-View-Controller)** architecture with mod
 -   **Multi-Tenant Data Isolation**: Enterprise-grade tenant isolation enforced through `user_id` foreign keys, automated migration, write path protection, database constraints, and authorization filters.
 -   **Subscription Billing**: **Stripe Subscription Billing** integration with transaction-based SMS quota enforcement, supporting trials and tiered plans, using Stripe webhooks and PostgreSQL row-level locking.
 -   **AI-Powered Review Reply Assistant**: Utilizes OpenAI (gpt-4o-mini via Replit AI Integrations) to generate SEO-optimized Google Review responses, with server-side validation.
+-   **Google Reviews Management**: Full review management dashboard with n8n webhook ingestion (`POST /api/reviews/ingest`), pending/posted/ignored status tracking, editable AI draft replies, and outbound webhook to post replies. Protected by `x-n8n-secret` header validation.
 -   **Telegram Autopilot Review Loop (Multi-Tenant)**: AI-to-Telegram integration for review management. Each user configures their own bot for notifications and approval workflows via a `pending_reviews` table and Telegram approval mechanism.
 -   **Security Layer**: Implements Helmet.js with CSP, `express-rate-limit` with Redis-backed storage for API protection.
 -   **SMS Opt-Out Compliance**: Full TCPA/CAN-SPAM compliance with automatic STOP/START keyword handling via Twilio webhooks and an `sms_optouts` database table.
@@ -97,7 +98,7 @@ A static HTML/CSS/JavaScript frontend with a modern, professional design, featur
 ## Database Layer
 
 -   **PostgreSQL Database**: Replit-managed Neon instance.
--   **Schema**: Includes tables for `customers`, `messages`, `subscriptions`, `users`, `user_sessions`, `auth_tokens`, `sms_optouts`, `user_settings`, `internal_feedback`, `pending_reviews`, and `telegram_configs`.
+-   **Schema**: Includes tables for `customers`, `messages`, `subscriptions`, `users`, `user_sessions`, `auth_tokens`, `sms_optouts`, `user_settings`, `internal_feedback`, `pending_reviews`, `telegram_configs`, and `google_reviews`.
 -   **Multi-Tenant Schema**: All relevant tables utilize `user_id` foreign keys with `NOT NULL` constraints, supported by an automated migration system for backfilling and enforcement.
 
 ## File Storage

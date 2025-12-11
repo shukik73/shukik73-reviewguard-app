@@ -548,15 +548,44 @@
         </section>
 
         <section id="reviews" class="section hidden">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex gap-2">
-              <button class="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg">All</button>
-              <button class="px-4 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50">Pending</button>
-              <button class="px-4 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50">Intercepted</button>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <div class="text-2xl font-bold text-amber-600" id="reviews-pending-count">0</div>
+              <div class="text-sm text-gray-500">Pending Reviews</div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <div class="text-2xl font-bold text-green-600" id="reviews-posted-count">0</div>
+              <div class="text-sm text-gray-500">Posted Replies</div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <div class="text-2xl font-bold text-gray-600" id="reviews-ignored-count">0</div>
+              <div class="text-sm text-gray-500">Ignored</div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <div class="text-2xl font-bold text-yellow-500" id="reviews-avg-rating">-</div>
+              <div class="text-sm text-gray-500">Avg Rating</div>
             </div>
           </div>
 
-          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex gap-2">
+              <button data-action="filterReviews" data-status="pending" class="reviews-filter-btn px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg">Pending</button>
+              <button data-action="filterReviews" data-status="posted" class="reviews-filter-btn px-4 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50">Posted</button>
+              <button data-action="filterReviews" data-status="ignored" class="reviews-filter-btn px-4 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50">Ignored</button>
+              <button data-action="filterReviews" data-status="all" class="reviews-filter-btn px-4 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50">All</button>
+            </div>
+            <button onclick="loadGoogleReviews()" class="px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Refresh">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+
+          <div id="google-reviews-list" class="space-y-4">
+            <div class="text-center py-12 text-gray-500">Loading reviews...</div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mt-6">
             <h3 class="font-semibold text-gray-900 mb-1">AI Review Reply Assistant</h3>
             <p class="text-sm text-gray-500 mb-4">Generate professional, SEO-optimized responses for Google Reviews</p>
             
@@ -972,6 +1001,7 @@
       if (sectionId === 'history') loadHistory();
       if (sectionId === 'customers') loadCustomers();
       if (sectionId === 'feedback') loadFeedback();
+      if (sectionId === 'reviews') loadGoogleReviews();
       if (sectionId === 'settings') { loadSettings(); loadTelegramConfig(); }
       if (sectionId === 'billing') updateSubscriptionDisplay();
     }
@@ -2502,6 +2532,86 @@
       }
     }
 
+    // Google Reviews Management
+    let currentReviewsFilter = 'pending';
+    
+    async function loadGoogleReviews(status = currentReviewsFilter) {
+      currentReviewsFilter = status;
+      try {
+        const response = await fetch(`/api/reviews?status=${status}`);
+        const data = await response.json();
+        
+        const container = document.getElementById('google-reviews-list');
+        
+        if (data.success && data.reviews && data.reviews.length > 0) {
+          container.innerHTML = data.reviews.map(review => `
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5" data-review-id="${review.id}">
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
+                    <span class="text-white font-medium">${review.reviewer_name.charAt(0).toUpperCase()}</span>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium text-gray-900">${review.reviewer_name}</span>
+                      <span class="text-yellow-500">${'⭐'.repeat(review.star_rating)}</span>
+                    </div>
+                    <div class="text-xs text-gray-400">${review.review_date ? new Date(review.review_date).toLocaleDateString() : 'Unknown date'}</div>
+                  </div>
+                </div>
+                <span class="px-2 py-1 text-xs rounded-full ${review.status === 'pending' ? 'bg-amber-100 text-amber-700' : review.status === 'posted' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">${review.status}</span>
+              </div>
+              
+              ${review.comment ? `<div class="bg-gray-50 rounded-lg p-3 mb-4 text-sm text-gray-700">"${review.comment}"</div>` : ''}
+              
+              ${review.status === 'pending' ? `
+                <div class="mb-4">
+                  <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">AI Draft Reply (editable)</label>
+                  <textarea id="draft-${review.id}" rows="3" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none">${review.ai_reply_draft || ''}</textarea>
+                </div>
+                <div class="flex gap-2">
+                  <button data-action="postReply" data-id="${review.id}" class="flex-1 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                    Post Reply
+                  </button>
+                  <button data-action="ignoreReview" data-id="${review.id}" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">
+                    Ignore
+                  </button>
+                </div>
+              ` : review.status === 'posted' ? `
+                <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div class="text-xs font-medium text-green-600 mb-1">Posted Reply:</div>
+                  <div class="text-sm text-green-800">${review.posted_reply || 'No reply text saved'}</div>
+                </div>
+              ` : ''}
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = `<div class="text-center py-12 text-gray-500">No ${status === 'all' ? '' : status} reviews found</div>`;
+        }
+        
+        loadReviewStats();
+      } catch (error) {
+        console.error('Error loading reviews:', error);
+        document.getElementById('google-reviews-list').innerHTML = '<div class="text-center py-12 text-red-500">Error loading reviews</div>';
+      }
+    }
+    
+    async function loadReviewStats() {
+      try {
+        const response = await fetch('/api/reviews/stats');
+        const data = await response.json();
+        if (data.success && data.stats) {
+          document.getElementById('reviews-pending-count').textContent = data.stats.pending_count || 0;
+          document.getElementById('reviews-posted-count').textContent = data.stats.posted_count || 0;
+          document.getElementById('reviews-ignored-count').textContent = data.stats.ignored_count || 0;
+          document.getElementById('reviews-avg-rating').textContent = data.stats.avg_rating ? `${data.stats.avg_rating}⭐` : '-';
+        }
+      } catch (error) {
+        console.error('Error loading review stats:', error);
+      }
+    }
+    
     // Event delegation for dynamically created buttons
     document.addEventListener('click', async function(e) {
       const btn = e.target.closest('[data-action]');
@@ -2510,7 +2620,76 @@
       const action = btn.dataset.action;
       console.log('[EVENT] Button clicked:', action, btn.dataset);
       
-      if (action === 'sendReminder') {
+      if (action === 'filterReviews') {
+        const status = btn.dataset.status;
+        document.querySelectorAll('.reviews-filter-btn').forEach(b => {
+          b.classList.remove('bg-gray-900', 'text-white');
+          b.classList.add('bg-white', 'border', 'border-gray-200', 'text-gray-600');
+        });
+        btn.classList.remove('bg-white', 'border', 'border-gray-200', 'text-gray-600');
+        btn.classList.add('bg-gray-900', 'text-white');
+        loadGoogleReviews(status);
+      }
+      
+      else if (action === 'postReply') {
+        const reviewId = btn.dataset.id;
+        const draftTextarea = document.getElementById(`draft-${reviewId}`);
+        const replyText = draftTextarea ? draftTextarea.value.trim() : '';
+        
+        if (!replyText) {
+          showNotification('Please enter a reply', 'error');
+          return;
+        }
+        
+        btn.disabled = true;
+        btn.innerHTML = '<span class="animate-spin">⏳</span> Posting...';
+        
+        try {
+          const response = await fetch('/api/reviews/post-reply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reviewId: parseInt(reviewId), replyText })
+          });
+          const data = await response.json();
+          if (data.success) {
+            showNotification('Reply posted successfully!', 'success');
+            loadGoogleReviews();
+          } else {
+            showNotification(data.error || 'Failed to post reply', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Post Reply';
+          }
+        } catch (error) {
+          console.error('Error posting reply:', error);
+          showNotification('Failed to post reply', 'error');
+          btn.disabled = false;
+        }
+      }
+      
+      else if (action === 'ignoreReview') {
+        const reviewId = btn.dataset.id;
+        if (!confirm('Are you sure you want to ignore this review?')) return;
+        
+        try {
+          const response = await fetch('/api/reviews/ignore', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reviewId: parseInt(reviewId) })
+          });
+          const data = await response.json();
+          if (data.success) {
+            showNotification('Review ignored', 'success');
+            loadGoogleReviews();
+          } else {
+            showNotification(data.error || 'Failed to ignore review', 'error');
+          }
+        } catch (error) {
+          console.error('Error ignoring review:', error);
+          showNotification('Failed to ignore review', 'error');
+        }
+      }
+      
+      else if (action === 'sendReminder') {
         const { id, name, phone, link } = btn.dataset;
         if (!confirm(`Send reminder to ${name}?`)) return;
         try {
