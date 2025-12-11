@@ -12,6 +12,7 @@ async function checkOptOut(pool, phone) {
 export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone, upload) => async (req, res) => {
   try {
     const { customerName, customerPhone, messageType, additionalInfo, feedbackRating, smsConsentConfirmed, device } = req.body;
+    console.log('[SMS] Received device:', device, '| Customer:', customerName);
     const userEmail = req.session.userEmail;
     const feedbackScore = feedbackRating ? parseInt(feedbackRating) : null;
     const consentConfirmed = smsConsentConfirmed === 'true' || smsConsentConfirmed === true;
