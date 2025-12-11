@@ -329,7 +329,7 @@ export const forgotPassword = (pool) => async (req, res) => {
       [user.id, resetToken, 'password_reset', expiresAt]
     );
 
-    const resetUrl = `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/reset-password.html?token=${resetToken}`;
+    const resetUrl = `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}/reset-password.html?token=${resetToken}`;
     console.log(`\n🔑 PASSWORD RESET LINK FOR ${user.company_email}:`);
     console.log(`${resetUrl}`);
     console.log(`This link expires in 1 hour.\n`);

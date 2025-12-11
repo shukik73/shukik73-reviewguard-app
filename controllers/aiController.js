@@ -133,19 +133,27 @@ export const processIncomingReview = async (pool, userId, reviewData, telegramSe
 
     console.log(`[AUTOPILOT] Processing review from ${customerName} (${starRating}⭐) for user ${userId}`);
 
+    // Fetch business name from user settings
+    const settingsResult = await pool.query(
+      'SELECT us.business_name, u.company_email FROM user_settings us JOIN users u ON us.user_email = u.company_email WHERE u.id = $1',
+      [userId]
+    );
+    const businessName = settingsResult.rows[0]?.business_name || 'Our Business';
+    const supportEmail = settingsResult.rows[0]?.company_email ? `support@${settingsResult.rows[0].company_email.split('@')[1]}` : 'our support team';
+
     // Step 1: Generate AI reply using 10 Golden Rules
     const rating = parseInt(starRating);
     let systemPrompt;
     let userPrompt;
 
     if (rating <= 3) {
-      systemPrompt = `You are a compassionate customer service manager for Techy Miramar, a repair shop in Miramar, Florida. Your goal is to genuinely apologize and offer resolution.
+      systemPrompt = `You are a compassionate customer service manager for ${businessName}. Your goal is to genuinely apologize and offer resolution.
 
 THE 10 GOLDEN RULES FOR NEGATIVE REVIEWS (1-3 STARS):
 Rule 1 (NEGATIVE OVERRIDE): For 1-3 star reviews, IGNORE all SEO rules. Focus only on sincere apology.
 Rule 2: Acknowledge their specific frustration
 Rule 3: Take full responsibility
-Rule 4: Ask them to email support@techymiramar.com
+Rule 4: Ask them to contact ${supportEmail}
 Rule 5: Keep it short (2-3 sentences max)
 Rule 6: Be heartfelt and genuine
 Rule 7: Do NOT mention devices or SEO keywords
@@ -164,14 +172,14 @@ Write a sincere apology following the 10 Golden Rules for negative reviews. No S
         ? `\n\nDETECTED DEVICES IN REVIEW: ${devicesInReview.join(', ')} - YOU MUST MENTION AT LEAST ONE OF THESE IN YOUR REPLY!`
         : '';
 
-      systemPrompt = `You are an expert Reputation Manager for Techy Miramar, a repair shop in Miramar, Florida. Your goal is to write replies that boost Local SEO while sounding natural and grateful.
+      systemPrompt = `You are an expert Reputation Manager for ${businessName}. Your goal is to write replies that boost Local SEO while sounding natural and grateful.
 
 THE 10 GOLDEN RULES FOR POSITIVE REVIEWS (4-5 STARS):
 Rule 1 (DEVICE RULE - MANDATORY): If the customer mentions ANY device (iPhone, iPad, MacBook, laptop, phone, tablet, console, computer, etc.), you MUST mention that EXACT device in your reply. This is non-negotiable for SEO. Example: "We're so glad we could fix your iPhone 13!"
 
 Rule 2 (CROSS-SELL): Occasionally mention other services naturally. Example: "We're here to help with any laptop, iPad, or phone repairs!"
 
-Rule 3 (LOCATION): Naturally include "Techy Miramar" or "here in Miramar" at least once.
+Rule 3 (LOCATION): Naturally include "${businessName}" at least once.
 
 Rule 4 (GRATITUDE): Always thank them by name.
 
@@ -241,6 +249,7 @@ Write a reply (2-3 sentences) following ALL 10 Golden Rules above. Make it sound
 export const generateReply = (pool) => async (req, res) => {
   try {
     const { reviewText, customerName, starRating } = req.body;
+    const userEmail = req.session?.userEmail;
 
     if (!reviewText || !customerName || starRating === undefined) {
       return res.status(400).json({
@@ -258,17 +267,29 @@ export const generateReply = (pool) => async (req, res) => {
       });
     }
 
+    // Fetch business name from user settings
+    let businessName = 'Our Business';
+    let supportEmail = 'our support team';
+    if (userEmail) {
+      const settingsResult = await pool.query(
+        'SELECT business_name FROM user_settings WHERE user_email = $1',
+        [userEmail]
+      );
+      businessName = settingsResult.rows[0]?.business_name || 'Our Business';
+      supportEmail = `support@${userEmail.split('@')[1]}`;
+    }
+
     let systemPrompt;
     let userPrompt;
 
     if (rating <= 3) {
-      systemPrompt = `You are a compassionate customer service manager for Techy Miramar, a repair shop in Miramar, Florida. Your goal is to genuinely apologize and offer resolution.
+      systemPrompt = `You are a compassionate customer service manager for ${businessName}. Your goal is to genuinely apologize and offer resolution.
 
 THE 10 GOLDEN RULES FOR NEGATIVE REVIEWS (1-3 STARS):
 Rule 1 (NEGATIVE OVERRIDE): For 1-3 star reviews, IGNORE all SEO rules. Focus only on sincere apology.
 Rule 2: Acknowledge their specific frustration
 Rule 3: Take full responsibility
-Rule 4: Ask them to email support@techymiramar.com
+Rule 4: Ask them to contact ${supportEmail}
 Rule 5: Keep it short (2-3 sentences max)
 Rule 6: Be heartfelt and genuine
 Rule 7: Do NOT mention devices or SEO keywords
@@ -287,14 +308,14 @@ Write a sincere apology following the 10 Golden Rules for negative reviews. No S
         ? `\n\nDETECTED DEVICES IN REVIEW: ${devicesInReview.join(', ')} - YOU MUST MENTION AT LEAST ONE OF THESE IN YOUR REPLY!`
         : '';
 
-      systemPrompt = `You are an expert Reputation Manager for Techy Miramar, a repair shop in Miramar, Florida. Your goal is to write replies that boost Local SEO while sounding natural and grateful.
+      systemPrompt = `You are an expert Reputation Manager for ${businessName}. Your goal is to write replies that boost Local SEO while sounding natural and grateful.
 
 THE 10 GOLDEN RULES FOR POSITIVE REVIEWS (4-5 STARS):
 Rule 1 (DEVICE RULE - MANDATORY): If the customer mentions ANY device (iPhone, iPad, MacBook, laptop, phone, tablet, console, computer, etc.), you MUST mention that EXACT device in your reply. This is non-negotiable for SEO. Example: "We're so glad we could fix your iPhone 13!"
 
 Rule 2 (CROSS-SELL): Occasionally mention other services naturally. Example: "We're here to help with any laptop, iPad, or phone repairs!"
 
-Rule 3 (LOCATION): Naturally include "Techy Miramar" or "here in Miramar" at least once.
+Rule 3 (LOCATION): Naturally include "${businessName}" at least once.
 
 Rule 4 (GRATITUDE): Always thank them by name.
 

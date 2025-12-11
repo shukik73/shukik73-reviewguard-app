@@ -21,7 +21,7 @@ if (!process.env.OPENAI_API_KEY) {
   process.exit(1);
 }
 
-console.log('OpenAI Key Loaded:', process.env.OPENAI_API_KEY ? 'Yes (Starts with ' + process.env.OPENAI_API_KEY.substring(0, 5) + ')' : 'No');
+console.log('OpenAI Key Loaded:', process.env.OPENAI_API_KEY ? 'Yes' : 'No');
 
 import express from 'express';
 import bodyParser from 'body-parser';

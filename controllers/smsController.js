@@ -882,84 +882,98 @@ export const sendReminder = (pool, getTwilioClient, getTwilioFromPhoneNumber, va
       });
     }
 
-    const subscriptionCheckResult = await pool.query(
-      'SELECT status, sms_quota, sms_used FROM subscriptions WHERE email = $1',
-      [userEmail]
-    );
-
-    if (subscriptionCheckResult.rows.length === 0) {
-      return res.status(403).json({
-        success: false,
-        error: 'No active subscription found. Please subscribe to a plan.'
-      });
-    }
-
-    const subscription = subscriptionCheckResult.rows[0];
-    
-    if (subscription.status !== 'active' && subscription.status !== 'trialing') {
-      return res.status(403).json({
-        success: false,
-        error: 'Your subscription is not active. Please update your billing.'
-      });
-    }
-
-    if (subscription.sms_used >= subscription.sms_quota) {
-      return res.status(403).json({
-        success: false,
-        error: 'SMS quota exceeded. Please upgrade your plan or wait for quota reset.'
-      });
-    }
-
     const reminderMessage = `Hi ${customerName}, just checking if you had a moment to leave us a review? It helps a lot! ${reviewLink}\n\nReply STOP to opt out`;
 
-    console.log(`[SEND REMINDER] Sending reminder to ${customerName} at ${formattedPhone}`);
-
-    const twilioClient = getTwilioClient();
-    const fromNumber = getTwilioFromPhoneNumber();
-
-    const result = await twilioClient.messages.create({
-      from: fromNumber,
-      to: formattedPhone,
-      body: reminderMessage
-    });
-
-    await pool.query(
-      'BEGIN'
-    );
-
+    const client = await pool.connect();
     try {
-      await pool.query(
-        `UPDATE subscriptions 
-         SET sms_used = sms_used + 1 
+      await client.query('BEGIN');
+
+      // Lock the subscription row and check quota atomically
+      const quotaLock = await client.query(
+        `SELECT subscription_status, sms_quota, sms_sent 
+         FROM subscriptions 
          WHERE email = $1 
          FOR UPDATE`,
         [userEmail]
       );
 
-      await pool.query(
+      if (quotaLock.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(403).json({
+          success: false,
+          error: 'No active subscription found. Please subscribe to a plan.'
+        });
+      }
+
+      const { subscription_status, sms_quota, sms_sent } = quotaLock.rows[0];
+      console.log(`[SEND REMINDER] Quota check (locked): sms_sent=${sms_sent}, sms_quota=${sms_quota}`);
+
+      if (subscription_status !== 'active' && subscription_status !== 'trialing' && subscription_status !== 'trial') {
+        await client.query('ROLLBACK');
+        return res.status(403).json({
+          success: false,
+          error: 'Your subscription is not active. Please update your billing.'
+        });
+      }
+
+      if (sms_sent >= sms_quota) {
+        await client.query('ROLLBACK');
+        return res.status(403).json({
+          success: false,
+          error: `SMS quota exceeded (${sms_sent}/${sms_quota}). Please upgrade your plan or wait for quota reset.`,
+          code: 'QUOTA_EXCEEDED',
+          quota: sms_quota,
+          used: sms_sent
+        });
+      }
+
+      // Send via Twilio (inside transaction to ensure quota is locked)
+      console.log(`[SEND REMINDER] Sending reminder to ${customerName} at ${formattedPhone}`);
+      const twilioClient = getTwilioClient();
+      const fromNumber = getTwilioFromPhoneNumber();
+
+      const result = await twilioClient.messages.create({
+        from: fromNumber,
+        to: formattedPhone,
+        body: reminderMessage
+      });
+
+      // Increment quota with RETURNING for accurate post-update value
+      const updateResult = await client.query(
+        `UPDATE subscriptions 
+         SET sms_sent = sms_sent + 1, updated_at = CURRENT_TIMESTAMP 
+         WHERE email = $1
+         RETURNING sms_sent`,
+        [userEmail]
+      );
+      const newSmsSent = updateResult.rows[0].sms_sent;
+
+      await client.query(
         `INSERT INTO messages (user_id, customer_name, customer_phone, message_type, review_link, twilio_sid, user_email, follow_up_message_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [userId, customerName, formattedPhone, 'reminder', reviewLink, result.sid, userEmail, messageId]
       );
 
-      await pool.query(
+      await client.query(
         `UPDATE messages 
          SET follow_up_sent_at = CURRENT_TIMESTAMP, review_status = 'reminder_sent'
          WHERE id = $1`,
         [messageId]
       );
 
-      await pool.query('COMMIT');
+      await client.query('COMMIT');
 
-      console.log(`[SEND REMINDER] ✓ Reminder sent successfully to ${customerName}`);
+      console.log(`[SEND REMINDER] ✓ Reminder sent successfully to ${customerName} | sms_sent variable correctly used: ${newSmsSent}/${sms_quota}`);
 
       res.json({
         success: true,
         message: `Reminder sent to ${customerName}`
       });
     } catch (dbError) {
-      await pool.query('ROLLBACK');
+      await client.query('ROLLBACK');
       throw dbError;
+    } finally {
+      client.release();
     }
   } catch (error) {
     console.error('Error sending reminder:', error);
