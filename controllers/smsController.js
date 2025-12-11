@@ -518,16 +518,115 @@ export const trackCustomerClick = (pool) => async (req, res) => {
     
     console.log(`📊 Link clicked by customer: ${customer.name} (Token: ${token.substring(0, 8)}...)`);
     
-    // Direct redirect to Google Review (no gating screen - 100% Google compliant)
+    // Show thank you transition page before redirecting to Google Review
     const googleLink = customer.google_review_link;
+    const businessName = customer.business_name || 'our business';
     
     if (googleLink && googleLink.trim()) {
-      console.log(`🚀 Redirecting ${customer.name} directly to Google Review`);
-      res.redirect(302, googleLink);
+      console.log(`🚀 Showing thank you page for ${customer.name}, then redirect to Google Review`);
+      
+      const transitionHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thank You! - ${businessName}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(10px);
+      border-radius: 24px;
+      padding: 48px 40px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 40px;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    p {
+      font-size: 18px;
+      opacity: 0.9;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .fallback {
+      font-size: 14px;
+      opacity: 0.7;
+    }
+    .fallback a {
+      color: #fff;
+      text-decoration: underline;
+    }
+    .business-name {
+      font-size: 14px;
+      opacity: 0.8;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">💜</div>
+    <h1>Thank You!</h1>
+    <p>We truly appreciate your business.<br>Taking you to Google Reviews...</p>
+    <div class="spinner"></div>
+    <p class="fallback">If not redirected, <a href="${googleLink}">click here</a></p>
+    <p class="business-name">${businessName}</p>
+  </div>
+  <script>
+    setTimeout(function() {
+      window.location.href = '${googleLink}';
+    }, 1500);
+  </script>
+</body>
+</html>`;
+      
+      res.send(transitionHtml);
     } else {
       // Fallback: Show thank you page when Google link is not configured
       console.log(`⚠️ No Google Review link configured for user_id: ${customer.user_id}`);
-      res.redirect(302, `/thank-you.html?business=${encodeURIComponent(customer.business_name || 'our business')}`);
+      res.redirect(302, `/thank-you.html?business=${encodeURIComponent(businessName)}`);
     }
   } catch (error) {
     console.error('Error tracking customer click:', error);
