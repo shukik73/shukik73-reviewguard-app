@@ -36,12 +36,43 @@
     .drag-area.dragover { border-color: #6366f1; background: rgba(99, 102, 241, 0.05); }
     .stat-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
     .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1); }
+    
+    /* Mobile sidebar */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 35; }
+      .sidebar.open ~ .sidebar-overlay { display: block; }
+      .main-content { margin-left: 0 !important; padding-top: 56px !important; }
+      .mobile-header { display: flex !important; }
+    }
+    @media (min-width: 769px) {
+      .mobile-header { display: none !important; }
+      .sidebar-overlay { display: none !important; }
+    }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
 
   <div class="flex min-h-screen">
-    <aside class="w-56 bg-sidebar fixed h-screen flex flex-col z-40">
+    <!-- Mobile Header -->
+    <div class="mobile-header hidden fixed top-0 left-0 right-0 h-14 bg-sidebar z-30 items-center px-4 gap-3">
+      <button id="mobile-menu-btn" class="p-2 text-white hover:bg-slate-700 rounded-lg">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <span id="mobile-brand" class="text-white font-semibold text-sm">ReviewGuard</span>
+      </div>
+    </div>
+    
+    <aside id="sidebar" class="sidebar w-56 bg-sidebar fixed h-screen flex flex-col z-40">
       <div class="p-5 border-b border-slate-700">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
@@ -142,8 +173,10 @@
         </div>
       </div>
     </aside>
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
 
-    <main class="flex-1 ml-56">
+    <main class="main-content flex-1 ml-56 pt-0 md:pt-0" style="padding-top: 0;">
+      <!-- Mobile top padding handled by CSS media query -->
       <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div class="flex items-center justify-between px-6 py-4">
           <div>
@@ -964,6 +997,23 @@
       setTimeout(() => container.classList.add('hidden'), 4000);
     }
 
+    // Mobile sidebar toggle
+    const sidebar = document.getElementById('sidebar');
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    
+    function openSidebar() {
+      sidebar.classList.add('open');
+    }
+    
+    window.closeSidebar = function() {
+      sidebar.classList.remove('open');
+    }
+    
+    if (mobileMenuBtn) {
+      mobileMenuBtn.addEventListener('click', openSidebar);
+    }
+
     const navItems = document.querySelectorAll('.nav-item');
     const sections = document.querySelectorAll('.section');
     const pageTitle = document.getElementById('page-title');
@@ -1016,6 +1066,7 @@
       item.addEventListener('click', () => {
         const sectionId = item.dataset.section;
         showSection(sectionId);
+        closeSidebar(); // Close sidebar on mobile after selection
       });
     });
 
@@ -2571,6 +2622,10 @@
           
           if (sidebarBrand) {
             sidebarBrand.textContent = user.business_name || 'ReviewGuard';
+          }
+          const mobileBrand = document.getElementById('mobile-brand');
+          if (mobileBrand) {
+            mobileBrand.textContent = user.business_name || 'ReviewGuard';
           }
           if (headerBranding) {
             headerBranding.textContent = user.business_name ? `${user.business_name} SMS Manager` : 'SMS Manager';
