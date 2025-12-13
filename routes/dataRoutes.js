@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import * as dataController from '../controllers/dataController.js';
+import { basicAuth } from '../middleware/security.js';
 
-export default function createDataRoutes(pool) {
+export default function createDataRoutes(pool, requireAuth) {
   const router = Router();
 
-  router.get('/api/messages', dataController.getMessages(pool));
-  router.get('/api/customers', dataController.getCustomers(pool));
-  router.get('/api/stats', dataController.getStats(pool));
+  router.get('/api/messages', requireAuth, basicAuth, dataController.getMessages(pool));
+  router.get('/api/customers', requireAuth, basicAuth, dataController.getCustomers(pool));
+  router.get('/api/stats', requireAuth, basicAuth, dataController.getStats(pool));
 
   return router;
 }

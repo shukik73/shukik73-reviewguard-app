@@ -121,7 +121,7 @@ async function startServer() {
 
     app.use(createAuthRoutes(pool));
     app.use(createSMSRoutes(pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone, upload, requireAuth, smsLimiter));
-    app.use(createDataRoutes(pool));
+    app.use(createDataRoutes(pool, requireAuth));
     app.use(createOCRRoutes(pool, ocrUpload));
     app.use(createBillingRoutes(pool));
     app.use(createSettingsRoutes(pool, requireAuth));
