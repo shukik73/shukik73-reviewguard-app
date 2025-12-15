@@ -227,7 +227,7 @@
                     successMessage.textContent = 'Login successful! Redirecting...';
                     successMessage.style.display = 'block';
                     setTimeout(() => {
-                        window.location.href = '/';
+                        window.location.href = '/app';
                     }, 1000);
                 } else {
                     errorMessage.textContent = data.error || 'Login failed';
