@@ -12,6 +12,7 @@ export default function createFeedbackRoutes(pool, requireAuth) {
   // Protected endpoints (require authentication)
   router.get('/api/feedback', requireAuth, basicAuth, feedbackController.getFeedback(pool));
   router.post('/api/feedback/mark-read', requireAuth, basicAuth, feedbackController.markFeedbackAsRead(pool));
+  router.post('/api/feedback/block', requireAuth, basicAuth, feedbackController.blockFeedback(pool));
 
   return router;
 }

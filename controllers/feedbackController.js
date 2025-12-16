@@ -260,10 +260,11 @@ export const getFeedback = (pool) => async (req, res) => {
     console.log(`[GET FEEDBACK] ✓ Authenticated - Fetching feedback for user_id: ${userId}`);
 
     // Get all feedback for this user (strict tenant filtering - SECURITY MAINTAINED)
+    // Exclude 'ignored' feedback (blocked/spam)
     const result = await pool.query(
       `SELECT id, message_id, customer_name, customer_phone, rating, feedback_text, created_at, status
        FROM internal_feedback
-       WHERE user_id = $1
+       WHERE user_id = $1 AND (status IS NULL OR status != 'ignored')
        ORDER BY created_at DESC`,
       [userId]
     );
@@ -386,6 +387,51 @@ export const markFeedbackAsRead = (pool) => async (req, res) => {
 
   } catch (error) {
     console.error('Error marking feedback as read:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const blockFeedback = (pool) => async (req, res) => {
+  try {
+    const { feedbackId } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId || !feedbackId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Feedback ID and authentication required' 
+      });
+    }
+
+    console.log(`[BLOCK FEEDBACK] User ${userId} blocking feedback ${feedbackId}`);
+
+    const result = await pool.query(
+      `UPDATE internal_feedback
+       SET status = 'ignored'
+       WHERE id = $1 AND user_id = $2
+       RETURNING id`,
+      [feedbackId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Feedback not found or access denied' 
+      });
+    }
+
+    console.log(`[BLOCK FEEDBACK] Successfully marked feedback ${feedbackId} as ignored`);
+
+    res.json({ 
+      success: true, 
+      message: 'Feedback marked as ignored' 
+    });
+
+  } catch (error) {
+    console.error('Error blocking feedback:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
