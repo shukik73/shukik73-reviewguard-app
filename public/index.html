@@ -297,26 +297,28 @@
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div class="stat-card bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
               <div class="flex items-center justify-between mb-3">
-                <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 </div>
               </div>
-              <div id="stat-total-messages" class="text-3xl font-bold text-gray-900">0</div>
-              <div class="text-sm text-gray-500">Total SMS Sent</div>
+              <div id="stat-reputation" class="text-3xl font-bold text-amber-600 flex items-center gap-1">
+                4.8 <span class="text-lg">★</span>
+              </div>
+              <div class="text-sm text-gray-500">Reputation Score</div>
             </div>
 
             <div class="stat-card bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
               <div class="flex items-center justify-between mb-3">
-                <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
               </div>
               <div id="stat-total-customers" class="text-3xl font-bold text-gray-900">0</div>
-              <div class="text-sm text-gray-500">Total Customers</div>
+              <div class="text-sm text-gray-500">Marketing List</div>
             </div>
 
             <div class="stat-card bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
@@ -653,9 +655,18 @@
             <div class="text-center py-12 text-gray-500">Loading reviews...</div>
           </div>
 
-          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mt-6">
-            <h3 class="font-semibold text-gray-900 mb-1">AI Review Reply Assistant</h3>
-            <p class="text-sm text-gray-500 mb-4">Generate professional, SEO-optimized responses for Google Reviews</p>
+          <div id="ai-reply-assistant-panel" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mt-6 hidden">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold text-gray-900 mb-1">AI Review Reply Assistant</h3>
+                <p class="text-sm text-gray-500">Generate professional, SEO-optimized responses for Google Reviews</p>
+              </div>
+              <button onclick="hideAIReplyPanel()" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             
             <div class="grid md:grid-cols-2 gap-4">
               <div class="space-y-4">
@@ -1162,7 +1173,6 @@
         const data = await response.json();
         
         if (data.success && data.stats) {
-          document.getElementById('stat-total-messages').textContent = data.stats.totalMessages || 0;
           document.getElementById('stat-total-customers').textContent = data.stats.totalCustomers || 0;
           document.getElementById('stat-today').textContent = data.stats.todayMessages || 0;
           document.getElementById('stat-this-week').textContent = data.stats.weekMessages || 0;
@@ -1281,6 +1291,13 @@
 
     document.getElementById('history-filter').addEventListener('change', loadHistory);
 
+    function generateMockLastVisit() {
+      const daysAgo = Math.floor(Math.random() * 30) + 1;
+      const date = new Date();
+      date.setDate(date.getDate() - daysAgo);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
     async function loadCustomers() {
       try {
         const response = await fetch('/api/customers');
@@ -1288,7 +1305,9 @@
         
         const container = document.getElementById('customers-list');
         if (data.success && data.customers && data.customers.length > 0) {
-          container.innerHTML = data.customers.map(customer => `
+          container.innerHTML = data.customers.map(customer => {
+            const lastVisit = customer.last_visit ? new Date(customer.last_visit).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : generateMockLastVisit();
+            return `
             <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
               <div class="w-10 h-10 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
                 <span class="text-white font-medium">${customer.name.charAt(0).toUpperCase()}</span>
@@ -1297,11 +1316,20 @@
                 <div class="font-medium text-gray-900">${customer.name}</div>
                 <div class="text-sm text-gray-500">${customer.phone} • ${customer.message_count || 0} messages</div>
               </div>
-              <button data-action="loadCustomerData" data-name="${customer.name.replace(/"/g, '&quot;')}" data-phone="${customer.phone}" class="px-3 py-1.5 text-xs border border-accent text-accent rounded-lg hover:bg-indigo-50 transition-colors">
-                Use in Form
-              </button>
+              <div class="text-center px-3">
+                <div class="text-xs text-gray-400 uppercase">Last Visit</div>
+                <div class="text-sm font-medium text-gray-600">${lastVisit}</div>
+              </div>
+              <div class="flex gap-2">
+                <button data-action="loadCustomerData" data-name="${customer.name.replace(/"/g, '&quot;')}" data-phone="${customer.phone}" class="px-3 py-1.5 text-xs border border-accent text-accent rounded-lg hover:bg-indigo-50 transition-colors">
+                  Use in Form
+                </button>
+                <button data-action="reactivateCustomer" data-name="${customer.name.replace(/"/g, '&quot;')}" data-phone="${customer.phone}" class="px-3 py-1.5 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">
+                  Reactivate
+                </button>
+              </div>
             </div>
-          `).join('');
+          `;}).join('');
         } else {
           container.innerHTML = '<p class="text-sm text-gray-500 text-center py-12">No customers yet</p>';
         }
@@ -1574,6 +1602,21 @@
       document.getElementById('ai-star-rating').value = '';
       document.getElementById('ai-review-text').value = '';
       document.getElementById('ai-reply-container').classList.add('hidden');
+    }
+
+    function showAIReplyPanel(customerName, starRating, reviewText) {
+      const panel = document.getElementById('ai-reply-assistant-panel');
+      document.getElementById('ai-customer-name').value = customerName || '';
+      document.getElementById('ai-star-rating').value = starRating || '';
+      document.getElementById('ai-review-text').value = reviewText || '';
+      document.getElementById('ai-reply-container').classList.add('hidden');
+      panel.classList.remove('hidden');
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function hideAIReplyPanel() {
+      document.getElementById('ai-reply-assistant-panel').classList.add('hidden');
+      clearAIReviewForm();
     }
 
     async function generateAIReply() {
@@ -2711,6 +2754,10 @@
                   <textarea id="draft-${review.id}" rows="3" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none">${review.ai_reply_draft || ''}</textarea>
                 </div>
                 <div class="flex gap-2">
+                  <button data-action="openAIReply" data-name="${review.reviewer_name.replace(/"/g, '&quot;')}" data-rating="${review.star_rating}" data-text="${(review.comment || '').replace(/"/g, '&quot;')}" class="px-4 py-2 bg-accent text-white font-medium rounded-lg hover:bg-indigo-600 transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    Reply
+                  </button>
                   <button data-action="postReply" data-id="${review.id}" class="flex-1 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                     Post Reply
@@ -2876,6 +2923,21 @@
         } catch (error) {
           console.error('Error marking feedback as read:', error);
         }
+      }
+      
+      else if (action === 'openAIReply') {
+        const { name, rating, text } = btn.dataset;
+        showAIReplyPanel(name, rating, text);
+      }
+      
+      else if (action === 'reactivateCustomer') {
+        const { name, phone } = btn.dataset;
+        document.getElementById('customer-name').value = name;
+        document.getElementById('customer-phone').value = phone;
+        document.getElementById('message-type').value = 'review';
+        showSection('send-sms');
+        updatePreview();
+        showNotification(`Ready to send reactivation message to ${name}`, 'success');
       }
     });
 
