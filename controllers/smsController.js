@@ -523,15 +523,15 @@ export const trackCustomerClick = (pool) => async (req, res) => {
     const businessName = customer.business_name || 'our business';
     
     if (googleLink && googleLink.trim()) {
-      console.log(`🚀 Showing thank you page for ${customer.name}, then redirect to Google Review`);
+      console.log(`🌟 Showing Star Filter page for ${customer.name}`);
       
-      const transitionHtml = `
+      const starFilterHtml = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Thank You! - ${businessName}</title>
+  <title>How Was Your Experience? - ${businessName}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -540,89 +540,420 @@ export const trackCustomerClick = (pool) => async (req, res) => {
       align-items: center;
       justify-content: center;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
       color: #fff;
       text-align: center;
       padding: 20px;
     }
     .container {
-      background: rgba(255,255,255,0.15);
-      backdrop-filter: blur(10px);
-      border-radius: 24px;
-      padding: 48px 40px;
-      max-width: 400px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      padding: 48px 36px;
+      max-width: 420px;
       width: 100%;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
     }
-    .icon {
+    .logo {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 28px;
+    }
+    .business-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+    .subtitle {
+      font-size: 16px;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 32px;
+    }
+    .stars-container {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .star-btn {
+      width: 56px;
+      height: 56px;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 28px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .star-btn:hover {
+      background: rgba(255,255,255,0.2);
+      transform: scale(1.1);
+    }
+    .star-btn.selected {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      border-color: #fbbf24;
+      transform: scale(1.1);
+    }
+    .star-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 8px;
+      padding: 0 4px;
+    }
+    
+    /* Priority Resolution Form (1-3 stars) */
+    .priority-form {
+      display: none;
+      text-align: left;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      animation: slideIn 0.4s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .priority-form.show { display: block; }
+    .priority-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .priority-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    .priority-text h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .priority-text p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+    }
+    .vip-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .form-textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 14px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      font-size: 15px;
+      resize: none;
+      transition: border-color 0.2s;
+    }
+    .form-textarea:focus {
+      outline: none;
+      border-color: #a855f7;
+    }
+    .form-textarea::placeholder {
+      color: rgba(255,255,255,0.4);
+    }
+    .submit-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 16px;
+      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4);
+    }
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .privacy-note {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 12px;
+      text-align: center;
+    }
+    
+    /* Awesome Screen (4-5 stars) */
+    .awesome-screen {
+      display: none;
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .awesome-screen.show { display: block; }
+    .awesome-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      animation: bounce 0.6s ease infinite alternate;
+    }
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-10px); }
+    }
+    .awesome-title {
+      font-size: 36px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+    .awesome-subtitle {
+      font-size: 16px;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 28px;
+    }
+    .google-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 32px;
+      background: #fff;
+      color: #1f2937;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .google-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(255,255,255,0.2);
+    }
+    .google-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+    
+    /* Success Screen */
+    .success-screen {
+      display: none;
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .success-screen.show { display: block; }
+    .success-icon {
       width: 80px;
       height: 80px;
-      background: #fff;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 24px;
+      margin: 0 auto 20px;
       font-size: 40px;
     }
-    h1 {
-      font-size: 32px;
+    .success-title {
+      font-size: 28px;
       font-weight: 700;
       margin-bottom: 12px;
     }
-    p {
-      font-size: 18px;
-      opacity: 0.9;
-      margin-bottom: 24px;
-      line-height: 1.5;
+    .success-subtitle {
+      font-size: 16px;
+      color: rgba(255,255,255,0.8);
     }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 20px;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    .fallback {
-      font-size: 14px;
-      opacity: 0.7;
-    }
-    .fallback a {
-      color: #fff;
-      text-decoration: underline;
-    }
-    .business-name {
-      font-size: 14px;
-      opacity: 0.8;
-      margin-top: 24px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255,255,255,0.2);
-    }
+    
+    /* Initial/Rating Screen */
+    .rating-screen { display: block; }
+    .rating-screen.hide { display: none; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="icon">💜</div>
-    <h1>Thank You!</h1>
-    <p>We truly appreciate your business.<br>Taking you to Google Reviews...</p>
-    <div class="spinner"></div>
-    <p class="fallback">If not redirected, <a href="${googleLink}">click here</a></p>
-    <p class="business-name">${businessName}</p>
+    <!-- Initial Rating Screen -->
+    <div id="rating-screen" class="rating-screen">
+      <div class="logo">⭐</div>
+      <div class="business-name">${businessName}</div>
+      <h1>How was your experience?</h1>
+      <p class="subtitle">Your feedback helps us serve you better</p>
+      
+      <div class="stars-container">
+        <button class="star-btn" data-rating="1">1</button>
+        <button class="star-btn" data-rating="2">2</button>
+        <button class="star-btn" data-rating="3">3</button>
+        <button class="star-btn" data-rating="4">4</button>
+        <button class="star-btn" data-rating="5">5</button>
+      </div>
+      <div class="star-labels">
+        <span>Poor</span>
+        <span>Excellent</span>
+      </div>
+      
+      <!-- Priority Resolution Form (1-3 Stars) -->
+      <div id="priority-form" class="priority-form">
+        <div class="priority-header">
+          <div class="priority-icon">🎯</div>
+          <div class="priority-text">
+            <h2>We want to make this right.</h2>
+            <p>Message the owner directly so we can fix this immediately.</p>
+          </div>
+        </div>
+        
+        <div class="vip-badge">
+          <span>👑</span> VIP Priority Resolution
+        </div>
+        
+        <textarea id="feedback-text" class="form-textarea" placeholder="Tell us what happened and how we can make it right. The owner will personally review your message..."></textarea>
+        
+        <button id="submit-feedback" class="submit-btn">Send Direct Message to Owner</button>
+        
+        <p class="privacy-note">🔒 This goes directly to the owner - not posted publicly</p>
+      </div>
+    </div>
+    
+    <!-- Awesome Screen (4-5 Stars) -->
+    <div id="awesome-screen" class="awesome-screen">
+      <div class="awesome-icon">🎉</div>
+      <h1 class="awesome-title">Awesome!</h1>
+      <p class="awesome-subtitle">We're thrilled you had a great experience!<br>Would you share it with others?</p>
+      <a href="${googleLink}" class="google-btn">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Post to Google
+      </a>
+    </div>
+    
+    <!-- Success Screen (After Feedback Submission) -->
+    <div id="success-screen" class="success-screen">
+      <div class="success-icon">✓</div>
+      <h1 class="success-title">Message Received!</h1>
+      <p class="success-subtitle">Thank you for reaching out. The owner will<br>review your message and get back to you soon.</p>
+    </div>
   </div>
+  
   <script>
-    setTimeout(function() {
-      window.location.href = '${googleLink}';
-    }, 1500);
+    const token = '${token}';
+    let selectedRating = 0;
+    
+    const starBtns = document.querySelectorAll('.star-btn');
+    const ratingScreen = document.getElementById('rating-screen');
+    const priorityForm = document.getElementById('priority-form');
+    const awesomeScreen = document.getElementById('awesome-screen');
+    const successScreen = document.getElementById('success-screen');
+    const submitBtn = document.getElementById('submit-feedback');
+    const feedbackText = document.getElementById('feedback-text');
+    
+    starBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        selectedRating = parseInt(this.dataset.rating);
+        
+        // Update star visual state
+        starBtns.forEach((b, i) => {
+          if (i < selectedRating) {
+            b.classList.add('selected');
+            b.textContent = '★';
+          } else {
+            b.classList.remove('selected');
+            b.textContent = (i + 1).toString();
+          }
+        });
+        
+        // Route based on rating
+        if (selectedRating >= 4) {
+          // High rating: Show Awesome screen
+          setTimeout(() => {
+            ratingScreen.classList.add('hide');
+            awesomeScreen.classList.add('show');
+          }, 400);
+        } else {
+          // Low rating: Show Priority Resolution Form
+          priorityForm.classList.add('show');
+        }
+      });
+    });
+    
+    submitBtn.addEventListener('click', async function() {
+      const text = feedbackText.value.trim();
+      
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
+      
+      try {
+        const response = await fetch('/api/internal-feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            feedbackToken: token,
+            rating: selectedRating,
+            feedbackText: text
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          ratingScreen.classList.add('hide');
+          priorityForm.classList.remove('show');
+          successScreen.classList.add('show');
+        } else {
+          alert('Something went wrong. Please try again.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Send Direct Message to Owner';
+        }
+      } catch (err) {
+        alert('Connection error. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Direct Message to Owner';
+      }
+    });
   </script>
 </body>
 </html>`;
       
-      res.send(transitionHtml);
+      res.send(starFilterHtml);
     } else {
       // Fallback: Show thank you page when Google link is not configured
       console.log(`⚠️ No Google Review link configured for user_id: ${customer.user_id}`);
