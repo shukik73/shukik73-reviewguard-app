@@ -107,7 +107,7 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
-          Bulk SMS
+          Campaigns
         </button>
 
         <button data-section="history" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm font-medium">
@@ -530,10 +530,16 @@
                   <div class="text-xs text-gray-400 mt-2">Character count: <span id="char-count">0</span>/160</div>
                 </div>
 
-                <label class="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer">
-                  <input type="checkbox" id="sms-consent-checkbox" class="mt-0.5 rounded border-amber-300 text-amber-600 focus:ring-amber-500" />
-                  <span class="text-xs text-amber-800">
-                    <strong>Required:</strong> I confirm this customer has consented to receive SMS updates from my business. (TCPA Compliance)
+                <label class="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer">
+                  <input type="checkbox" id="sms-consent-checkbox" class="mt-0.5 rounded border-green-300 text-green-600 focus:ring-green-500" checked />
+                  <span class="text-xs text-green-800 flex items-center gap-1.5">
+                    Standard Repair Consent Verified
+                    <span class="relative group">
+                      <svg class="w-3.5 h-3.5 text-green-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                      </svg>
+                      <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">Covers standard repair intake consent forms.</span>
+                    </span>
                   </span>
                 </label>
 
@@ -735,6 +741,19 @@
               </button>
             </div>
 
+            <div class="flex flex-wrap gap-2 mb-4">
+              <span class="text-xs font-medium text-gray-500 self-center mr-1">Quick Filters:</span>
+              <button class="quick-filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors flex items-center gap-1.5">
+                <span>&#128142;</span> High Value Repairs
+              </button>
+              <button class="quick-filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors flex items-center gap-1.5">
+                <span>&#127823;</span> iPhone Users
+              </button>
+              <button class="quick-filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors flex items-center gap-1.5">
+                <span>&#128197;</span> Last 30 Days
+              </button>
+            </div>
+
             <div id="bulk-tickets-panel">
               <div class="flex items-center gap-3 mb-4 flex-wrap">
                 <div class="relative flex-1 min-w-[200px]">
@@ -781,7 +800,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
-                Send Review Requests
+                Launch Reactivation Campaign
               </button>
             </div>
             </div>
@@ -1068,7 +1087,7 @@
     const pageTitles = {
       'dashboard': { title: 'Dashboard', subtitle: 'Overview of your messaging and reviews.' },
       'send-sms': { title: 'New Customer Onboarding', subtitle: 'Upload a receipt to auto-fill details. Review and correct AI data before saving.' },
-      'bulk-sms': { title: 'Bulk SMS', subtitle: 'Send review requests to multiple customers from RepairDesk.' },
+      'bulk-sms': { title: 'Campaigns', subtitle: 'Launch targeted reactivation campaigns for your customers.' },
       'history': { title: 'Message History', subtitle: 'Track all sent messages and customer interactions.' },
       'customers': { title: 'Customer Database', subtitle: 'Manage your customer contacts and profiles.' },
       'reviews': { title: 'Review Inbox', subtitle: 'Manage incoming reviews and approve AI responses.' },
@@ -2655,7 +2674,7 @@
         }
 
         bulkSendBtn.disabled = false;
-        bulkSendBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg> Send Review Requests`;
+        bulkSendBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg> Launch Reactivation Campaign`;
 
         if (successCount > 0) {
           showNotification(`Sent ${successCount} review request${successCount > 1 ? 's' : ''} successfully!`, 'success');
