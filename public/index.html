@@ -2012,8 +2012,8 @@
           body: JSON.stringify({
             customerPhone: apologyCustomerPhone,
             customerName: document.getElementById('apology-customer-info').textContent.split(' (')[0] || 'Customer',
-            messageType: 'custom',
-            customMessage: message,
+            messageType: 'apology',
+            additionalInfo: message + '\n\nReply STOP to opt out.',
             smsConsentConfirmed: true
           })
         });
