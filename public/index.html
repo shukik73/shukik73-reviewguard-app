@@ -291,6 +291,37 @@
         </div>
       </div>
 
+      <!-- Big Centered Error Modal (impossible to miss) -->
+      <div id="error-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4">
+        <div id="error-modal-backdrop" class="absolute inset-0 bg-black/70"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-bounce-in">
+          <div class="flex flex-col items-center text-center">
+            <div class="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Something Went Wrong</h3>
+            <p id="error-modal-message" class="text-gray-600 mb-6">An error occurred. Please try again.</p>
+            <button id="error-modal-close-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-all text-lg">
+              OK, Got It
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <style>
+        @keyframes bounceIn {
+          0% { transform: scale(0.3); opacity: 0; }
+          50% { transform: scale(1.05); }
+          70% { transform: scale(0.9); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-bounce-in {
+          animation: bounceIn 0.4s ease-out;
+        }
+      </style>
+
       <!-- SMS Apology Modal -->
       <div id="sms-apology-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4">
         <div id="sms-apology-backdrop" class="absolute inset-0 bg-black/50"></div>
@@ -1088,6 +1119,22 @@
       container.classList.remove('hidden');
       setTimeout(() => container.classList.add('hidden'), 4000);
     }
+    
+    // Big centered error modal - impossible to miss!
+    function showErrorModal(message) {
+      const modal = document.getElementById('error-modal');
+      const messageEl = document.getElementById('error-modal-message');
+      messageEl.textContent = message || 'An error occurred. Please try again.';
+      modal.classList.remove('hidden');
+    }
+    
+    function closeErrorModal() {
+      document.getElementById('error-modal').classList.add('hidden');
+    }
+    
+    // Set up error modal close handlers
+    document.getElementById('error-modal-close-btn')?.addEventListener('click', closeErrorModal);
+    document.getElementById('error-modal-backdrop')?.addEventListener('click', closeErrorModal);
 
     // Mobile sidebar toggle
     const sidebar = document.getElementById('sidebar');
@@ -1950,7 +1997,7 @@
     window.sendApologySMS = async function() {
       const message = document.getElementById('apology-message').value.trim();
       if (!message) {
-        showNotification('Please enter a message', 'error');
+        showErrorModal('Please enter a message before sending.');
         return;
       }
       
@@ -1964,22 +2011,31 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             customerPhone: apologyCustomerPhone,
-            customerName: 'Customer',
+            customerName: document.getElementById('apology-customer-info').textContent.split(' (')[0] || 'Customer',
             messageType: 'custom',
             customMessage: message,
             tcpaConsent: true
           })
         });
+        
+        if (!response.ok) {
+          window.closeApologyModal();
+          showErrorModal('SMS failed to send. Please check your connection and try again.');
+          return;
+        }
+        
         const data = await response.json();
         if (data.success) {
           window.closeApologyModal();
           showNotification('Apology SMS sent successfully!', 'success');
         } else {
-          showNotification(data.error || 'Failed to send SMS', 'error');
+          window.closeApologyModal();
+          showErrorModal(data.error || 'SMS failed to send. Please try again.');
         }
       } catch (error) {
         console.error('Error sending apology SMS:', error);
-        showNotification('Failed to send SMS', 'error');
+        window.closeApologyModal();
+        showErrorModal('SMS failed to send. Network error - please check your connection.');
       } finally {
         sendBtn.disabled = false;
         sendBtn.textContent = 'Send Apology';
