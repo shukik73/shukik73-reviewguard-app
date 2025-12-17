@@ -850,16 +850,22 @@
             <div id="bulk-tickets-list" class="hidden space-y-2 max-h-[800px] overflow-y-auto">
             </div>
 
-            <div id="bulk-selection-bar" class="hidden mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="text-purple-700 font-medium"><span id="bulk-selected-count">0</span>/5 selected</span>
+            <div id="bulk-selection-bar" class="hidden mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <div class="mb-3">
+                <label class="block text-sm font-medium text-purple-800 mb-1">Campaign Message:</label>
+                <textarea id="campaign-message" rows="3" class="w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="Hi {name}! Thank you for choosing us. We'd love to hear about your experience..."></textarea>
               </div>
-              <button id="bulk-send-btn" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-                Launch Reactivation Campaign
-              </button>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-purple-700 font-medium"><span id="bulk-selected-count">0</span>/5 selected</span>
+                </div>
+                <button id="bulk-send-btn" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  Launch Reactivation Campaign
+                </button>
+              </div>
             </div>
             </div>
 
@@ -2783,61 +2789,51 @@
           return;
         }
 
-        const selectedCustomers = [];
+        const campaignMessage = document.getElementById('campaign-message').value.trim();
+        if (!campaignMessage) {
+          showErrorModal('Please enter a campaign message before launching.');
+          return;
+        }
+
+        const selectedNumbers = [];
         document.querySelectorAll('.bulk-ticket-row').forEach(row => {
           if (bulkSelectedTickets.has(row.dataset.id)) {
-            selectedCustomers.push({
-              name: row.dataset.name,
-              phone: row.dataset.phone,
-              device: row.dataset.device
-            });
+            selectedNumbers.push(row.dataset.phone);
           }
         });
 
         bulkSendBtn.disabled = true;
-        bulkSendBtn.innerHTML = '<span class="animate-spin">⏳</span> Sending...';
+        bulkSendBtn.innerHTML = '<span class="inline-block animate-spin">⏳</span> Sending...';
 
-        let successCount = 0;
-        let failCount = 0;
+        try {
+          const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          const payload = {
+            campaign_name: `Reactivation ${today}`,
+            message: campaignMessage,
+            numbers: selectedNumbers
+          };
 
-        for (const customer of selectedCustomers) {
-          try {
-            const formData = new FormData();
-            formData.append('customerName', customer.name);
-            formData.append('customerPhone', customer.phone);
-            formData.append('device', customer.device || '');
-            formData.append('messageType', 'review');
-            formData.append('additionalInfo', `Hi ${customer.name}! Thank you for choosing {business} for your ${customer.device} repair. We'd love to hear about your experience!`);
-            formData.append('smsConsentConfirmed', 'true');
+          const response = await fetch('https://n8n.srv1155599.hstgr.cloud/webhook/broadcast', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
 
-            const response = await fetch('/api/send-review-request', {
-              method: 'POST',
-              body: formData
-            });
-
-            const data = await response.json();
-            if (data.success) {
-              successCount++;
-            } else {
-              failCount++;
-            }
-          } catch (err) {
-            failCount++;
+          if (response.ok) {
+            showNotification('🚀 Campaign Launched! Messages are being sent.', 'success');
+            bulkSelectedTickets.clear();
+            document.getElementById('campaign-message').value = '';
+            renderBulkTickets();
+          } else {
+            showErrorModal('Failed to launch campaign. Please try again.');
           }
+        } catch (err) {
+          console.error('Campaign launch error:', err);
+          showErrorModal('Network error. Could not reach the campaign server.');
         }
 
         bulkSendBtn.disabled = false;
         bulkSendBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg> Launch Reactivation Campaign`;
-
-        if (successCount > 0) {
-          showNotification(`Sent ${successCount} review request${successCount > 1 ? 's' : ''} successfully!`, 'success');
-        }
-        if (failCount > 0) {
-          showNotification(`Failed to send ${failCount} request${failCount > 1 ? 's' : ''}`, 'error');
-        }
-
-        bulkSelectedTickets.clear();
-        renderBulkTickets();
       });
     }
 
