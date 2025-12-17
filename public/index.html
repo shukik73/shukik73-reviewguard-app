@@ -2006,7 +2006,7 @@
       sendBtn.textContent = 'Sending...';
       
       try {
-        const response = await fetch('/api/send-sms', {
+        const response = await fetch('/api/send-review-request', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -2014,7 +2014,7 @@
             customerName: document.getElementById('apology-customer-info').textContent.split(' (')[0] || 'Customer',
             messageType: 'custom',
             customMessage: message,
-            tcpaConsent: true
+            smsConsentConfirmed: true
           })
         });
         
