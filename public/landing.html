@@ -4,36 +4,33 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ReviewGuard - Turn Paper Receipts into 5-Star Google Reviews</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] },
-          colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              200: '#c7d2fe',
-              300: '#a5b4fc',
-              400: '#818cf8',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-              800: '#3730a3',
-              900: '#312e81',
-            },
-            navy: {
-              900: '#0B0F2D',
-              800: '#151a45',
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="/styles.css" />
   <style>
+    :root {
+      --brand-50: #eef2ff; --brand-100: #e0e7ff; --brand-200: #c7d2fe; --brand-300: #a5b4fc;
+      --brand-400: #818cf8; --brand-500: #6366f1; --brand-600: #4f46e5; --brand-700: #4338ca;
+      --brand-800: #3730a3; --brand-900: #312e81; --navy-900: #0B0F2D; --navy-800: #151a45;
+    }
+    .bg-brand-50 { background-color: var(--brand-50); }
+    .bg-brand-100 { background-color: var(--brand-100); }
+    .bg-brand-200 { background-color: var(--brand-200); }
+    .bg-brand-500 { background-color: var(--brand-500); }
+    .bg-brand-600 { background-color: var(--brand-600); }
+    .bg-brand-700 { background-color: var(--brand-700); }
+    .bg-navy-900 { background-color: var(--navy-900); }
+    .text-brand-500 { color: var(--brand-500); }
+    .text-brand-600 { color: var(--brand-600); }
+    .text-brand-700 { color: var(--brand-700); }
+    .border-brand-500 { border-color: var(--brand-500); }
+    .border-brand-600 { border-color: var(--brand-600); }
+    .from-brand-500 { --tw-gradient-from: var(--brand-500); --tw-gradient-to: transparent; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+    .to-brand-700 { --tw-gradient-to: var(--brand-700); }
+    .hover\:bg-brand-700:hover { background-color: var(--brand-700); }
+    .hover\:text-brand-600:hover { color: var(--brand-600); }
+    .ring-brand-500 { --tw-ring-color: var(--brand-500); }
+    .bg-gradient-to-r { background-image: linear-gradient(to right, var(--tw-gradient-stops)); }
+    .bg-clip-text { -webkit-background-clip: text; background-clip: text; }
+    .text-transparent { color: transparent; }
     .animate-blob {
       animation: blob 7s infinite;
     }
