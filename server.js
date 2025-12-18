@@ -27,6 +27,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import session from 'express-session';
@@ -59,12 +60,14 @@ let smsLimiter, apiLimiter;
 
 app.set('trust proxy', 1);
 
+app.use(compression());
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "js.stripe.com", "cdn.tailwindcss.com", "code.jquery.com", "cdn.jsdelivr.net"],
-      styleSrc: ["'self'", "'unsafe-inline'", "cdn.tailwindcss.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "js.stripe.com", "code.jquery.com", "cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "https://api.stripe.com"],
       frameSrc: ["'self'", "js.stripe.com"],
