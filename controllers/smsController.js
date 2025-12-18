@@ -100,14 +100,14 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
 
     // SAFETY BRAKE: Prevent duplicate SMS within 1 hour (infinite loop protection)
     const recentSmsCheck = await pool.query(
-      `SELECT id, created_at FROM messages 
+      `SELECT id, sent_at FROM messages 
        WHERE user_id = $1 AND customer_phone = $2 
-       AND created_at > NOW() - INTERVAL '1 hour'
-       ORDER BY created_at DESC LIMIT 1`,
+       AND sent_at > NOW() - INTERVAL '1 hour'
+       ORDER BY sent_at DESC LIMIT 1`,
       [userId, formattedPhone]
     );
     if (recentSmsCheck.rows.length > 0) {
-      const lastSentAt = new Date(recentSmsCheck.rows[0].created_at);
+      const lastSentAt = new Date(recentSmsCheck.rows[0].sent_at);
       const minutesAgo = Math.round((Date.now() - lastSentAt.getTime()) / 60000);
       console.log(`[SAFETY BRAKE] Blocked duplicate SMS to ${formattedPhone} - last sent ${minutesAgo} minutes ago`);
       return res.status(429).json({
