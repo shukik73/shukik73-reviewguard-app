@@ -98,6 +98,25 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
       });
     }
 
+    // SAFETY BRAKE: Prevent duplicate SMS within 1 hour (infinite loop protection)
+    const recentSmsCheck = await pool.query(
+      `SELECT id, created_at FROM messages 
+       WHERE user_id = $1 AND customer_phone = $2 
+       AND created_at > NOW() - INTERVAL '1 hour'
+       ORDER BY created_at DESC LIMIT 1`,
+      [userId, formattedPhone]
+    );
+    if (recentSmsCheck.rows.length > 0) {
+      const lastSentAt = new Date(recentSmsCheck.rows[0].created_at);
+      const minutesAgo = Math.round((Date.now() - lastSentAt.getTime()) / 60000);
+      console.log(`[SAFETY BRAKE] Blocked duplicate SMS to ${formattedPhone} - last sent ${minutesAgo} minutes ago`);
+      return res.status(429).json({
+        success: false,
+        error: `A message was already sent to this number ${minutesAgo} minutes ago. Please wait at least 1 hour between messages to the same customer.`,
+        code: 'DUPLICATE_SMS_BLOCKED'
+      });
+    }
+
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
     
@@ -1069,13 +1088,28 @@ export const sendCustomerFollowups = (pool, getTwilioClient, getTwilioFromPhoneN
 export const updateReviewStatus = (pool) => async (req, res) => {
   try {
     const { id } = req.params;
+    const userEmail = req.session.userEmail;
+
+    if (!userEmail) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const userResult = await pool.query('SELECT id FROM users WHERE company_email = $1', [userEmail]);
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ success: false, error: 'User not found' });
+    }
+    const userId = userResult.rows[0].id;
     
-    await pool.query(
+    const result = await pool.query(
       `UPDATE messages 
        SET review_received_at = CURRENT_TIMESTAMP, review_status = 'reviewed'
-       WHERE id = $1`,
-      [id]
+       WHERE id = $1 AND user_id = $2`,
+      [id, userId]
     );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Message not found or access denied' });
+    }
     
     res.json({ success: true, message: 'Review marked as received' });
   } catch (error) {

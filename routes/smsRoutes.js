@@ -12,9 +12,9 @@ export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhon
   // Legacy token-based tracking (for old messages)
   router.get('/review/:token', smsController.trackReviewClick(pool));
   
-  router.patch('/api/messages/:id/review-status', smsController.updateReviewStatus(pool));
+  router.patch('/api/messages/:id/review-status', requireAuth, smsController.updateReviewStatus(pool));
   router.get('/api/messages/needs-followup', requireAuth, smsController.getMessagesNeedingFollowup(pool));
-  router.post('/api/follow-ups/send', smsLimiter, smsController.sendFollowups(pool, getTwilioClient, getTwilioFromPhoneNumber));
+  router.post('/api/follow-ups/send', smsLimiter, requireAuth, smsController.sendFollowups(pool, getTwilioClient, getTwilioFromPhoneNumber));
   router.post('/api/send-reminder', smsLimiter, requireAuth, smsController.sendReminder(pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone));
   router.post('/api/sms/webhook', smsController.handleIncomingSMS(pool, validateAndFormatPhone));
   
