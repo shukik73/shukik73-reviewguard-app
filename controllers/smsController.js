@@ -1387,3 +1387,56 @@ export const sendReminder = (pool, getTwilioClient, getTwilioFromPhoneNumber, va
     });
   }
 };
+
+export const checkSentStatus = (pool) => async (req, res) => {
+  try {
+    const { phoneNumbers } = req.body;
+    const userEmail = req.session.userEmail;
+
+    if (!userEmail) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    if (!phoneNumbers || !Array.isArray(phoneNumbers) || phoneNumbers.length === 0) {
+      return res.json({ success: true, sentStatus: {} });
+    }
+
+    const userResult = await pool.query('SELECT id FROM users WHERE company_email = $1', [userEmail]);
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ success: false, error: 'User not found' });
+    }
+    const userId = userResult.rows[0].id;
+
+    const result = await pool.query(
+      `SELECT customer_phone, MAX(created_at) as last_sent
+       FROM messages
+       WHERE user_id = $1 
+         AND customer_phone = ANY($2)
+         AND message_type IN ('review', 'reactivation', 'reminder', 'apology')
+       GROUP BY customer_phone`,
+      [userId, phoneNumbers]
+    );
+
+    const sentStatus = {};
+    const now = new Date();
+    
+    for (const row of result.rows) {
+      const lastSent = new Date(row.last_sent);
+      const diffMs = now - lastSent;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) {
+        sentStatus[row.customer_phone] = 'Today';
+      } else if (diffDays === 1) {
+        sentStatus[row.customer_phone] = '1d ago';
+      } else {
+        sentStatus[row.customer_phone] = `${diffDays}d ago`;
+      }
+    }
+
+    res.json({ success: true, sentStatus });
+  } catch (error) {
+    console.error('Error checking sent status:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

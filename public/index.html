@@ -2637,6 +2637,26 @@
 
         bulkTicketsData = data.tickets || [];
         bulkSelectedTickets.clear();
+        
+        // Fetch sent status for all phone numbers
+        const phoneNumbers = bulkTicketsData.map(t => t.customer_phone).filter(p => p);
+        if (phoneNumbers.length > 0) {
+          try {
+            const statusResponse = await fetch('/api/customers/sent-status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ phoneNumbers })
+            });
+            const statusData = await statusResponse.json();
+            if (statusData.success) {
+              window.bulkSentStatus = statusData.sentStatus || {};
+            }
+          } catch (err) {
+            console.log('Could not fetch sent status:', err);
+            window.bulkSentStatus = {};
+          }
+        }
+        
         renderBulkTickets();
 
       } catch (err) {
@@ -2692,6 +2712,11 @@
         const isSelected = bulkSelectedTickets.has(ticket.id);
         const selectedClass = isSelected ? 'bg-purple-50 border-purple-300' : 'border-gray-200';
 
+        const sentStatus = window.bulkSentStatus?.[ticket.customer_phone];
+        const sentBadge = sentStatus 
+          ? `<span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Sent ${sentStatus}</span>`
+          : '';
+
         return `
           <div class="bulk-ticket-row p-3 border ${selectedClass} rounded-lg hover:bg-purple-50 cursor-pointer transition-colors flex items-center gap-3" 
                data-id="${ticket.id}"
@@ -2703,6 +2728,7 @@
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-xs font-mono text-gray-500">#${ticket.id}</span>
                 <span class="text-xs px-2 py-0.5 rounded-full ${statusClass}">${ticket.status}</span>
+                ${sentBadge}
               </div>
               <div class="font-medium text-gray-900">${ticket.customer_name}</div>
               <div class="text-sm text-gray-500">${ticket.device_name}</div>

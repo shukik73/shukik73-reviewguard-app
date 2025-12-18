@@ -21,6 +21,9 @@ export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhon
   // Smart Follow-up endpoints
   router.get('/api/customers/needs-followup', requireAuth, smsController.getCustomersNeedingFollowup(pool));
   router.post('/api/customers/send-followups', smsLimiter, requireAuth, smsController.sendCustomerFollowups(pool, getTwilioClient, getTwilioFromPhoneNumber));
+  
+  // Check sent status for campaign list
+  router.post('/api/customers/sent-status', requireAuth, smsController.checkSentStatus(pool));
 
   return router;
 }
