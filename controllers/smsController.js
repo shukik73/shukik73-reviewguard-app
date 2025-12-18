@@ -970,15 +970,17 @@ export const getCustomersNeedingFollowup = (pool) => async (req, res) => {
     }
     const userId = userResult.rows[0].id;
 
+    // Get customers not contacted in 6+ months OR never contacted
     const result = await pool.query(
-      `SELECT id, name, phone, last_sms_sent_at, created_at
-       FROM customers 
-       WHERE user_id = $1
-         AND last_sms_sent_at IS NOT NULL
-         AND link_clicked = FALSE
-         AND follow_up_sent = FALSE
-         AND last_sms_sent_at < NOW() - INTERVAL '24 hours'
-       ORDER BY last_sms_sent_at ASC`,
+      `SELECT c.id, c.name, c.phone, c.device, c.created_at,
+              (SELECT MAX(m.created_at) FROM messages m WHERE m.customer_phone = c.phone AND m.user_id = $1) as last_message_at
+       FROM customers c
+       WHERE c.user_id = $1
+         AND (
+           NOT EXISTS (SELECT 1 FROM messages m WHERE m.customer_phone = c.phone AND m.user_id = $1)
+           OR (SELECT MAX(m.created_at) FROM messages m WHERE m.customer_phone = c.phone AND m.user_id = $1) < NOW() - INTERVAL '6 months'
+         )
+       ORDER BY c.created_at DESC`,
       [userId]
     );
     

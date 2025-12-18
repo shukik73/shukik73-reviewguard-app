@@ -798,14 +798,17 @@
 
             <div class="flex flex-wrap gap-2 mb-4">
               <span class="text-xs font-medium text-gray-500 self-center mr-1">Quick Filters:</span>
-              <button class="quick-filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors flex items-center gap-1.5">
+              <button id="filter-high-value" class="quick-filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors flex items-center gap-1.5" data-filter="high-value">
                 <span>&#128142;</span> High Value Repairs
               </button>
-              <button class="quick-filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors flex items-center gap-1.5">
+              <button id="filter-iphone" class="quick-filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors flex items-center gap-1.5" data-filter="iphone">
                 <span>&#127823;</span> iPhone Users
               </button>
-              <button class="quick-filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors flex items-center gap-1.5">
+              <button id="filter-last30" class="quick-filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors flex items-center gap-1.5" data-filter="last30">
                 <span>&#128197;</span> Last 30 Days
+              </button>
+              <button id="filter-clear" class="quick-filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-gray-300 bg-white text-gray-600 hover:bg-gray-100 transition-colors hidden" data-filter="clear">
+                &#10005; Clear Filter
               </button>
             </div>
 
@@ -2451,6 +2454,7 @@
 
     // Bulk Review Sender
     let bulkTicketsData = [];
+    let activeQuickFilter = null;
     let bulkSelectedTickets = new Set();
     let followupCustomersData = [];
     let followupSelectedCustomers = new Set();
@@ -2691,6 +2695,26 @@
         });
       }
 
+      // Apply quick filters
+      if (activeQuickFilter === 'iphone') {
+        filteredTickets = filteredTickets.filter(t => {
+          const device = (t.device_name || '').toLowerCase();
+          return device.includes('iphone');
+        });
+      } else if (activeQuickFilter === 'high-value') {
+        filteredTickets = filteredTickets.filter(t => {
+          const cost = parseFloat(t.cost) || 0;
+          return cost > 100;
+        });
+      } else if (activeQuickFilter === 'last30') {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        filteredTickets = filteredTickets.filter(t => {
+          const createdDate = t.created_at ? new Date(t.created_at) : null;
+          return createdDate && createdDate >= thirtyDaysAgo;
+        });
+      }
+
       if (filteredTickets.length === 0) {
         const message = searchTerm ? `No tickets matching "${searchInput.value}"` : 'No tickets found';
         list.innerHTML = `<div class="text-center py-8 text-gray-500">${message}</div>`;
@@ -2711,8 +2735,8 @@
 
         const sentStatus = window.bulkSentStatus?.[ticket.customer_phone];
         const sentBadge = sentStatus 
-          ? `<span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Sent ${sentStatus}</span>`
-          : '';
+          ? `<span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Last SMS: ${sentStatus}</span>`
+          : `<span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">Never Contacted</span>`;
 
         return `
           <div class="bulk-ticket-row p-3 border ${selectedClass} rounded-lg hover:bg-purple-50 cursor-pointer transition-colors flex items-center gap-3" 
@@ -2803,6 +2827,36 @@
     if (bulkRefreshBtn) {
       bulkRefreshBtn.addEventListener('click', loadBulkTickets);
     }
+
+    // Quick Filter button handlers
+    document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filter = btn.dataset.filter;
+        const clearBtn = document.getElementById('filter-clear');
+        
+        if (filter === 'clear') {
+          activeQuickFilter = null;
+          clearBtn.classList.add('hidden');
+          document.querySelectorAll('.quick-filter-btn').forEach(b => {
+            b.classList.remove('ring-2', 'ring-offset-1');
+          });
+        } else {
+          if (activeQuickFilter === filter) {
+            activeQuickFilter = null;
+            clearBtn.classList.add('hidden');
+            btn.classList.remove('ring-2', 'ring-offset-1');
+          } else {
+            activeQuickFilter = filter;
+            clearBtn.classList.remove('hidden');
+            document.querySelectorAll('.quick-filter-btn').forEach(b => {
+              b.classList.remove('ring-2', 'ring-offset-1');
+            });
+            btn.classList.add('ring-2', 'ring-offset-1');
+          }
+        }
+        renderBulkTickets();
+      });
+    });
 
     const bulkSendBtn = document.getElementById('bulk-send-btn');
     if (bulkSendBtn) {
