@@ -158,10 +158,10 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
     if (messageType === 'review') {
       // Use secure tracking token instead of predictable customer ID
       const trackingLink = `${appHost}/r/${trackingToken}`;
-      message += `\n\n${trackingLink}\n\nReply STOP to opt out.`;
+      message += `\n\n${trackingLink}\n\n(Reply STOP to end)`;
       console.log(`📱 Secure Tracking Link: ${trackingLink}`);
     } else {
-      message += `\n\nReply STOP to opt out.`;
+      message += `\n\n(Reply STOP to end)`;
     }
 
     const messageOptions = {
@@ -427,7 +427,7 @@ export const submitFeedback = (pool, getTwilioClient, getTwilioFromPhoneNumber) 
         const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000';
         const trackedReviewLink = `${appHost}/r/${reviewToken}`;
         
-        const reviewMessage = `Thank you for your positive feedback! 🌟 We'd love if you could share your experience on Google: ${trackedReviewLink}\n\nReply STOP to opt out.`;
+        const reviewMessage = `Thank you for your positive feedback! 🌟 We'd love if you could share your experience on Google: ${trackedReviewLink}\n\n(Reply STOP to end)`;
 
         twilioResult = await client.messages.create({
           body: reviewMessage,
@@ -1049,7 +1049,7 @@ export const sendCustomerFollowups = (pool, getTwilioClient, getTwilioFromPhoneN
         }
         
         const trackingLink = `${appHost}/r/${trackingToken}`;
-        const reminderMessage = `Hi ${customer.name}, just checking if you had a chance to rate your repair? It really helps us out! ${trackingLink}\n\nReply STOP to opt out.`;
+        const reminderMessage = `Hi ${customer.name}, just checking if you had a chance to rate your repair? It really helps us out! ${trackingLink}\n\n(Reply STOP to end)`;
         
         const result = await client.messages.create({
           body: reminderMessage,
@@ -1174,7 +1174,7 @@ export const sendFollowups = (pool, getTwilioClient, getTwilioFromPhoneNumber) =
         
         const trackedLink = `${appHost}/r/${review_link_token}`;
         
-        const followUpMessage = `Hi ${customer_name}! Just a friendly reminder - we'd really appreciate your feedback on Google. Your review helps us serve you better! ${trackedLink} Thank you! 🙏\n\nReply STOP to opt out.`;
+        const followUpMessage = `Hi ${customer_name}! Just a friendly reminder - we'd really appreciate your feedback on Google. Your review helps us serve you better! ${trackedLink} Thank you! 🙏\n\n(Reply STOP to end)`;
         
         const result = await client.messages.create({
           body: followUpMessage,
@@ -1259,7 +1259,7 @@ export const handleIncomingSMS = (pool, validateAndFormatPhone) => async (req, r
       
       return res.status(200).type('text/xml').send(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Message>You have been re-subscribed to SMS messages. Reply STOP to opt out.</Message>
+  <Message>You have been re-subscribed to SMS messages. (Reply STOP to end)</Message>
 </Response>`);
     }
     
@@ -1322,7 +1322,7 @@ export const sendReminder = (pool, getTwilioClient, getTwilioFromPhoneNumber, va
       });
     }
 
-    const reminderMessage = `Hi ${customerName}, just checking if you had a moment to leave us a review? It helps a lot! ${reviewLink}\n\nReply STOP to opt out`;
+    const reminderMessage = `Hi ${customerName}, just checking if you had a moment to leave us a review? It helps a lot! ${reviewLink}\n\n(Reply STOP to end)`;
 
     const client = await pool.connect();
     try {
