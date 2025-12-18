@@ -1443,30 +1443,49 @@ export const checkSentStatus = (pool) => async (req, res) => {
     }
     const userId = userResult.rows[0].id;
 
+    // Normalize phone numbers - strip all non-digits for matching
+    const normalizePhone = (phone) => phone ? phone.replace(/\D/g, '') : '';
+    const normalizedPhones = phoneNumbers.map(normalizePhone).filter(p => p.length >= 10);
+
+    // Query using normalized comparison (strip non-digits from both sides)
     const result = await pool.query(
-      `SELECT customer_phone, MAX(created_at) as last_sent
+      `SELECT REGEXP_REPLACE(customer_phone, '[^0-9]', '', 'g') as normalized_phone,
+              customer_phone as original_phone,
+              MAX(sent_at) as last_sent
        FROM messages
        WHERE user_id = $1 
-         AND customer_phone = ANY($2)
-         AND message_type IN ('review', 'reactivation', 'reminder', 'apology')
-       GROUP BY customer_phone`,
-      [userId, phoneNumbers]
+         AND REGEXP_REPLACE(customer_phone, '[^0-9]', '', 'g') = ANY($2)
+         AND message_type IN ('review', 'reactivation', 'reminder', 'apology', 'custom')
+       GROUP BY REGEXP_REPLACE(customer_phone, '[^0-9]', '', 'g'), customer_phone`,
+      [userId, normalizedPhones]
     );
 
     const sentStatus = {};
     const now = new Date();
     
+    // Build a map of normalized phone -> status
+    const normalizedStatusMap = {};
     for (const row of result.rows) {
       const lastSent = new Date(row.last_sent);
       const diffMs = now - lastSent;
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
       
+      let status;
       if (diffDays === 0) {
-        sentStatus[row.customer_phone] = 'Today';
+        status = 'Today';
       } else if (diffDays === 1) {
-        sentStatus[row.customer_phone] = '1d ago';
+        status = '1d ago';
       } else {
-        sentStatus[row.customer_phone] = `${diffDays}d ago`;
+        status = `${diffDays}d ago`;
+      }
+      normalizedStatusMap[row.normalized_phone] = status;
+    }
+
+    // Map back to original phone numbers
+    for (const originalPhone of phoneNumbers) {
+      const normalized = normalizePhone(originalPhone);
+      if (normalizedStatusMap[normalized]) {
+        sentStatus[originalPhone] = normalizedStatusMap[normalized];
       }
     }
 

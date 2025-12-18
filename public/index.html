@@ -1360,6 +1360,15 @@
         if (messages.length > 0) {
           container.innerHTML = messages.map(msg => {
             const deviceDisplay = msg.customer_device ? `<span class="text-xs rounded-full bg-slate-100 text-slate-600 px-2 py-0.5">${msg.customer_device}</span>` : '';
+            
+            // Status badge logic: Review Posted > Clicked > Sent
+            let statusBadge = '<span class="text-xs rounded-full bg-gray-100 text-gray-600 px-2 py-0.5">Sent</span>';
+            if (msg.review_received_at || msg.feedback_rating) {
+              statusBadge = '<span class="text-xs rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 font-medium">Review Posted</span>';
+            } else if (msg.review_link_clicked_at) {
+              statusBadge = '<span class="text-xs rounded-full bg-green-100 text-green-700 px-2 py-0.5 font-medium">Clicked</span>';
+            }
+            
             return `
             <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
               <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -1370,8 +1379,7 @@
                   <span class="font-medium text-gray-900">${msg.customer_name}</span>
                   ${deviceDisplay}
                   <span class="text-xs rounded-full bg-indigo-50 text-indigo-700 px-2 py-0.5">${getMessageTypeLabel(msg.message_type)}</span>
-                  ${msg.review_link_clicked_at ? '<span class="text-xs rounded-full bg-green-50 text-green-700 px-2 py-0.5">Clicked</span>' : ''}
-                  ${msg.feedback_rating ? `<span class="text-xs rounded-full bg-amber-50 text-amber-700 px-2 py-0.5">${'⭐'.repeat(msg.feedback_rating)}</span>` : ''}
+                  ${statusBadge}
                 </div>
                 <div class="text-sm text-gray-500">${msg.customer_phone} • ${new Date(msg.sent_at).toLocaleString()}</div>
               </div>
@@ -2909,7 +2917,7 @@
             numbers: selectedNumbers
           };
 
-          const response = await fetch('https://n8n.srv1155599.hstgr.cloud/webhook-test/broadcast', {
+          const response = await fetch('/api/campaigns/launch', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
