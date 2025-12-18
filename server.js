@@ -92,6 +92,19 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors());
 
+// Performance logging middleware for API requests
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api')) {
+    const start = Date.now();
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      const logLevel = duration > 500 ? '⚠️ SLOW' : '✓';
+      console.log(`${logLevel} ${req.method} ${req.url} took ${duration}ms`);
+    });
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   if (req.url.endsWith('.html') || req.url.endsWith('.js') || req.url === '/') {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
