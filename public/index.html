@@ -53,7 +53,7 @@
 
   <!-- Login Modal -->
   <div id="login-modal" class="fixed inset-0 z-50 hidden">
-    <div class="modal-backdrop absolute inset-0"></div>
+    <div class="modal-backdrop absolute inset-0" id="login-modal-backdrop"></div>
     <div class="relative flex items-start justify-center pt-16 px-4">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative animate-fade-in">
         <div class="text-center mb-6">
@@ -87,12 +87,12 @@
           
           <button type="submit" id="login-modal-btn"
             class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/30">
-            Log In
+            Sign In
           </button>
         </form>
         
         <div class="mt-6 text-center text-sm text-gray-600">
-          Don't have an account? <a href="/signup.html" class="text-indigo-600 font-semibold hover:text-indigo-700">Sign up here</a>
+          New here? <a href="/signup.html" class="text-indigo-600 font-semibold hover:text-indigo-700">Create an Account</a>
         </div>
       </div>
     </div>
@@ -3014,6 +3014,13 @@
       document.getElementById('login-modal').classList.add('hidden');
       document.getElementById('login-error').classList.add('hidden');
       document.getElementById('login-modal-form').reset();
+    }
+
+    const loginModalBackdrop = document.getElementById('login-modal-backdrop');
+    if (loginModalBackdrop) {
+      loginModalBackdrop.addEventListener('click', () => {
+        hideLoginModal();
+      });
     }
 
     const loginModalForm = document.getElementById('login-modal-form');
