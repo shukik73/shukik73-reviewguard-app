@@ -761,7 +761,7 @@
               <button data-action="filterReviews" data-status="all" class="reviews-filter-btn px-4 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50">All</button>
             </div>
             <div class="flex items-center gap-2">
-              <button id="manual-ai-reply-btn" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all flex items-center gap-2 shadow-sm">
+              <button id="manual-ai-reply-btn" class="px-4 py-2.5 bg-accent hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                 </svg>
@@ -796,11 +796,11 @@
               <div class="space-y-4">
                 <div>
                   <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Customer Name</label>
-                  <input type="text" id="ai-customer-name" placeholder="Enter reviewer name..." class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
+                  <input type="text" id="ai-customer-name" placeholder="Enter reviewer name..." class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-accent" />
                 </div>
                 <div>
                   <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Star Rating</label>
-                  <select id="ai-star-rating" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white">
+                  <select id="ai-star-rating" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-accent bg-white">
                     <option value="">Select rating...</option>
                     <option value="5">⭐⭐⭐⭐⭐ 5 Stars</option>
                     <option value="4">⭐⭐⭐⭐ 4 Stars</option>
@@ -811,7 +811,7 @@
                 </div>
                 <div>
                   <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Review Text</label>
-                  <textarea id="ai-review-text" rows="4" placeholder="Paste the customer's review text here..." class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none"></textarea>
+                  <textarea id="ai-review-text" rows="4" placeholder="Paste the customer's review text here..." class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-accent resize-none"></textarea>
                 </div>
                 <button id="generate-reply-btn" onclick="generateAIReply()" class="w-full py-3 bg-accent text-white font-medium rounded-lg hover:bg-indigo-600 transition-colors flex items-center justify-center gap-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
