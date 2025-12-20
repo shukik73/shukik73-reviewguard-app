@@ -219,7 +219,7 @@ Rule 4 (GRATITUDE): Always thank them by name.
 
 Rule 5 (NATURAL TONE): Sound warm and genuine, not robotic. Vary your phrasing - don't use the same template for every review.
 
-Rule 6 (BREVITY): Keep it concise (2-3 sentences max).
+Rule 6 (SPECIFICITY): Reference specific details from their review when possible. Mirror their language.
 
 Rule 7 (PROFESSIONALISM): Maintain professional yet friendly tone.
 
@@ -368,7 +368,7 @@ Rule 4 (GRATITUDE): Always thank them by name.
 
 Rule 5 (NATURAL TONE): Sound warm and genuine, not robotic. Vary your phrasing - don't use the same template for every review.
 
-Rule 6 (BREVITY): Keep it concise (2-3 sentences max).
+Rule 6 (SPECIFICITY): Reference specific details from their review when possible. Mirror their language.
 
 Rule 7 (PROFESSIONALISM): Maintain professional yet friendly tone.
 
