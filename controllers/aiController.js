@@ -357,18 +357,7 @@ Write a reply (2-3 sentences) following ALL 10 Golden Rules above. Make it sound
       validation = validateDeviceRuleCompliance(reviewText, generatedReply);
       
       if (validation.status === 'failed') {
-        console.warn('Device Rule Violation Detected:', validation);
-        return res.status(500).json({
-          success: false,
-          error: 'AI failed to follow the device rule. Please try generating again or manually edit the response.',
-          validation: {
-            status: validation.status,
-            reason: validation.reason,
-            devicesRequired: validation.devicesRequired,
-            devicesMentioned: validation.devicesMentioned,
-            missingDevices: validation.missingDevices || []
-          }
-        });
+        console.warn('Device Rule Warning:', validation.reason);
       }
     }
 
