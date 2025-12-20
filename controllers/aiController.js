@@ -15,9 +15,16 @@ function extractDeviceMentions(text) {
     'Chromebook', 'Chromebooks', 'console', 'consoles'
   ];
   
-  const foundDevices = [];
+  const hypotheticalPhrases = [
+    'if you have', 'if you need', 'if your', 'when you have', 'when you need',
+    'whether it\'s', 'whether its', 'any', 'every', 'all your', 'other',
+    'recommend them for', 'recommend for', 'bring your', 'for any',
+    'no matter what', 'whatever', 'whichever', 'highly recommend'
+  ];
   
+  const foundDevices = [];
   const allKeywords = [...deviceBrands, ...genericDevices];
+  const textLower = text.toLowerCase();
   
   const boundaryWords = ['and', 'or', 'both', 'repair', 'fixed', 'repaired', 'broken', 'issue', 'problem', 'ready', 'done', 'finished', 'service', 'work', 'works', 'working', 'great', 'amazing', 'excellent', 'fast', 'quick', 'slow', 'bad', 'good', 'super', 'very', 'really', 'so', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'with', 'from', 'was', 'were', 'is', 'are', 'my', 'your', 'their', 'his', 'her', 'our', 'its', 'also', 'too', 'plus', 'as', 'well', 'today', 'yesterday', 'now', 'here', 'there', 'perfectly', 'perfectly!'];
   
@@ -28,6 +35,14 @@ function extractDeviceMentions(text) {
     const matches = text.matchAll(pattern);
     for (const match of matches) {
       let devicePhrase = match[1].trim();
+      const matchIndex = match.index;
+      
+      const contextBefore = textLower.substring(Math.max(0, matchIndex - 30), matchIndex);
+      const isHypothetical = hypotheticalPhrases.some(phrase => contextBefore.includes(phrase));
+      
+      if (isHypothetical) {
+        continue;
+      }
       
       const tokens = devicePhrase.split(/\s+/);
       let validTokens = [tokens[0]];
@@ -48,7 +63,6 @@ function extractDeviceMentions(text) {
       }
       
       devicePhrase = validTokens.join(' ').trim();
-      
       devicePhrase = devicePhrase.replace(/[.,;:!?]+$/, '');
       
       if (devicePhrase && devicePhrase.length > 0) {
