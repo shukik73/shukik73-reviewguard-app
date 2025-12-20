@@ -813,7 +813,7 @@
                   <label class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Review Text</label>
                   <textarea id="ai-review-text" rows="4" placeholder="Paste the customer's review text here..." class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-accent resize-none"></textarea>
                 </div>
-                <button id="generate-reply-btn" onclick="generateAIReply()" class="w-full py-3 bg-accent text-white font-medium rounded-lg hover:bg-indigo-600 transition-colors flex items-center justify-center gap-2">
+                <button id="generate-reply-btn" class="w-full py-3 bg-accent text-white font-medium rounded-lg hover:bg-indigo-600 transition-colors flex items-center justify-center gap-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
@@ -2560,6 +2560,12 @@
 
     const copyReplyBtn = document.getElementById('copy-reply-btn');
     if (copyReplyBtn) copyReplyBtn.addEventListener('click', copyReplyToClipboard);
+
+    // Generate AI Reply button
+    const generateReplyBtn = document.getElementById('generate-reply-btn');
+    if (generateReplyBtn) {
+      generateReplyBtn.addEventListener('click', generateAIReply);
+    }
 
     // Manual AI Reply Generator button
     const manualAiReplyBtn = document.getElementById('manual-ai-reply-btn');
