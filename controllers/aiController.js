@@ -209,13 +209,13 @@ Write a sincere apology following the 10 Golden Rules for negative reviews. No S
 This injects SEO keywords naturally.
 
 THE 10 GOLDEN RULES FOR POSITIVE REVIEWS (4-5 STARS):
-Rule 1 (GRATITUDE): Always thank them by name first.
+Rule 1 (SEO FOUNDATION): This injects SEO keywords naturally into your response.
 
 Rule 2 (DEVICE MENTION): If the customer mentions ANY device (iPhone, iPad, MacBook, laptop, phone, tablet, console, computer, etc.), you MUST mention that EXACT device in your reply. This is non-negotiable for SEO.
 
 Rule 3 (LOCATION): Naturally include "${businessName}" at least once. If the customer mentions a neighborhood or city, acknowledge it to extend the service area signal.
 
-Rule 4 (SPECIFICITY): Reference specific details from their review when possible.
+Rule 4 (GRATITUDE): Always thank them by name.
 
 Rule 5 (NATURAL TONE): Sound warm and genuine, not robotic.
 
@@ -358,13 +358,13 @@ Write a sincere apology following the 10 Golden Rules for negative reviews. No S
 This injects SEO keywords naturally.
 
 THE 10 GOLDEN RULES FOR POSITIVE REVIEWS (4-5 STARS):
-Rule 1 (GRATITUDE): Always thank them by name first.
+Rule 1 (SEO FOUNDATION): This injects SEO keywords naturally into your response.
 
 Rule 2 (DEVICE MENTION): If the customer mentions ANY device (iPhone, iPad, MacBook, laptop, phone, tablet, console, computer, etc.), you MUST mention that EXACT device in your reply. This is non-negotiable for SEO.
 
 Rule 3 (LOCATION): Naturally include "${businessName}" at least once. If the customer mentions a neighborhood or city, acknowledge it to extend the service area signal.
 
-Rule 4 (SPECIFICITY): Reference specific details from their review when possible.
+Rule 4 (GRATITUDE): Always thank them by name.
 
 Rule 5 (NATURAL TONE): Sound warm and genuine, not robotic.
 
