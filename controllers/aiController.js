@@ -223,7 +223,7 @@ Rule 6 (SPECIFICITY): Reference specific details from their review when possible
 
 Rule 7 (FUTURE-PACING): Plant a seed for the next visit. Example: "Glad your screen is fixed! Just so you know, we also do computer diagnostics if your laptop ever gives you trouble."
 
-Rule 8 (FUTURE FOCUS): Invite them back for future needs.
+Rule 8 (BREVITY): Keep it concise (2-3 sentences max). Response time matters more than length.
 
 Rule 9 (CROSS-SELL): Occasionally mention other services naturally. Example: "We're here to help with any laptop, iPad, or phone repairs!"
 
@@ -372,7 +372,7 @@ Rule 6 (SPECIFICITY): Reference specific details from their review when possible
 
 Rule 7 (FUTURE-PACING): Plant a seed for the next visit. Example: "Glad your screen is fixed! Just so you know, we also do computer diagnostics if your laptop ever gives you trouble."
 
-Rule 8 (FUTURE FOCUS): Invite them back for future needs.
+Rule 8 (BREVITY): Keep it concise (2-3 sentences max). Response time matters more than length.
 
 Rule 9 (CROSS-SELL): Occasionally mention other services naturally. Example: "We're here to help with any laptop, iPad, or phone repairs!"
 
