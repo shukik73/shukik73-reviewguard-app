@@ -825,6 +825,41 @@ export const trackCustomerClick = (pool) => async (req, res) => {
         <span>Excellent</span>
       </div>
       
+      <!-- No-JS Fallback Form -->
+      <noscript>
+        <style>.stars-container, .star-labels { display: none !important; }</style>
+        <form action="/r/${token}" method="POST" style="margin-top: 20px;">
+          <p style="margin-bottom: 16px; color: rgba(255,255,255,0.8);">Please rate your experience:</p>
+          <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 20px;">
+            <label style="text-align: center; cursor: pointer;">
+              <input type="radio" name="rating" value="1" required style="display: block; margin: 0 auto 4px;">
+              <span>1</span>
+            </label>
+            <label style="text-align: center; cursor: pointer;">
+              <input type="radio" name="rating" value="2" style="display: block; margin: 0 auto 4px;">
+              <span>2</span>
+            </label>
+            <label style="text-align: center; cursor: pointer;">
+              <input type="radio" name="rating" value="3" style="display: block; margin: 0 auto 4px;">
+              <span>3</span>
+            </label>
+            <label style="text-align: center; cursor: pointer;">
+              <input type="radio" name="rating" value="4" style="display: block; margin: 0 auto 4px;">
+              <span>4</span>
+            </label>
+            <label style="text-align: center; cursor: pointer;">
+              <input type="radio" name="rating" value="5" style="display: block; margin: 0 auto 4px;">
+              <span>5</span>
+            </label>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; margin-bottom: 8px; color: rgba(255,255,255,0.8);">Feedback (optional):</label>
+            <textarea name="feedback" rows="4" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: #fff;" placeholder="Tell us about your experience..."></textarea>
+          </div>
+          <button type="submit" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); border: none; border-radius: 8px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;">Submit Rating</button>
+        </form>
+      </noscript>
+      
       <!-- Priority Resolution Form (1-3 Stars) -->
       <div id="priority-form" class="priority-form">
         <div class="priority-header">
@@ -954,6 +989,109 @@ export const trackCustomerClick = (pool) => async (req, res) => {
   } catch (error) {
     console.error('Error tracking customer click:', error);
     res.status(500).send('Error processing link');
+  }
+};
+
+export const handleNoJsRatingSubmission = (pool) => async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { rating, feedback } = req.body;
+    
+    const parsedRating = parseInt(rating, 10);
+    if (!parsedRating || parsedRating < 1 || parsedRating > 5) {
+      return res.status(400).send('Invalid rating');
+    }
+    
+    const result = await pool.query(
+      `SELECT c.id, c.name, c.user_id, s.google_review_link, us.business_name
+       FROM customers c
+       LEFT JOIN users u ON c.user_id = u.id
+       LEFT JOIN subscriptions s ON u.company_email = s.email
+       LEFT JOIN user_settings us ON u.company_email = us.user_email
+       WHERE c.tracking_token = $1`,
+      [token]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).send('Invalid or expired link');
+    }
+    
+    const customer = result.rows[0];
+    const businessName = customer.business_name || 'our business';
+    const googleLink = customer.google_review_link;
+    
+    if (parsedRating >= 4) {
+      if (googleLink && googleLink.trim()) {
+        return res.redirect(302, googleLink);
+      } else {
+        return res.redirect(302, `/thank-you.html?business=${encodeURIComponent(businessName)}`);
+      }
+    }
+    
+    await pool.query(
+      `INSERT INTO internal_feedback (customer_id, user_id, rating, feedback_text)
+       VALUES ($1, $2, $3, $4)`,
+      [customer.id, customer.user_id, parsedRating, feedback || '']
+    );
+    
+    console.log(`📝 No-JS feedback received: ${customer.name} rated ${parsedRating} stars`);
+    
+    const thankYouHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thank You - ${businessName}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      padding: 48px 36px;
+      max-width: 420px;
+      width: 100%;
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 40px;
+    }
+    h1 { font-size: 28px; margin-bottom: 12px; }
+    p { font-size: 16px; color: rgba(255,255,255,0.8); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">✓</div>
+    <h1>Message Received!</h1>
+    <p>Thank you for your feedback. The owner will review your message and get back to you soon.</p>
+  </div>
+</body>
+</html>`;
+    
+    res.send(thankYouHtml);
+  } catch (error) {
+    console.error('Error handling no-JS rating submission:', error);
+    res.status(500).send('Error processing your feedback');
   }
 };
 

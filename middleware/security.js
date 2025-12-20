@@ -45,7 +45,7 @@ export function createBasicAuth(pool) {
       return res.status(401).json({ error: 'Invalid admin credentials' });
     } catch (error) {
       console.error('Admin auth check error:', error);
-      return next();
+      return res.status(500).json({ error: 'Authentication service unavailable' });
     }
   };
 }

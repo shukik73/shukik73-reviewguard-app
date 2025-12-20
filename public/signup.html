@@ -9,191 +9,316 @@
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="/icons/icon-192x192.png" type="image/png">
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            200: '#c7d2fe',
-                            300: '#a5b4fc',
-                            400: '#818cf8',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            800: '#3730a3',
-                            900: '#312e81',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        .bg-gradient-brand {
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh;
             background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 16px 32px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-width: 42rem;
+            width: 100%;
+            padding: 32px;
+            margin: 32px 0;
+        }
+        .header { text-align: center; margin-bottom: 32px; }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .logo-icon {
+            background: #4f46e5;
+            padding: 8px;
+            border-radius: 8px;
+            color: white;
+        }
+        .logo-icon svg { width: 24px; height: 24px; }
+        .brand-title { font-size: 1.5rem; font-weight: 700; color: #1e293b; }
+        .brand-title span { color: #4f46e5; }
+        .subtitle { color: #64748b; font-size: 1rem; }
+        .message {
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            display: none;
+        }
+        .message.error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+        .message.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; }
+        .message.show { display: block; }
+        .section { margin-bottom: 32px; }
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } }
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #334155;
+            margin-bottom: 8px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 16px;
+            color: #1e293b;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        .form-input::placeholder { color: #94a3b8; }
+        .plan-options { display: grid; gap: 16px; }
+        .plan-option {
+            position: relative;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .plan-option:hover { border-color: #4f46e5; }
+        .plan-option.selected {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+        .plan-option input { position: absolute; opacity: 0; pointer-events: none; }
+        .plan-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .plan-name { font-size: 1.125rem; font-weight: 600; color: #1e293b; }
+        .plan-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4f46e5;
+            margin-top: 4px;
+        }
+        .plan-price span { font-size: 14px; font-weight: 400; color: #64748b; }
+        .plan-features { margin-top: 12px; list-style: none; }
+        .plan-features li {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .plan-features li::before {
+            content: '✓';
+            color: #22c55e;
+            font-weight: 600;
+        }
+        .check-icon {
+            width: 24px;
+            height: 24px;
+            background: #4f46e5;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+        .plan-option.selected .check-icon { display: flex; }
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: #4f46e5;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+        }
+        .submit-btn:hover { background: #4338ca; }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .login-link {
+            text-align: center;
+            margin-top: 24px;
+            color: #64748b;
+        }
+        .login-link a {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .login-link a:hover { color: #4338ca; }
     </style>
 </head>
-<body class="min-h-screen bg-gradient-brand flex items-center justify-center p-4 py-8">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 my-8">
-        <div class="text-center mb-8">
-            <div class="flex items-center justify-center gap-2 mb-4">
-                <div class="bg-brand-600 p-2 rounded-lg text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<body>
+    <div class="card">
+        <div class="header">
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                     </svg>
                 </div>
-                <h1 class="text-2xl font-bold">
-                    Review<span class="text-brand-600">Guard</span>
-                </h1>
+                <h1 class="brand-title">Review<span>Guard</span></h1>
             </div>
-            <p class="text-slate-600">Create your account to get started</p>
+            <p class="subtitle">Create your account to get started</p>
         </div>
 
-        <div id="errorMessage" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl mb-6 text-sm"></div>
-        <div id="successMessage" class="hidden bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-xl mb-6 text-sm"></div>
+        <div id="errorMessage" class="message error"></div>
+        <div id="successMessage" class="message success"></div>
 
-        <form id="signupForm" class="space-y-8">
-            <div>
-                <h3 class="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">Company Information</h3>
-                <div>
-                    <label for="companyName" class="block text-sm font-medium text-slate-700 mb-2">Company Name *</label>
-                    <input type="text" id="companyName" name="companyName" required placeholder="e.g., Techy Miramar"
-                        class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 transition-colors">
+        <form id="signupForm">
+            <div class="section">
+                <h3 class="section-title">Company Information</h3>
+                <div class="form-group">
+                    <label for="companyName" class="form-label">Company Name *</label>
+                    <input type="text" id="companyName" name="companyName" required placeholder="e.g., Techy Miramar" class="form-input">
                 </div>
             </div>
 
-            <div>
-                <h3 class="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">Personal Information</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label for="firstName" class="block text-sm font-medium text-slate-700 mb-2">First Name *</label>
-                        <input type="text" id="firstName" name="firstName" required
-                            class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 transition-colors">
+            <div class="section">
+                <h3 class="section-title">Personal Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName" class="form-label">First Name *</label>
+                        <input type="text" id="firstName" name="firstName" required class="form-input">
                     </div>
-                    <div>
-                        <label for="lastName" class="block text-sm font-medium text-slate-700 mb-2">Last Name *</label>
-                        <input type="text" id="lastName" name="lastName" required
-                            class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 transition-colors">
+                    <div class="form-group">
+                        <label for="lastName" class="form-label">Last Name *</label>
+                        <input type="text" id="lastName" name="lastName" required class="form-input">
                     </div>
                 </div>
-                <div class="mb-4">
-                    <label for="email" class="block text-sm font-medium text-slate-700 mb-2">Email Address *</label>
-                    <input type="email" id="email" name="email" required placeholder="you@company.com"
-                        class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 transition-colors">
+                <div class="form-group">
+                    <label for="email" class="form-label">Email Address *</label>
+                    <input type="email" id="email" name="email" required placeholder="you@company.com" class="form-input">
                 </div>
-                <div>
-                    <label for="password" class="block text-sm font-medium text-slate-700 mb-2">Password * (minimum 8 characters)</label>
-                    <input type="password" id="password" name="password" required minlength="8"
-                        class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 transition-colors">
+                <div class="form-group">
+                    <label for="password" class="form-label">Password * (minimum 8 characters)</label>
+                    <input type="password" id="password" name="password" required minlength="8" class="form-input">
                 </div>
             </div>
 
-            <div>
-                <h3 class="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">Billing Address</h3>
-                <div class="mb-4">
-                    <label for="billingStreet" class="block text-sm font-medium text-slate-700 mb-2">Street Address</label>
-                    <input type="text" id="billingStreet" name="billingStreet" placeholder="123 Main St"
-                        class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 transition-colors">
+            <div class="section">
+                <h3 class="section-title">Billing Address</h3>
+                <div class="form-group">
+                    <label for="billingStreet" class="form-label">Street Address</label>
+                    <input type="text" id="billingStreet" name="billingStreet" placeholder="123 Main St" class="form-input">
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label for="billingCity" class="block text-sm font-medium text-slate-700 mb-2">City</label>
-                        <input type="text" id="billingCity" name="billingCity"
-                            class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 transition-colors">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="billingCity" class="form-label">City</label>
+                        <input type="text" id="billingCity" name="billingCity" class="form-input">
                     </div>
-                    <div>
-                        <label for="billingState" class="block text-sm font-medium text-slate-700 mb-2">State</label>
-                        <input type="text" id="billingState" name="billingState" placeholder="FL"
-                            class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 transition-colors">
+                    <div class="form-group">
+                        <label for="billingState" class="form-label">State</label>
+                        <input type="text" id="billingState" name="billingState" placeholder="FL" class="form-input">
                     </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="billingZip" class="block text-sm font-medium text-slate-700 mb-2">ZIP Code</label>
-                        <input type="text" id="billingZip" name="billingZip"
-                            class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 transition-colors">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="billingZip" class="form-label">ZIP Code</label>
+                        <input type="text" id="billingZip" name="billingZip" class="form-input">
                     </div>
-                    <div>
-                        <label for="billingCountry" class="block text-sm font-medium text-slate-700 mb-2">Country</label>
-                        <input type="text" id="billingCountry" name="billingCountry" value="USA"
-                            class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 transition-colors">
+                    <div class="form-group">
+                        <label for="billingCountry" class="form-label">Country</label>
+                        <input type="text" id="billingCountry" name="billingCountry" value="USA" class="form-input">
                     </div>
                 </div>
             </div>
 
-            <div>
-                <h3 class="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">Choose Your Plan</h3>
-                <div class="grid gap-4">
-                    <label class="relative border-2 border-slate-200 rounded-xl p-5 cursor-pointer hover:border-brand-500 transition-colors has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
-                        <input type="radio" name="subscriptionOption" value="trial" checked class="sr-only">
-                        <div class="flex justify-between items-start">
+            <div class="section">
+                <h3 class="section-title">Choose Your Plan</h3>
+                <div class="plan-options">
+                    <label class="plan-option selected" onclick="selectPlan(this)">
+                        <input type="radio" name="subscriptionOption" value="trial" checked>
+                        <div class="plan-header">
                             <div>
-                                <div class="font-semibold text-slate-900 text-lg">Free Trial</div>
-                                <div class="text-2xl font-bold text-brand-600 mt-1">$0 <span class="text-sm font-normal text-slate-500">/7 days</span></div>
-                                <ul class="mt-3 space-y-1 text-sm text-slate-600">
-                                    <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> 50 SMS messages</li>
-                                    <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> All core features</li>
-                                    <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> 7-day trial period</li>
-                                    <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> No credit card required</li>
+                                <div class="plan-name">Free Trial</div>
+                                <div class="plan-price">$0 <span>/7 days</span></div>
+                                <ul class="plan-features">
+                                    <li>50 SMS messages</li>
+                                    <li>All core features</li>
+                                    <li>7-day trial period</li>
+                                    <li>No credit card required</li>
                                 </ul>
                             </div>
-                            <div class="hidden [:checked+*>&]:block w-6 h-6 bg-brand-600 rounded-full flex items-center justify-center text-white text-sm">&#10003;</div>
+                            <div class="check-icon">✓</div>
                         </div>
                     </label>
 
-                    <label class="relative border-2 border-slate-200 rounded-xl p-5 cursor-pointer hover:border-brand-500 transition-colors has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
-                        <input type="radio" name="subscriptionOption" value="starter" class="sr-only">
-                        <div class="flex justify-between items-start">
+                    <label class="plan-option" onclick="selectPlan(this)">
+                        <input type="radio" name="subscriptionOption" value="starter">
+                        <div class="plan-header">
                             <div>
-                                <div class="font-semibold text-slate-900 text-lg">Starter Plan</div>
-                                <div class="text-2xl font-bold text-brand-600 mt-1">$79 <span class="text-sm font-normal text-slate-500">/month</span></div>
-                                <ul class="mt-3 space-y-1 text-sm text-slate-600">
-                                    <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> 500 SMS messages per month</li>
-                                    <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Review tracking & analytics</li>
-                                    <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Customer management</li>
-                                    <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Email notifications</li>
+                                <div class="plan-name">Starter Plan</div>
+                                <div class="plan-price">$79 <span>/month</span></div>
+                                <ul class="plan-features">
+                                    <li>500 SMS messages per month</li>
+                                    <li>Review tracking & analytics</li>
+                                    <li>Customer management</li>
+                                    <li>Email notifications</li>
                                 </ul>
                             </div>
-                            <div class="hidden [:checked+*>&]:block w-6 h-6 bg-brand-600 rounded-full flex items-center justify-center text-white text-sm">&#10003;</div>
+                            <div class="check-icon">✓</div>
                         </div>
                     </label>
 
-                    <label class="relative border-2 border-slate-200 rounded-xl p-5 cursor-pointer hover:border-brand-500 transition-colors has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
-                        <input type="radio" name="subscriptionOption" value="pro" class="sr-only">
-                        <div class="flex justify-between items-start">
+                    <label class="plan-option" onclick="selectPlan(this)">
+                        <input type="radio" name="subscriptionOption" value="pro">
+                        <div class="plan-header">
                             <div>
-                                <div class="font-semibold text-slate-900 text-lg">Pro Plan</div>
-                                <div class="text-2xl font-bold text-brand-600 mt-1">$149 <span class="text-sm font-normal text-slate-500">/month</span></div>
-                                <ul class="mt-3 space-y-1 text-sm text-slate-600">
-                                    <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> 2000 SMS messages per month</li>
-                                    <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Everything in Starter</li>
-                                    <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Priority support</li>
-                                    <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Advanced analytics</li>
+                                <div class="plan-name">Pro Plan</div>
+                                <div class="plan-price">$149 <span>/month</span></div>
+                                <ul class="plan-features">
+                                    <li>2000 SMS messages per month</li>
+                                    <li>Everything in Starter</li>
+                                    <li>Priority support</li>
+                                    <li>Advanced analytics</li>
                                 </ul>
                             </div>
-                            <div class="hidden [:checked+*>&]:block w-6 h-6 bg-brand-600 rounded-full flex items-center justify-center text-white text-sm">&#10003;</div>
+                            <div class="check-icon">✓</div>
                         </div>
                     </label>
                 </div>
             </div>
 
-            <button type="submit" id="submitBtn" 
-                class="w-full py-3 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30">
-                Create Account
-            </button>
+            <button type="submit" id="submitBtn" class="submit-btn">Create Account</button>
         </form>
 
-        <p class="text-center mt-6 text-slate-600">
-            Already have an account? <a href="/login.html" class="text-brand-600 font-semibold hover:text-brand-700">Log in here</a>
+        <p class="login-link">
+            Already have an account? <a href="/login.html">Log in here</a>
         </p>
     </div>
 
     <script>
+        function selectPlan(element) {
+            document.querySelectorAll('.plan-option').forEach(p => p.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+
         const form = document.getElementById('signupForm');
         const submitBtn = document.getElementById('submitBtn');
         const errorMessage = document.getElementById('errorMessage');
@@ -202,8 +327,8 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            errorMessage.classList.add('hidden');
-            successMessage.classList.add('hidden');
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Creating account...';
 
@@ -224,9 +349,7 @@
             try {
                 const response = await fetch('/api/auth/signup', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify(formData)
                 });
@@ -235,19 +358,17 @@
 
                 if (data.success) {
                     successMessage.textContent = 'Account created successfully! Redirecting...';
-                    successMessage.classList.remove('hidden');
-                    setTimeout(() => {
-                        window.location.href = '/app';
-                    }, 1500);
+                    successMessage.classList.add('show');
+                    setTimeout(() => { window.location.href = '/app'; }, 1500);
                 } else {
                     errorMessage.textContent = data.error || 'Failed to create account';
-                    errorMessage.classList.remove('hidden');
+                    errorMessage.classList.add('show');
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Create Account';
                 }
             } catch (error) {
                 errorMessage.textContent = 'Network error. Please try again.';
-                errorMessage.classList.remove('hidden');
+                errorMessage.classList.add('show');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Create Account';
             }

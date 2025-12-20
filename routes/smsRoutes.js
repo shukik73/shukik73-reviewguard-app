@@ -1,11 +1,51 @@
 import { Router } from 'express';
 import axios from 'axios';
+import twilio from 'twilio';
 import * as smsController from '../controllers/smsController.js';
 
 export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone, upload, requireAuth, smsLimiter) {
   const router = Router();
+  
+  const validateTwilioSignature = async (req, res, next) => {
+    try {
+      const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+      const skipValidation = process.env.SKIP_TWILIO_WEBHOOK_VALIDATION === 'true';
+      
+      if (!twilioAuthToken) {
+        if (skipValidation) {
+          console.warn('⚠️ TWILIO_AUTH_TOKEN not configured - webhook validation DISABLED (SKIP_TWILIO_WEBHOOK_VALIDATION=true)');
+          return next();
+        }
+        console.error('❌ TWILIO_AUTH_TOKEN secret required for webhook security. Set SKIP_TWILIO_WEBHOOK_VALIDATION=true to bypass (not recommended for production).');
+        return res.status(500).json({ error: 'Webhook validation not configured' });
+      }
+      
+      const twilioSignature = req.headers['x-twilio-signature'];
+      
+      if (!twilioSignature) {
+        console.warn('Missing Twilio signature header');
+        return res.status(403).json({ error: 'Missing Twilio signature' });
+      }
+      
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      const host = req.get('host');
+      const url = `${protocol}://${host}${req.originalUrl}`;
+      
+      const isValid = twilio.validateRequest(twilioAuthToken, twilioSignature, url, req.body);
+      
+      if (!isValid) {
+        console.warn('Invalid Twilio signature for URL:', url);
+        return res.status(403).json({ error: 'Invalid Twilio signature' });
+      }
+      
+      next();
+    } catch (error) {
+      console.error('Twilio signature validation error:', error);
+      return res.status(500).json({ error: 'Webhook validation failed' });
+    }
+  };
 
-  // Campaign launch endpoint - proxies to n8n webhook
+  // Campaign launch endpoint - proxies to n8n webhook with deduplication
   router.post('/api/campaigns/launch', requireAuth, async (req, res) => {
     try {
       const n8nWebhookUrl = process.env.N8N_CAMPAIGN_WEBHOOK_URL;
@@ -13,17 +53,41 @@ export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhon
         return res.status(500).json({ success: false, error: 'Campaign webhook URL not configured' });
       }
 
-      const { campaign_name, message, numbers } = req.body;
+      const { campaign_name, message, numbers, campaign_id: clientCampaignId } = req.body;
       
       if (!campaign_name || !message || !numbers || numbers.length === 0) {
         return res.status(400).json({ success: false, error: 'Missing required fields' });
       }
 
+      const userEmail = req.session.userEmail;
+      const userResult = await pool.query('SELECT id FROM users WHERE company_email = $1', [userEmail]);
+      if (userResult.rows.length === 0) {
+        return res.status(401).json({ success: false, error: 'User not found' });
+      }
+      const userId = userResult.rows[0].id;
+
+      const campaignId = clientCampaignId || `${campaign_name.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+      const duplicateCheck = await pool.query(
+        'SELECT COUNT(*) as count FROM messages WHERE campaign_id = $1 AND user_id = $2',
+        [campaignId, userId]
+      );
+
+      if (parseInt(duplicateCheck.rows[0].count) > 0) {
+        console.warn(`⚠️ Duplicate campaign detected: ${campaignId} for user ${userId}`);
+        return res.status(409).json({ 
+          success: false, 
+          error: 'Campaign already processed',
+          campaign_id: campaignId 
+        });
+      }
+
       const response = await axios.post(n8nWebhookUrl, {
         campaign_name,
+        campaign_id: campaignId,
         message,
         numbers,
-        user_email: req.session.userEmail
+        user_email: userEmail
       }, {
         headers: {
           'Content-Type': 'application/json',
@@ -32,8 +96,8 @@ export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhon
         timeout: 30000
       });
 
-      console.log(`✅ Campaign "${campaign_name}" launched with ${numbers.length} recipients`);
-      res.json({ success: true, data: response.data });
+      console.log(`✅ Campaign "${campaign_name}" (${campaignId}) launched with ${numbers.length} recipients`);
+      res.json({ success: true, campaign_id: campaignId, data: response.data });
     } catch (error) {
       console.error('Campaign launch error:', error.message);
       res.status(500).json({ success: false, error: error.message });
@@ -44,6 +108,7 @@ export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhon
   
   // Secure token-based tracking route (Smart Follow-up)
   router.get('/r/:token', smsController.trackCustomerClick(pool));
+  router.post('/r/:token', smsController.handleNoJsRatingSubmission(pool));
   
   // Legacy token-based tracking (for old messages)
   router.get('/review/:token', smsController.trackReviewClick(pool));
@@ -52,7 +117,7 @@ export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhon
   router.get('/api/messages/needs-followup', requireAuth, smsController.getMessagesNeedingFollowup(pool));
   router.post('/api/follow-ups/send', smsLimiter, requireAuth, smsController.sendFollowups(pool, getTwilioClient, getTwilioFromPhoneNumber));
   router.post('/api/send-reminder', smsLimiter, requireAuth, smsController.sendReminder(pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone));
-  router.post('/api/sms/webhook', smsController.handleIncomingSMS(pool, validateAndFormatPhone));
+  router.post('/api/sms/webhook', validateTwilioSignature, smsController.handleIncomingSMS(pool, validateAndFormatPhone));
   
   // Smart Follow-up endpoints
   router.get('/api/customers/needs-followup', requireAuth, smsController.getCustomersNeedingFollowup(pool));

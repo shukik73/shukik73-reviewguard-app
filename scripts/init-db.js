@@ -312,7 +312,17 @@ async function runMigrations() {
     } catch (e) {}
 
     try {
+      await pool.query(`
+        ALTER TABLE messages ADD COLUMN IF NOT EXISTS campaign_id VARCHAR(100)
+      `);
+    } catch (e) {}
+
+    try {
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id)`);
+    } catch (e) {}
+
+    try {
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_messages_campaign_id ON messages(campaign_id)`);
     } catch (e) {}
     console.log('[MIGRATION] ✅ Messages table updated');
 
