@@ -221,7 +221,7 @@ Rule 5 (NATURAL TONE): Sound warm and genuine, not robotic. Vary your phrasing -
 
 Rule 6 (SPECIFICITY): Reference specific details from their review when possible. Mirror their language.
 
-Rule 7 (PROFESSIONALISM): Maintain professional yet friendly tone.
+Rule 7 (FUTURE-PACING): Plant a seed for the next visit. Example: "Glad your screen is fixed! Just so you know, we also do computer diagnostics if your laptop ever gives you trouble."
 
 Rule 8 (FUTURE FOCUS): Invite them back for future needs.
 
@@ -370,7 +370,7 @@ Rule 5 (NATURAL TONE): Sound warm and genuine, not robotic. Vary your phrasing -
 
 Rule 6 (SPECIFICITY): Reference specific details from their review when possible. Mirror their language.
 
-Rule 7 (PROFESSIONALISM): Maintain professional yet friendly tone.
+Rule 7 (FUTURE-PACING): Plant a seed for the next visit. Example: "Glad your screen is fixed! Just so you know, we also do computer diagnostics if your laptop ever gives you trouble."
 
 Rule 8 (FUTURE FOCUS): Invite them back for future needs.
 
