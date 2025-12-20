@@ -457,15 +457,15 @@
     const mobileMenu = document.getElementById('mobile-menu');
     const loginModal = document.getElementById('loginModal');
 
-    function openLoginModal() {
+    window.openLoginModal = function() {
       loginModal.classList.remove('hidden');
       document.body.style.overflow = 'hidden';
-    }
+    };
 
-    function closeLoginModal() {
+    window.closeLoginModal = function() {
       loginModal.classList.add('hidden');
       document.body.style.overflow = '';
-    }
+    };
 
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
