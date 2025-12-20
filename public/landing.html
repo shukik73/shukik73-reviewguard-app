@@ -482,11 +482,12 @@
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          credentials: 'include',
+          body: JSON.stringify({ email: email.trim(), password })
         });
         const data = await res.json();
         
-        if (res.ok) {
+        if (data.success) {
           window.location.href = '/app';
         } else {
           errorDiv.textContent = data.error || 'Login failed';

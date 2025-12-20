@@ -3089,6 +3089,8 @@
           
           if (data.success) {
             hideLoginModal();
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Sign In';
             loadUserOnPageLoad();
             loadStats();
             loadMessages();
@@ -3098,7 +3100,7 @@
             loginError.textContent = data.error || 'Login failed';
             loginError.classList.remove('hidden');
             loginBtn.disabled = false;
-            loginBtn.textContent = 'Log In';
+            loginBtn.textContent = 'Sign In';
           }
         } catch (error) {
           loginError.textContent = 'Network error. Please try again.';
