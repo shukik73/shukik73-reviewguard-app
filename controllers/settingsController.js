@@ -15,14 +15,15 @@ export const getSettings = (pool) => async (req, res) => {
     );
 
     const settingsResult = await pool.query(
-      'SELECT business_name, sms_template FROM user_settings WHERE user_email = $1',
+      'SELECT business_name, sms_template, admin_auth_enabled FROM user_settings WHERE user_email = $1',
       [userEmail]
     );
 
     const settings = {
       google_review_link: subscriptionResult.rows[0]?.google_review_link || 'https://g.page/r/CXmh-C0UxHgqEBM/review',
       business_name: settingsResult.rows[0]?.business_name || '',
-      sms_template: settingsResult.rows[0]?.sms_template || 'Hi {name}, thanks for visiting {business}! Please review us here: {link}'
+      sms_template: settingsResult.rows[0]?.sms_template || 'Hi {name}, thanks for visiting {business}! Please review us here: {link}',
+      admin_auth_enabled: settingsResult.rows[0]?.admin_auth_enabled || false
     };
 
     res.json({
@@ -38,7 +39,7 @@ export const getSettings = (pool) => async (req, res) => {
 export const updateSettings = (pool) => async (req, res) => {
   try {
     const userEmail = req.session.userEmail;
-    const { google_review_link, business_name, sms_template } = req.body;
+    const { google_review_link, business_name, sms_template, admin_auth_enabled } = req.body;
 
     if (!userEmail) {
       return res.status(401).json({
@@ -54,17 +55,19 @@ export const updateSettings = (pool) => async (req, res) => {
     `, [google_review_link || 'https://g.page/r/CXmh-C0UxHgqEBM/review', userEmail]);
 
     await pool.query(`
-      INSERT INTO user_settings (user_email, business_name, sms_template, updated_at)
-      VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+      INSERT INTO user_settings (user_email, business_name, sms_template, admin_auth_enabled, updated_at)
+      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
       ON CONFLICT (user_email) 
       DO UPDATE SET 
         business_name = EXCLUDED.business_name,
         sms_template = EXCLUDED.sms_template,
+        admin_auth_enabled = EXCLUDED.admin_auth_enabled,
         updated_at = CURRENT_TIMESTAMP
     `, [
       userEmail,
       business_name || '',
-      sms_template || 'Hi {name}, thanks for visiting {business}! Please review us here: {link}'
+      sms_template || 'Hi {name}, thanks for visiting {business}! Please review us here: {link}',
+      admin_auth_enabled === true
     ]);
 
     res.json({

@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import * as reviewsController from '../controllers/reviewsController.js';
-import { basicAuth } from '../middleware/security.js';
+import { createBasicAuth } from '../middleware/security.js';
 
 export default function createReviewsRoutes(pool, requireAuth) {
   const router = Router();
+  const basicAuth = createBasicAuth(pool);
 
   router.post('/api/reviews/ingest', reviewsController.ingestReview(pool));
   router.get('/api/reviews', requireAuth, basicAuth, reviewsController.getReviews(pool));
