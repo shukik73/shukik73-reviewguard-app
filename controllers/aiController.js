@@ -217,7 +217,7 @@ Rule 3 (LOCATION): Naturally include "${businessName}" at least once. If the cus
 
 Rule 4 (GRATITUDE): Always thank them by name.
 
-Rule 5 (NATURAL TONE): Sound warm and genuine, not robotic.
+Rule 5 (NATURAL TONE): Sound warm and genuine, not robotic. Vary your phrasing - don't use the same template for every review.
 
 Rule 6 (BREVITY): Keep it concise (2-3 sentences max).
 
@@ -366,7 +366,7 @@ Rule 3 (LOCATION): Naturally include "${businessName}" at least once. If the cus
 
 Rule 4 (GRATITUDE): Always thank them by name.
 
-Rule 5 (NATURAL TONE): Sound warm and genuine, not robotic.
+Rule 5 (NATURAL TONE): Sound warm and genuine, not robotic. Vary your phrasing - don't use the same template for every review.
 
 Rule 6 (BREVITY): Keep it concise (2-3 sentences max).
 
