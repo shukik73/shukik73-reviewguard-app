@@ -170,7 +170,7 @@
           <div class="hidden md:flex items-center gap-4">
             <button
               type="button"
-              onclick="window.openLoginModal()"
+              id="headerLoginBtn"
               class="text-sm font-semibold text-slate-600 hover:text-brand-600 transition-colors"
             >
               Log in
@@ -232,7 +232,7 @@
           <div class="pt-4 flex flex-col gap-3">
             <button
               type="button"
-              onclick="window.openLoginModal(); document.getElementById('mobile-menu').classList.add('hidden');"
+              id="mobileLoginBtn"
               class="w-full py-3 text-slate-600 font-semibold border border-slate-200 rounded-lg text-center"
             >
               Log in
@@ -1113,6 +1113,23 @@
             mobileMenu.classList.add('hidden');
           });
         });
+
+        // Header login button
+        const headerLoginBtn = document.getElementById('headerLoginBtn');
+        if (headerLoginBtn) {
+          headerLoginBtn.addEventListener('click', function() {
+            window.openLoginModal();
+          });
+        }
+
+        // Mobile login button
+        const mobileLoginBtn = document.getElementById('mobileLoginBtn');
+        if (mobileLoginBtn) {
+          mobileLoginBtn.addEventListener('click', function() {
+            window.openLoginModal();
+            mobileMenu.classList.add('hidden');
+          });
+        }
       });
     </script>
   </body>
