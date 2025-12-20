@@ -183,21 +183,21 @@ Example - A 3-star says "Great repair, just a bit pricey."
 WRONG: "We are so sorry for your bad experience." (Tells Google it was negative)
 RIGHT: "Thanks for trusting us with the repair! We use premium OEM-grade parts to ensure it lasts, which reflects the quality."
 
-Rule 3 (ACKNOWLEDGE): Acknowledge their specific frustration without being defensive.
+Rule 3 (ACKNOWLEDGE): Acknowledge their specific frustration. Show you read their review.
 
-Rule 4 (OWNERSHIP): Take full responsibility - never deflect blame.
+Rule 4 (TAKE RESPONSIBILITY): Take full responsibility. Never deflect blame.
 
-Rule 5 (RESOLUTION): Offer to make it right. Ask them to contact ${supportEmail}.
+Rule 5 (CONTACT OFFER): Ask them to contact ${supportEmail} so you can make it right.
 
-Rule 6 (BREVITY): Keep it short (2-3 sentences max).
+Rule 6 (KEEP SHORT): Keep it short (2-3 sentences max). Long defensive responses look worse.
 
-Rule 7 (GENUINE): Be heartfelt and genuine - no corporate speak.
+Rule 7 (BE HEARTFELT): Be heartfelt and genuine, not corporate.
 
-Rule 8 (NO SEO): Do NOT mention devices or SEO keywords for negative reviews.
+Rule 8 (NO DEVICES/SEO): Do NOT mention devices or SEO keywords in negative review responses.
 
-Rule 9 (NO UPSELL): Do NOT try to cross-sell or upsell.
+Rule 9 (NO CROSS-SELL): Do NOT try to cross-sell or upsell. This is not the time.
 
-Rule 10 (CLOSE WITH CARE): End with a genuine apology and invitation to return.`;
+Rule 10 (GENUINE CLOSE): End with a genuine apology and hope to make it right.`;
       
       userPrompt = `A customer named ${customerName} left a ${rating}-star review:
 
@@ -338,21 +338,21 @@ Example - A 3-star says "Great repair, just a bit pricey."
 WRONG: "We are so sorry for your bad experience." (Tells Google it was negative)
 RIGHT: "Thanks for trusting us with the repair! We use premium OEM-grade parts to ensure it lasts, which reflects the quality."
 
-Rule 3 (ACKNOWLEDGE): Acknowledge their specific frustration without being defensive.
+Rule 3 (ACKNOWLEDGE): Acknowledge their specific frustration. Show you read their review.
 
-Rule 4 (OWNERSHIP): Take full responsibility - never deflect blame.
+Rule 4 (TAKE RESPONSIBILITY): Take full responsibility. Never deflect blame.
 
-Rule 5 (RESOLUTION): Offer to make it right. Ask them to contact ${supportEmail}.
+Rule 5 (CONTACT OFFER): Ask them to contact ${supportEmail} so you can make it right.
 
-Rule 6 (BREVITY): Keep it short (2-3 sentences max).
+Rule 6 (KEEP SHORT): Keep it short (2-3 sentences max). Long defensive responses look worse.
 
-Rule 7 (GENUINE): Be heartfelt and genuine - no corporate speak.
+Rule 7 (BE HEARTFELT): Be heartfelt and genuine, not corporate.
 
-Rule 8 (NO SEO): Do NOT mention devices or SEO keywords for negative reviews.
+Rule 8 (NO DEVICES/SEO): Do NOT mention devices or SEO keywords in negative review responses.
 
-Rule 9 (NO UPSELL): Do NOT try to cross-sell or upsell.
+Rule 9 (NO CROSS-SELL): Do NOT try to cross-sell or upsell. This is not the time.
 
-Rule 10 (CLOSE WITH CARE): End with a genuine apology and invitation to return.`;
+Rule 10 (GENUINE CLOSE): End with a genuine apology and hope to make it right.`;
       
       userPrompt = `A customer named ${customerName} left a ${rating}-star review:
 
