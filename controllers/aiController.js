@@ -122,6 +122,17 @@ function validateDeviceRuleCompliance(reviewText, generatedReply) {
     !replyLower.includes(device.toLowerCase())
   );
   
+  if (mentionedDevices.length === 0 && devicesInReview.length > 0) {
+    console.log(`[AI REPLY] Device FAIL: Review mentions ${devicesInReview.length} device(s) but reply mentions ZERO. Devices: "${devicesInReview.join('", "')}"`);
+    return { 
+      status: 'failed',
+      reason: `Device Rule Violation: Review mentions ${devicesInReview.length} device(s) but reply mentions none`,
+      devicesRequired: devicesInReview,
+      devicesMentioned: [],
+      missingDevices: devicesInReview
+    };
+  }
+  
   if (mentionedDevices.length < devicesInReview.length) {
     console.log(`[AI REPLY] Device warning: Review mentions ${devicesInReview.length} device(s), reply mentions ${mentionedDevices.length}. Missing: "${missingDevices.join('", "')}". Allowing anyway - AI uses context to determine relevance.`);
     return { 
