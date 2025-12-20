@@ -122,7 +122,7 @@ function validateDeviceRuleCompliance(reviewText, generatedReply) {
     !replyLower.includes(device.toLowerCase())
   );
   
-  if (mentionedDevices.length === 0 && devicesInReview.length > 0) {
+  if (mentionedDevices.length === 0 && devicesInReview.length >= 2) {
     console.log(`[AI REPLY] Device FAIL: Review mentions ${devicesInReview.length} device(s) but reply mentions ZERO. Devices: "${devicesInReview.join('", "')}"`);
     return { 
       status: 'failed',
