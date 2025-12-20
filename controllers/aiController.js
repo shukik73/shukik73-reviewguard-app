@@ -365,36 +365,12 @@ Write a reply (2-3 sentences) following ALL 10 Golden Rules above. Make it sound
 
     const generatedReply = completion.choices[0].message.content.trim();
 
-    let validation = null;
-    
-    if (rating >= 4) {
-      validation = validateDeviceRuleCompliance(reviewText, generatedReply);
-      
-      if (validation.status === 'failed') {
-        console.warn('Device Rule Warning:', validation.reason);
-      }
-    }
-
     res.json({
       success: true,
       reply: generatedReply,
       metadata: {
         rating,
-        deviceRuleApplied: rating >= 4,
-        devicesDetected: rating >= 4 ? extractDeviceMentions(reviewText) : []
-      },
-      validation: validation ? {
-        status: validation.status,
-        reason: validation.reason,
-        devicesRequired: validation.devicesRequired || [],
-        devicesMentioned: validation.devicesMentioned || [],
-        missingDevices: validation.missingDevices || []
-      } : {
-        status: 'not_applicable',
-        reason: 'Device rule only applies to 4-5 star reviews',
-        devicesRequired: [],
-        devicesMentioned: [],
-        missingDevices: []
+        customerName
       }
     });
   } catch (error) {
