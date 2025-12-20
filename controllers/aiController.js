@@ -399,12 +399,22 @@ Write a reply (2-3 sentences) following ALL rules above. Make it sound natural a
 
     const generatedReply = completion.choices[0].message.content.trim();
 
+    // Run device validation (lenient - logs warnings but never blocks)
+    const deviceValidation = validateDeviceRuleCompliance(reviewText, generatedReply);
+    
+    if (deviceValidation.status === 'failed') {
+      console.warn(`[AI REPLY] ${deviceValidation.reason}`);
+    } else if (deviceValidation.status === 'passed_with_warning') {
+      console.log(`[AI REPLY] ${deviceValidation.reason}`);
+    }
+
     res.json({
       success: true,
       reply: generatedReply,
       metadata: {
         rating,
-        customerName
+        customerName,
+        deviceValidation
       }
     });
   } catch (error) {
