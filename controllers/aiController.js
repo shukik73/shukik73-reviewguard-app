@@ -165,15 +165,21 @@ export const processIncomingReview = async (pool, userId, reviewData, telegramSe
 
 THE 10 GOLDEN RULES FOR NEGATIVE REVIEWS (1-3 STARS):
 Rule 1 (NEGATIVE OVERRIDE): For 1-3 star reviews, IGNORE all SEO rules. Focus only on sincere apology.
-Rule 2: Acknowledge their specific frustration
-Rule 3: Take full responsibility
-Rule 4: Ask them to contact ${supportEmail}
-Rule 5: Keep it short (2-3 sentences max)
-Rule 6: Be heartfelt and genuine
-Rule 7: Do NOT mention devices or SEO keywords
-Rule 8: Do NOT try to cross-sell or upsell
-Rule 9: Do NOT deflect blame
-Rule 10: End with a genuine apology`;
+
+Rule 2 (SENTIMENT ANALYSIS): Read the sentiment, not just the stars.
+Example: A 3-star review says "Great repair, just a bit pricey."
+WRONG response: "We are so sorry for your bad experience." (This tells Google it was negative)
+RIGHT response: "Thanks for trusting us with the repair! We use premium OEM-grade parts to ensure it lasts, which reflects the quality."
+
+Rule 3: Acknowledge their specific frustration
+Rule 4: Take full responsibility
+Rule 5: Ask them to contact ${supportEmail}
+Rule 6: Keep it short (2-3 sentences max)
+Rule 7: Be heartfelt and genuine
+Rule 8: Do NOT mention devices or SEO keywords
+Rule 9: Do NOT try to cross-sell or upsell
+Rule 10: Do NOT deflect blame
+Rule 11: End with a genuine apology`;
       
       userPrompt = `A customer named ${customerName} left a ${rating}-star review:
 
@@ -207,13 +213,18 @@ Rule 8 (PROFESSIONALISM): Maintain professional yet friendly tone.
 
 Rule 9 (FUTURE FOCUS): Invite them back for future needs.
 
-Rule 10 (COMPLIANCE): Never violate Google's review response policies.`;
+Rule 10 (COMPLIANCE): Never violate Google's review response policies.
+
+DANGER ZONES TO AVOID:
+- Keyword stuffing (e.g., "Thanks for the phone repair, computer repair, tablet repair..." is SPAM)
+- Generic responses that could apply to any business
+- Overly long responses (keep under 3 sentences)`;
 
       userPrompt = `A customer named ${customerName} left a ${rating}-star review:
 
 "${reviewText}"${deviceHint}
 
-Write a reply (2-3 sentences) following ALL 10 Golden Rules above. Make it sound natural and grateful.`;
+Write a reply (2-3 sentences) following ALL rules above. Make it sound natural and grateful.`;
     }
 
     const openai = getOpenAI();
@@ -301,15 +312,21 @@ export const generateReply = (pool) => async (req, res) => {
 
 THE 10 GOLDEN RULES FOR NEGATIVE REVIEWS (1-3 STARS):
 Rule 1 (NEGATIVE OVERRIDE): For 1-3 star reviews, IGNORE all SEO rules. Focus only on sincere apology.
-Rule 2: Acknowledge their specific frustration
-Rule 3: Take full responsibility
-Rule 4: Ask them to contact ${supportEmail}
-Rule 5: Keep it short (2-3 sentences max)
-Rule 6: Be heartfelt and genuine
-Rule 7: Do NOT mention devices or SEO keywords
-Rule 8: Do NOT try to cross-sell or upsell
-Rule 9: Do NOT deflect blame
-Rule 10: End with a genuine apology`;
+
+Rule 2 (SENTIMENT ANALYSIS): Read the sentiment, not just the stars.
+Example: A 3-star review says "Great repair, just a bit pricey."
+WRONG response: "We are so sorry for your bad experience." (This tells Google it was negative)
+RIGHT response: "Thanks for trusting us with the repair! We use premium OEM-grade parts to ensure it lasts, which reflects the quality."
+
+Rule 3: Acknowledge their specific frustration
+Rule 4: Take full responsibility
+Rule 5: Ask them to contact ${supportEmail}
+Rule 6: Keep it short (2-3 sentences max)
+Rule 7: Be heartfelt and genuine
+Rule 8: Do NOT mention devices or SEO keywords
+Rule 9: Do NOT try to cross-sell or upsell
+Rule 10: Do NOT deflect blame
+Rule 11: End with a genuine apology`;
       
       userPrompt = `A customer named ${customerName} left a ${rating}-star review:
 
@@ -343,13 +360,18 @@ Rule 8 (PROFESSIONALISM): Maintain professional yet friendly tone.
 
 Rule 9 (FUTURE FOCUS): Invite them back for future needs.
 
-Rule 10 (COMPLIANCE): Never violate Google's review response policies.`;
+Rule 10 (COMPLIANCE): Never violate Google's review response policies.
+
+DANGER ZONES TO AVOID:
+- Keyword stuffing (e.g., "Thanks for the phone repair, computer repair, tablet repair..." is SPAM)
+- Generic responses that could apply to any business
+- Overly long responses (keep under 3 sentences)`;
 
       userPrompt = `A customer named ${customerName} left a ${rating}-star review:
 
 "${reviewText}"${deviceHint}
 
-Write a reply (2-3 sentences) following ALL 10 Golden Rules above. Make it sound natural and grateful.`;
+Write a reply (2-3 sentences) following ALL rules above. Make it sound natural and grateful.`;
     }
 
     const openai = getOpenAI();
