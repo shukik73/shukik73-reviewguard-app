@@ -76,7 +76,7 @@
         </nav>
 
         <div class="hidden md:flex items-center gap-4">
-          <button onclick="openLoginModal()" class="text-sm font-semibold text-slate-600 hover:text-brand-600 transition-colors">Log in</button>
+          <button type="button" onclick="window.openLoginModal()" class="text-sm font-semibold text-slate-600 hover:text-brand-600 transition-colors">Log in</button>
           <a href="/app" class="bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-brand-600 transition-all hover:shadow-lg hover:shadow-brand-500/20 flex items-center gap-2">
             Get More Customers ⚡
           </a>
@@ -97,7 +97,7 @@
         <a href="#pricing" class="text-lg font-medium text-slate-700 hover:text-brand-600 py-2 border-b border-slate-50">Pricing</a>
         <a href="#integration" class="text-lg font-medium text-slate-700 hover:text-brand-600 py-2 border-b border-slate-50">Integration</a>
         <div class="pt-4 flex flex-col gap-3">
-          <button onclick="openLoginModal(); mobileMenu.classList.add('hidden');" class="w-full py-3 text-slate-600 font-semibold border border-slate-200 rounded-lg text-center">Log in</button>
+          <button type="button" onclick="window.openLoginModal(); document.getElementById('mobile-menu').classList.add('hidden');" class="w-full py-3 text-slate-600 font-semibold border border-slate-200 rounded-lg text-center">Log in</button>
           <a href="/signup.html" class="w-full py-3 bg-brand-600 text-white font-semibold rounded-lg shadow-md text-center">Get Started</a>
         </div>
       </div>
@@ -452,77 +452,91 @@
   </div>
 
   <script>
-    const header = document.getElementById('header');
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const mobileMenu = document.getElementById('mobile-menu');
-    const loginModal = document.getElementById('loginModal');
-
+    // Define functions immediately (before DOMContentLoaded) so onclick works
     window.openLoginModal = function() {
-      loginModal.classList.remove('hidden');
-      document.body.style.overflow = 'hidden';
+      console.log('openLoginModal function called');
+      alert('Login button clicked!');
+      const loginModal = document.getElementById('loginModal');
+      console.log('loginModal element:', loginModal);
+      if (loginModal) {
+        loginModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        console.log('Modal should now be visible');
+      } else {
+        console.error('loginModal element not found!');
+      }
     };
 
     window.closeLoginModal = function() {
-      loginModal.classList.add('hidden');
-      document.body.style.overflow = '';
+      const loginModal = document.getElementById('loginModal');
+      if (loginModal) {
+        loginModal.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
     };
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('loginEmail').value;
-      const password = document.getElementById('loginPassword').value;
-      const errorDiv = document.getElementById('loginError');
-      const btn = document.getElementById('loginBtn');
-      
-      btn.disabled = true;
-      btn.textContent = 'Signing in...';
-      errorDiv.classList.add('hidden');
-      
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email: email.trim(), password })
-        });
-        const data = await res.json();
+    document.addEventListener('DOMContentLoaded', function() {
+      const header = document.getElementById('header');
+      const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        const errorDiv = document.getElementById('loginError');
+        const btn = document.getElementById('loginBtn');
         
-        if (data.success) {
-          window.location.href = '/app';
-        } else {
-          errorDiv.textContent = data.error || 'Login failed';
+        btn.disabled = true;
+        btn.textContent = 'Signing in...';
+        errorDiv.classList.add('hidden');
+        
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email: email.trim(), password })
+          });
+          const data = await res.json();
+          
+          if (data.success) {
+            window.location.href = '/app';
+          } else {
+            errorDiv.textContent = data.error || 'Login failed';
+            errorDiv.classList.remove('hidden');
+          }
+        } catch (err) {
+          errorDiv.textContent = 'Connection error. Please try again.';
           errorDiv.classList.remove('hidden');
         }
-      } catch (err) {
-        errorDiv.textContent = 'Connection error. Please try again.';
-        errorDiv.classList.remove('hidden');
-      }
-      
-      btn.disabled = false;
-      btn.textContent = 'Sign In';
-    });
+        
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      });
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeLoginModal();
-    });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') window.closeLoginModal();
+      });
 
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 20) {
-        header.classList.add('bg-white/90', 'backdrop-blur-md', 'shadow-sm', 'py-3', 'border-b', 'border-slate-200');
-        header.classList.remove('bg-transparent', 'py-5');
-      } else {
-        header.classList.remove('bg-white/90', 'backdrop-blur-md', 'shadow-sm', 'py-3', 'border-b', 'border-slate-200');
-        header.classList.add('bg-transparent', 'py-5');
-      }
-    });
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 20) {
+          header.classList.add('bg-white/90', 'backdrop-blur-md', 'shadow-sm', 'py-3', 'border-b', 'border-slate-200');
+          header.classList.remove('bg-transparent', 'py-5');
+        } else {
+          header.classList.remove('bg-white/90', 'backdrop-blur-md', 'shadow-sm', 'py-3', 'border-b', 'border-slate-200');
+          header.classList.add('bg-transparent', 'py-5');
+        }
+      });
 
-    mobileMenuBtn.addEventListener('click', () => {
-      mobileMenu.classList.toggle('hidden');
-    });
+      mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+      });
 
-    document.querySelectorAll('#mobile-menu a').forEach(link => {
-      link.addEventListener('click', () => {
-        mobileMenu.classList.add('hidden');
+      document.querySelectorAll('#mobile-menu a').forEach(link => {
+        link.addEventListener('click', () => {
+          mobileMenu.classList.add('hidden');
+        });
       });
     });
   </script>
