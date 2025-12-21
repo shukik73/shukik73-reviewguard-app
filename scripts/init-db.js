@@ -132,6 +132,8 @@ async function runMigrations() {
         user_email VARCHAR(255) REFERENCES users(company_email),
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
         status VARCHAR(20) DEFAULT 'unread',
+        feedback_status VARCHAR(20) DEFAULT 'new',
+        assigned_to VARCHAR(100),
         sms_sent_at TIMESTAMP,
         called_at TIMESTAMP,
         is_read BOOLEAN DEFAULT FALSE,

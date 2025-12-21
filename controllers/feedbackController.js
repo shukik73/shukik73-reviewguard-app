@@ -611,3 +611,66 @@ export const getCustomerInfoByToken = (pool) => async (req, res) => {
     res.status(500).json({ success: false, error: 'Server error' });
   }
 };
+
+export const updateFeedbackStatus = (pool) => async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const userId = req.session?.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    
+    const validStatuses = ['new', 'in_progress', 'resolved'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, error: 'Invalid status' });
+    }
+    
+    const result = await pool.query(
+      `UPDATE internal_feedback 
+       SET feedback_status = $1, is_read = $2
+       WHERE id = $3 AND user_id = $4
+       RETURNING id`,
+      [status, status === 'resolved', id, userId]
+    );
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Feedback not found' });
+    }
+    
+    res.json({ success: true, status });
+  } catch (error) {
+    console.error('Error updating feedback status:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+};
+
+export const assignFeedback = (pool) => async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assignedTo } = req.body;
+    const userId = req.session?.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    
+    const result = await pool.query(
+      `UPDATE internal_feedback 
+       SET assigned_to = $1, feedback_status = CASE WHEN feedback_status = 'new' THEN 'in_progress' ELSE feedback_status END
+       WHERE id = $2 AND user_id = $3
+       RETURNING id, feedback_status`,
+      [assignedTo, id, userId]
+    );
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Feedback not found' });
+    }
+    
+    res.json({ success: true, assignedTo, status: result.rows[0].feedback_status });
+  } catch (error) {
+    console.error('Error assigning feedback:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+};
