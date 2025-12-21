@@ -1979,6 +1979,12 @@
           const feedbackDate = new Date(fb.created_at).toLocaleDateString();
           const isUnread = fb.status === 'unread' && !fb.is_read;
           const isUnanswered = !fb.sms_sent_at && !fb.called_at && !fb.is_read;
+          const feedbackStatus = fb.feedback_status || 'new';
+          const statusBadge = feedbackStatus === 'new' 
+            ? '<span class="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 font-medium">NEW</span>'
+            : feedbackStatus === 'in_progress'
+            ? '<span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">🔧 In Progress</span>'
+            : '<span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">✓ Resolved</span>';
           
           const customerMessages = grouped[fb.customer_phone] || [];
           const otherMessages = customerMessages.filter(m => m.id !== fb.id);
@@ -2028,8 +2034,8 @@
                   <span class="${isUnread ? 'font-bold' : 'font-semibold'} text-gray-900">${fb.customer_name}</span>
                   <span class="text-sm ${fb.rating <= 2 ? 'text-red-600' : 'text-gray-600'}">⭐ ${customerAvgRating || fb.rating}</span>
                   <span class="text-xs text-gray-400">${relativeTime}</span>
-                  ${isUnread ? '<span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">New</span>' : ''}
-                  ${isUnanswered ? '<span class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">Unanswered</span>' : ''}
+                  ${statusBadge}
+                  ${isUnanswered && feedbackStatus !== 'resolved' ? '<span class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">Unanswered</span>' : ''}
                 </div>
                 ${fb.feedback_text ? `<div class="text-sm text-gray-700 mt-1">"${fb.feedback_text}"</div>` : ''}
                 <div class="flex items-center gap-2 mt-2 text-xs text-gray-500 flex-wrap">

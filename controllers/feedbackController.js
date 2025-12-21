@@ -616,7 +616,7 @@ export const updateFeedbackStatus = (pool) => async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const userId = req.session?.user?.id;
+    const userId = req.user?.id;
     
     if (!userId) {
       return res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -650,7 +650,7 @@ export const assignFeedback = (pool) => async (req, res) => {
   try {
     const { id } = req.params;
     const { assignedTo } = req.body;
-    const userId = req.session?.user?.id;
+    const userId = req.user?.id;
     
     if (!userId) {
       return res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -658,7 +658,7 @@ export const assignFeedback = (pool) => async (req, res) => {
     
     const result = await pool.query(
       `UPDATE internal_feedback 
-       SET assigned_to = $1, feedback_status = CASE WHEN feedback_status = 'new' THEN 'in_progress' ELSE feedback_status END
+       SET assigned_to = $1, feedback_status = CASE WHEN feedback_status IS NULL OR feedback_status = 'new' THEN 'in_progress' ELSE feedback_status END
        WHERE id = $2 AND user_id = $3
        RETURNING id, feedback_status`,
       [assignedTo, id, userId]
