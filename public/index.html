@@ -1046,32 +1046,78 @@
         </section>
 
         <section id="feedback" class="section hidden">
-          <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
-            <div class="p-5 border-b border-gray-100">
-              <div class="flex items-center justify-between mb-4">
-                <div>
-                  <h3 class="font-semibold text-gray-900">Feedback Inbox</h3>
-                  <p class="text-sm text-gray-500">Internal feedback from customers (1-3 star ratings)</p>
+          <div class="flex gap-4">
+            <div class="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm">
+              <div class="p-5 border-b border-gray-100">
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 class="font-semibold text-gray-900">Feedback Inbox</h3>
+                    <p class="text-sm text-gray-500">Internal feedback from customers (1-3 star ratings)</p>
+                  </div>
+                </div>
+                <div class="flex gap-4 mb-4">
+                  <span class="bg-blue-500 text-white px-3 py-1 rounded-full text-sm" id="feedback-unread-count">0 Unread</span>
+                  <span class="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm" id="feedback-avg-rating">Avg. Rating: 0 ⭐</span>
+                  <select id="feedback-sort" class="border rounded px-2 py-1 text-sm ml-auto">
+                    <option value="newest">Newest</option>
+                    <option value="oldest">Oldest</option>
+                    <option value="rating">Rating</option>
+                  </select>
+                </div>
+                <div class="flex gap-2 border-b -mx-5 px-5">
+                  <button data-filter="all" class="feedback-tab px-4 py-2 border-b-2 border-blue-500 text-blue-600 font-medium">All</button>
+                  <button data-filter="unread" class="feedback-tab px-4 py-2 text-gray-500 hover:text-gray-700 border-b-2 border-transparent">Unread</button>
+                  <button data-filter="in_progress" class="feedback-tab px-4 py-2 text-gray-500 hover:text-gray-700 border-b-2 border-transparent">In Progress</button>
+                  <button data-filter="resolved" class="feedback-tab px-4 py-2 text-gray-500 hover:text-gray-700 border-b-2 border-transparent">Resolved</button>
                 </div>
               </div>
-              <div class="flex gap-4 mb-4">
-                <span class="bg-blue-500 text-white px-3 py-1 rounded-full text-sm" id="feedback-unread-count">0 Unread</span>
-                <span class="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm" id="feedback-avg-rating">Avg. Rating: 0 ⭐</span>
-                <select id="feedback-sort" class="border rounded px-2 py-1 text-sm ml-auto">
-                  <option value="newest">Newest</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="rating">Rating</option>
-                </select>
-              </div>
-              <div class="flex gap-2 border-b -mx-5 px-5">
-                <button data-filter="all" class="feedback-tab px-4 py-2 border-b-2 border-blue-500 text-blue-600 font-medium">All</button>
-                <button data-filter="unread" class="feedback-tab px-4 py-2 text-gray-500 hover:text-gray-700 border-b-2 border-transparent">Unread</button>
-                <button data-filter="in_progress" class="feedback-tab px-4 py-2 text-gray-500 hover:text-gray-700 border-b-2 border-transparent">In Progress</button>
-                <button data-filter="resolved" class="feedback-tab px-4 py-2 text-gray-500 hover:text-gray-700 border-b-2 border-transparent">Resolved</button>
+              <div id="feedback-list" class="divide-y divide-gray-50 max-h-[500px] overflow-y-auto p-2">
+                <div class="text-center py-12 text-gray-500">Loading...</div>
               </div>
             </div>
-            <div id="feedback-list" class="divide-y divide-gray-50 max-h-[500px] overflow-y-auto p-2">
-              <div class="text-center py-12 text-gray-500">Loading...</div>
+            
+            <div id="feedback-context-panel" class="hidden w-80 bg-white rounded-xl border border-gray-100 shadow-sm flex-shrink-0">
+              <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+                <h4 class="font-semibold text-gray-900">Customer Context</h4>
+                <button onclick="closeFeedbackPanel()" class="text-gray-400 hover:text-gray-600 p-1">
+                  <span class="text-lg">×</span>
+                </button>
+              </div>
+              <div class="p-4">
+                <div class="text-center mb-4">
+                  <div id="panel-customer-avatar" class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-2">
+                    <span class="text-2xl">😠</span>
+                  </div>
+                  <h3 id="panel-customer-name" class="font-bold text-gray-900 text-lg">Customer Name</h3>
+                  <p id="panel-customer-phone" class="text-sm text-gray-500">+1 (555) 123-4567</p>
+                </div>
+                
+                <div class="flex items-center justify-center gap-3 mb-4">
+                  <span id="panel-sentiment-badge" class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">😠 Very unhappy</span>
+                  <span id="panel-avg-rating" class="text-lg font-bold text-red-600">⭐ 1.2</span>
+                </div>
+                
+                <div class="border-t border-gray-100 pt-4">
+                  <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Feedback History</h5>
+                  <div id="panel-feedback-history" class="space-y-3 max-h-48 overflow-y-auto">
+                  </div>
+                </div>
+                
+                <div class="border-t border-gray-100 pt-4 mt-4">
+                  <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Quick Actions</h5>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button id="panel-call-btn" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center justify-center gap-1">
+                      <span>📞</span> Call
+                    </button>
+                    <button id="panel-sms-btn" class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center justify-center gap-1">
+                      <span>💬</span> SMS
+                    </button>
+                    <button id="panel-resolve-btn" class="px-3 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-700 flex items-center justify-center gap-1 col-span-2">
+                      <span>✓</span> Mark Resolved
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -1611,6 +1657,88 @@
     }
     window.toggleCustomerHistory = toggleCustomerHistory;
     
+    let selectedFeedbackCustomer = null;
+    
+    function openFeedbackPanel(phone) {
+      const grouped = groupFeedbackByCustomer(allFeedback);
+      const customerFeedback = grouped[phone] || [];
+      if (customerFeedback.length === 0) return;
+      
+      selectedFeedbackCustomer = { phone, feedback: customerFeedback };
+      const latest = customerFeedback[0];
+      const avgRating = (customerFeedback.reduce((sum, f) => sum + f.rating, 0) / customerFeedback.length).toFixed(1);
+      
+      const sentiment = avgRating <= 1.5 ? { emoji: '😠', text: 'Very unhappy', color: 'red' }
+        : avgRating <= 2.5 ? { emoji: '😟', text: 'Unhappy', color: 'orange' }
+        : { emoji: '😐', text: 'Neutral', color: 'yellow' };
+      
+      document.getElementById('panel-customer-name').textContent = latest.customer_name;
+      document.getElementById('panel-customer-phone').textContent = phone;
+      document.getElementById('panel-avg-rating').textContent = `⭐ ${avgRating}`;
+      document.getElementById('panel-avg-rating').className = `text-lg font-bold text-${sentiment.color}-600`;
+      
+      const avatarEl = document.getElementById('panel-customer-avatar');
+      avatarEl.className = `w-16 h-16 rounded-full bg-${sentiment.color}-100 flex items-center justify-center mx-auto mb-2`;
+      avatarEl.innerHTML = `<span class="text-2xl">${sentiment.emoji}</span>`;
+      
+      const badgeEl = document.getElementById('panel-sentiment-badge');
+      badgeEl.className = `px-3 py-1 rounded-full text-sm font-medium bg-${sentiment.color}-100 text-${sentiment.color}-700`;
+      badgeEl.textContent = `${sentiment.emoji} ${sentiment.text}`;
+      
+      const historyEl = document.getElementById('panel-feedback-history');
+      historyEl.innerHTML = customerFeedback.map(f => {
+        const date = new Date(f.created_at).toLocaleDateString();
+        const status = f.is_read || f.sms_sent_at || f.called_at ? 'Handled' : 'Unanswered';
+        const statusColor = status === 'Handled' ? 'green' : 'orange';
+        return `
+          <div class="p-2 bg-gray-50 rounded-lg text-sm">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-medium">${'⭐'.repeat(f.rating)}</span>
+              <span class="text-xs text-${statusColor}-600">${status}</span>
+            </div>
+            ${f.feedback_text ? `<p class="text-gray-600 text-xs mb-1">"${f.feedback_text}"</p>` : ''}
+            <p class="text-xs text-gray-400">${date}</p>
+          </div>
+        `;
+      }).join('');
+      
+      document.getElementById('panel-call-btn').onclick = () => {
+        window.location.href = `tel:${phone}`;
+        trackFeedbackCall(latest.id);
+      };
+      document.getElementById('panel-sms-btn').onclick = () => {
+        document.getElementById('customer-name').value = latest.customer_name;
+        document.getElementById('customer-phone').value = phone;
+        showSection('send-sms');
+        trackFeedbackSms(latest.id);
+      };
+      document.getElementById('panel-resolve-btn').onclick = () => {
+        markFeedbackRead(latest.id);
+        closeFeedbackPanel();
+      };
+      
+      document.getElementById('feedback-context-panel').classList.remove('hidden');
+    }
+    window.openFeedbackPanel = openFeedbackPanel;
+    
+    function closeFeedbackPanel() {
+      document.getElementById('feedback-context-panel').classList.add('hidden');
+      selectedFeedbackCustomer = null;
+    }
+    window.closeFeedbackPanel = closeFeedbackPanel;
+    
+    async function trackFeedbackCall(id) {
+      try {
+        await fetch(`/api/feedback/${id}/called`, { method: 'POST' });
+      } catch (e) { console.error(e); }
+    }
+    
+    async function trackFeedbackSms(id) {
+      try {
+        await fetch(`/api/feedback/${id}/sms-sent`, { method: 'POST' });
+      } catch (e) { console.error(e); }
+    }
+    
     function renderFeedbackList() {
       const container = document.getElementById('feedback-list');
       
@@ -1684,7 +1812,7 @@
           const borderColor = fb.rating === 1 ? 'border-l-4 border-l-red-500' : (fb.rating <= 3 ? 'border-l-4 border-l-amber-500' : 'border-l-4 border-l-green-500');
           
           return `
-          <div class="p-3 rounded-lg border ${borderColor} ${isUnread ? 'bg-amber-50' : 'bg-white hover:bg-gray-50'} mb-2" id="feedback-item-${fb.id}">
+          <div class="p-3 rounded-lg border ${borderColor} ${isUnread ? 'bg-amber-50' : 'bg-white hover:bg-gray-50'} mb-2 cursor-pointer" id="feedback-item-${fb.id}" onclick="openFeedbackPanel('${fb.customer_phone}')">
             <div class="flex items-start justify-between gap-3">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
@@ -1707,7 +1835,7 @@
                 <div class="text-xs text-gray-400 mt-1">${fb.customer_phone}</div>
                 ${historyHtml}
               </div>
-              <div class="flex items-center gap-1 flex-shrink-0">
+              <div class="flex items-center gap-1 flex-shrink-0" onclick="event.stopPropagation()">
                 <a href="tel:${fb.customer_phone}" data-action="callCustomer" data-id="${fb.id}" data-phone="${fb.customer_phone}" class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Call">
                   <span>📞</span>
                 </a>
