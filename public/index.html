@@ -519,15 +519,15 @@
               <div class="w-12 h-0.5 bg-gray-300"></div>
             </div>
             <div class="flex items-center gap-2">
-              <span class="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-bold" id="step-2-circle">2</span>
-              <span class="text-sm font-medium text-gray-500" id="step-2-text">Customer Info</span>
+              <span class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-sm font-bold" id="step-2-circle">2</span>
+              <span class="text-sm text-gray-500" id="step-2-text">Review Customer</span>
             </div>
             <div class="hidden sm:flex items-center">
               <div class="w-12 h-0.5 bg-gray-300"></div>
             </div>
             <div class="flex items-center gap-2">
-              <span class="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-bold" id="step-3-circle">3</span>
-              <span class="text-sm font-medium text-gray-500" id="step-3-text">Send Message</span>
+              <span class="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center text-sm font-bold" id="step-3-circle">3</span>
+              <span class="text-sm text-gray-500" id="step-3-text">Send Message</span>
             </div>
           </div>
           
@@ -582,14 +582,23 @@
                 </div>
               </div>
 
-              <div class="mt-4 p-4 bg-gray-50 rounded-lg">
-                <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Detected from Receipt</div>
-                <div class="grid grid-cols-2 gap-2 text-sm">
-                  <div><span class="text-gray-500">Name:</span> <span id="ocr-name" class="text-gray-900 font-medium">-</span></div>
-                  <div><span class="text-gray-500">Phone:</span> <span id="ocr-phone" class="text-gray-900 font-medium">-</span></div>
-                  <div><span class="text-gray-500">Device:</span> <span id="ocr-device" class="text-gray-900 font-medium">-</span></div>
-                  <div><span class="text-gray-500">Repair:</span> <span id="ocr-repair" class="text-gray-900 font-medium">-</span></div>
+              <div id="ocr-detected-section" class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <div class="flex items-center justify-between cursor-pointer" onclick="toggleOcrSection()">
+                  <div class="flex items-center gap-2">
+                    <div class="text-xs font-medium text-amber-700 uppercase tracking-wide">Detected from Receipt</div>
+                    <span id="ocr-confirmed-badge" class="hidden text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">✓ Confirmed</span>
+                  </div>
+                  <svg id="ocr-chevron" class="w-4 h-4 text-amber-600 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
+                <div id="ocr-details" class="grid grid-cols-2 gap-2 text-sm mt-3">
+                  <div><span class="text-amber-700">Name:</span> <span id="ocr-name" class="text-gray-900 font-medium">-</span></div>
+                  <div><span class="text-amber-700">Phone:</span> <span id="ocr-phone" class="text-gray-900 font-medium">-</span></div>
+                  <div><span class="text-amber-700">Device:</span> <span id="ocr-device" class="text-gray-900 font-medium">-</span></div>
+                  <div><span class="text-amber-700">Repair:</span> <span id="ocr-repair" class="text-gray-900 font-medium">-</span></div>
+                </div>
+                <p id="ocr-empty-state" class="text-sm text-amber-600 mt-2 hidden">No receipt detected yet. Upload or take a photo to auto-fill customer details.</p>
               </div>
             </div>
 
@@ -685,11 +694,9 @@
                 </label>
 
                 <button id="send-sms-btn" disabled class="w-full py-3 bg-accent text-white font-medium rounded-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                  Save & Send Welcome SMS
+                  📤 Send Welcome SMS
                 </button>
+                <p class="text-xs text-gray-500 mt-1 text-center">This will send an SMS immediately</p>
               </div>
             </div>
           </div>
@@ -1536,7 +1543,7 @@
               </div>
             `).join('');
           } else {
-            container.innerHTML = '<p class="text-sm text-gray-500 text-center py-8">No recent activity</p>';
+            container.innerHTML = '<div class="text-center py-8"><p class="text-sm text-gray-500">No recent activity</p><p class="text-xs text-gray-400 mt-1">Send your first message to get started!</p></div>';
           }
         }
       } catch (error) {
@@ -1766,6 +1773,32 @@
       }
     }
     window.toggleCustomerHistory = toggleCustomerHistory;
+    
+    function toggleOcrSection() {
+      const details = document.getElementById('ocr-details');
+      const chevron = document.getElementById('ocr-chevron');
+      if (details && chevron) {
+        details.classList.toggle('hidden');
+        chevron.classList.toggle('rotate-180');
+      }
+    }
+    window.toggleOcrSection = toggleOcrSection;
+    
+    function confirmOcrFields() {
+      const badge = document.getElementById('ocr-confirmed-badge');
+      if (badge) badge.classList.remove('hidden');
+      const step2Circle = document.getElementById('step-2-circle');
+      const step2Text = document.getElementById('step-2-text');
+      if (step2Circle) {
+        step2Circle.classList.remove('bg-gray-300', 'text-gray-600');
+        step2Circle.classList.add('bg-purple-500', 'text-white');
+      }
+      if (step2Text) {
+        step2Text.classList.remove('text-gray-500');
+        step2Text.classList.add('text-gray-900', 'font-medium');
+      }
+    }
+    window.confirmOcrFields = confirmOcrFields;
     
     let openMenuId = null;
     
@@ -2613,7 +2646,7 @@
         showNotification('Failed to send SMS. Please try again.', 'error');
       } finally {
         sendSmsBtn.disabled = !smsConsentCheckbox.checked;
-        sendSmsBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg> Save & Send Welcome SMS';
+        sendSmsBtn.innerHTML = '📤 Send Welcome SMS';
       }
     }
 
