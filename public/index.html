@@ -1934,9 +1934,27 @@
     let selectedFeedbackCustomer = null;
     
     function openFeedbackPanel(phone) {
+      console.log('[FeedbackPanel] Opening for phone:', phone);
+      console.log('[FeedbackPanel] allFeedback count:', allFeedback.length);
+      
+      const panel = document.getElementById('feedback-context-panel');
+      if (!panel) {
+        console.error('[FeedbackPanel] ERROR: Panel element not found!');
+        showNotification('Error: Panel not found', 'error');
+        return;
+      }
+      
       const grouped = groupFeedbackByCustomer(allFeedback);
+      console.log('[FeedbackPanel] Grouped keys:', Object.keys(grouped));
+      
       const customerFeedback = grouped[phone] || [];
-      if (customerFeedback.length === 0) return;
+      console.log('[FeedbackPanel] Customer feedback count:', customerFeedback.length);
+      
+      if (customerFeedback.length === 0) {
+        console.warn('[FeedbackPanel] No feedback found for this phone');
+        showNotification('No feedback found for this customer', 'error');
+        return;
+      }
       
       selectedFeedbackCustomer = { phone, feedback: customerFeedback };
       const latest = customerFeedback[0];
