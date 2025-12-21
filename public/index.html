@@ -1103,71 +1103,71 @@
               </div>
             </div>
           </div>
+          
+          <!-- Feedback Response Panel (hidden by default, slides in from right) -->
+          <div id="feedback-panel" class="hidden fixed top-0 right-0 w-96 h-full bg-white shadow-xl border-l z-50 overflow-y-auto transform translate-x-full transition-transform duration-300">
+            <div class="p-4 border-b bg-gray-50">
+              <div class="flex justify-between items-center">
+                <h3 class="font-bold text-lg text-gray-900">Respond to Feedback</h3>
+                <button onclick="closeFeedbackPanel()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+              </div>
+            </div>
+            <div id="feedback-panel-content" class="p-4">
+              <!-- Customer Info -->
+              <div class="text-center mb-6">
+                <div id="fp-customer-avatar" class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-2">
+                  <span class="text-2xl">😠</span>
+                </div>
+                <h4 id="fp-customer-name" class="font-bold text-gray-900 text-lg">Customer Name</h4>
+                <p id="fp-customer-phone" class="text-sm text-gray-500">+1 (555) 123-4567</p>
+                <div class="flex items-center justify-center gap-2 mt-2">
+                  <span id="fp-sentiment-badge" class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">😠 Very unhappy</span>
+                  <span id="fp-avg-rating" class="text-lg font-bold text-red-600">⭐ 1.2</span>
+                </div>
+              </div>
+
+              <!-- Original Feedback -->
+              <div class="mb-6">
+                <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Original Feedback</h5>
+                <div id="fp-original-feedback" class="p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
+                  "No feedback text"
+                </div>
+              </div>
+
+              <!-- Response Composer -->
+              <div class="mb-6">
+                <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Compose Response</h5>
+                <select id="fp-template-select" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2" onchange="applyFpTemplate()">
+                  <option value="">Select Template...</option>
+                  <option value="apologetic">🙏 Apologetic</option>
+                  <option value="friendly">😊 Friendly</option>
+                  <option value="professional">💼 Professional</option>
+                </select>
+                <textarea id="fp-response-text" rows="4" placeholder="Type your response message..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" oninput="updateFpCharCount()"></textarea>
+                <div class="flex justify-between items-center mt-1">
+                  <span class="text-xs text-gray-400"><span id="fp-char-count">0</span>/160</span>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="space-y-2">
+                <button id="fp-send-btn" class="w-full py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                  <span>💬</span> Send SMS Response
+                </button>
+                <div class="grid grid-cols-2 gap-2">
+                  <button id="fp-call-btn" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center justify-center gap-1">
+                    <span>📞</span> Call
+                  </button>
+                  <button id="fp-resolve-btn" class="px-3 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-700 flex items-center justify-center gap-1">
+                    <span>✓</span> Mark Resolved
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Overlay for slide-in panel -->
+          <div id="feedback-panel-overlay" class="hidden fixed inset-0 bg-black bg-opacity-30 z-40" onclick="closeFeedbackPanel()"></div>
         </section>
-
-        <!-- Slide-in Feedback Response Panel -->
-        <div id="feedback-panel" class="hidden fixed top-0 right-0 w-96 h-full bg-white shadow-xl border-l z-50 overflow-y-auto transform translate-x-full transition-transform duration-300">
-          <div class="p-4 border-b bg-gray-50">
-            <div class="flex justify-between items-center">
-              <h3 class="font-bold text-lg text-gray-900">Respond to Feedback</h3>
-              <button onclick="closeFeedbackPanel()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-            </div>
-          </div>
-          <div id="feedback-panel-content" class="p-4">
-            <!-- Customer Info -->
-            <div class="text-center mb-6">
-              <div id="fp-customer-avatar" class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-2">
-                <span class="text-2xl">😠</span>
-              </div>
-              <h4 id="fp-customer-name" class="font-bold text-gray-900 text-lg">Customer Name</h4>
-              <p id="fp-customer-phone" class="text-sm text-gray-500">+1 (555) 123-4567</p>
-              <div class="flex items-center justify-center gap-2 mt-2">
-                <span id="fp-sentiment-badge" class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">😠 Very unhappy</span>
-                <span id="fp-avg-rating" class="text-lg font-bold text-red-600">⭐ 1.2</span>
-              </div>
-            </div>
-
-            <!-- Original Feedback -->
-            <div class="mb-6">
-              <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Original Feedback</h5>
-              <div id="fp-original-feedback" class="p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
-                "No feedback text"
-              </div>
-            </div>
-
-            <!-- Response Composer -->
-            <div class="mb-6">
-              <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Compose Response</h5>
-              <select id="fp-template-select" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2" onchange="applyFpTemplate()">
-                <option value="">Select Template...</option>
-                <option value="apologetic">🙏 Apologetic</option>
-                <option value="friendly">😊 Friendly</option>
-                <option value="professional">💼 Professional</option>
-              </select>
-              <textarea id="fp-response-text" rows="4" placeholder="Type your response message..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" oninput="updateFpCharCount()"></textarea>
-              <div class="flex justify-between items-center mt-1">
-                <span class="text-xs text-gray-400"><span id="fp-char-count">0</span>/160</span>
-              </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="space-y-2">
-              <button id="fp-send-btn" class="w-full py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-                <span>💬</span> Send SMS Response
-              </button>
-              <div class="grid grid-cols-2 gap-2">
-                <button id="fp-call-btn" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center justify-center gap-1">
-                  <span>📞</span> Call
-                </button>
-                <button id="fp-resolve-btn" class="px-3 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-700 flex items-center justify-center gap-1">
-                  <span>✓</span> Mark Resolved
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Overlay for slide-in panel -->
-        <div id="feedback-panel-overlay" class="hidden fixed inset-0 bg-black bg-opacity-30 z-40" onclick="closeFeedbackPanel()"></div>
 
         <section id="settings" class="section hidden">
           <div class="grid lg:grid-cols-2 gap-6">
