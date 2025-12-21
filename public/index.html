@@ -1677,12 +1677,14 @@
             </div>
           ` : '';
           
+          const borderColor = fb.rating === 1 ? 'border-l-4 border-l-red-500' : (fb.rating <= 3 ? 'border-l-4 border-l-amber-500' : 'border-l-4 border-l-green-500');
+          
           return `
-          <div class="p-3 rounded-lg border ${isUnread ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-100 hover:bg-gray-50'} mb-2" id="feedback-item-${fb.id}">
+          <div class="p-3 rounded-lg border ${borderColor} ${isUnread ? 'bg-amber-50' : 'bg-white hover:bg-gray-50'} mb-2" id="feedback-item-${fb.id}">
             <div class="flex items-start justify-between gap-3">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-semibold text-gray-900">${fb.customer_name}</span>
+                  <span class="${isUnread ? 'font-bold' : 'font-semibold'} text-gray-900">${fb.customer_name}</span>
                   <span class="text-sm">${'⭐'.repeat(fb.rating)}</span>
                   <span class="text-xs text-gray-400">${relativeTime}</span>
                   ${isUnread ? '<span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">New</span>' : ''}
