@@ -262,7 +262,7 @@ export const getFeedback = (pool) => async (req, res) => {
     // Get all feedback for this user (strict tenant filtering - SECURITY MAINTAINED)
     // Exclude 'ignored' feedback (blocked/spam) - keep read items visible with status
     const result = await pool.query(
-      `SELECT id, message_id, customer_name, customer_phone, rating, feedback_text, created_at, status, sms_sent_at, called_at, is_read
+      `SELECT id, message_id, customer_name, customer_phone, rating, feedback_text, created_at, status, sms_sent_at, called_at, is_read, feedback_status, assigned_to, resolved_at
        FROM internal_feedback
        WHERE user_id = $1 AND (status IS NULL OR status != 'ignored')
        ORDER BY created_at DESC`,

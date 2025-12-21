@@ -1047,10 +1047,27 @@
 
         <section id="feedback" class="section hidden">
           <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
-            <div class="flex items-center justify-between p-5 border-b border-gray-100">
-              <div>
-                <h3 class="font-semibold text-gray-900">Feedback Inbox</h3>
-                <p class="text-sm text-gray-500">Internal feedback from customers (1-3 star ratings)</p>
+            <div class="p-5 border-b border-gray-100">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="font-semibold text-gray-900">Feedback Inbox</h3>
+                  <p class="text-sm text-gray-500">Internal feedback from customers (1-3 star ratings)</p>
+                </div>
+              </div>
+              <div class="flex gap-4 mb-4">
+                <span class="bg-blue-500 text-white px-3 py-1 rounded-full text-sm" id="feedback-unread-count">0 Unread</span>
+                <span class="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm" id="feedback-avg-rating">Avg. Rating: 0 ⭐</span>
+                <select id="feedback-sort" class="border rounded px-2 py-1 text-sm ml-auto">
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="rating">Rating</option>
+                </select>
+              </div>
+              <div class="flex gap-2 border-b -mx-5 px-5">
+                <button data-filter="all" class="feedback-tab px-4 py-2 border-b-2 border-blue-500 text-blue-600 font-medium">All</button>
+                <button data-filter="unread" class="feedback-tab px-4 py-2 text-gray-500 hover:text-gray-700 border-b-2 border-transparent">Unread</button>
+                <button data-filter="in_progress" class="feedback-tab px-4 py-2 text-gray-500 hover:text-gray-700 border-b-2 border-transparent">In Progress</button>
+                <button data-filter="resolved" class="feedback-tab px-4 py-2 text-gray-500 hover:text-gray-700 border-b-2 border-transparent">Resolved</button>
               </div>
             </div>
             <div id="feedback-list" class="divide-y divide-gray-50 max-h-[500px] overflow-y-auto p-2">
@@ -1524,70 +1541,132 @@
       showNotification('Customer data loaded!', 'success');
     }
 
+    let allFeedback = [];
+    let currentFeedbackFilter = 'all';
+    let currentFeedbackSort = 'newest';
+    
     async function loadFeedback() {
       try {
         const response = await fetch('/api/feedback');
         const data = await response.json();
         
-        const container = document.getElementById('feedback-list');
-        if (data.success && data.feedback && data.feedback.length > 0) {
-          container.innerHTML = data.feedback.map(fb => {
-            const smsSentDate = fb.sms_sent_at ? new Date(fb.sms_sent_at).toLocaleDateString() : null;
-            const calledDate = fb.called_at ? new Date(fb.called_at).toLocaleDateString() : null;
-            
-            return `
-            <div class="p-4 rounded-lg ${fb.status === 'unread' ? 'bg-amber-50 border-l-4 border-l-amber-500' : 'hover:bg-gray-50'}" id="feedback-item-${fb.id}">
-              <div class="flex items-start justify-between gap-4">
-                <div class="flex gap-3">
-                  <div class="w-10 h-10 rounded-full ${fb.rating <= 3 ? 'bg-red-100' : 'bg-green-100'} flex items-center justify-center flex-shrink-0">
-                    <span class="${fb.rating <= 3 ? 'text-red-600' : 'text-green-600'}">${fb.rating <= 3 ? '😞' : '😊'}</span>
-                  </div>
-                  <div>
-                    <div class="flex items-center gap-2 mb-1">
-                      <span class="font-medium text-gray-900">${fb.customer_name}</span>
-                      <span class="text-xs px-2 py-1 rounded-full ${fb.rating <= 3 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
-                        ${'⭐'.repeat(fb.rating)}
-                      </span>
-                      ${fb.status === 'unread' ? '<span class="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">New</span>' : ''}
-                    </div>
-                    <div class="text-sm text-gray-500">${fb.customer_phone}</div>
-                    ${fb.feedback_text ? `<div class="mt-2 p-3 bg-white rounded-lg border border-gray-100 text-sm text-gray-700">"${fb.feedback_text}"</div>` : ''}
-                    <div class="text-xs text-gray-400 mt-2">${new Date(fb.created_at).toLocaleString()}</div>
-                  </div>
-                </div>
-                <div class="flex flex-col gap-2 min-w-[160px]">
-                  <div class="flex items-center gap-2">
-                    <a href="tel:${fb.customer_phone}" data-action="callCustomer" data-id="${fb.id}" data-phone="${fb.customer_phone}" class="flex-1 px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors inline-flex items-center gap-1 justify-center cursor-pointer">
-                      <span>📞</span> Call
-                    </a>
-                    ${calledDate ? `<span class="text-xs text-green-600 font-medium whitespace-nowrap">Called ${calledDate}</span>` : ''}
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <button data-action="smsApology" data-id="${fb.id}" data-name="${fb.customer_name.replace(/"/g, '&quot;')}" data-phone="${fb.customer_phone}" class="flex-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1 justify-center">
-                      <span>💬</span> SMS Apology
-                    </button>
-                    ${smsSentDate ? `<span class="text-xs text-blue-600 font-medium whitespace-nowrap">Sent ${smsSentDate}</span>` : ''}
-                  </div>
-                  <button data-action="blockFeedback" data-id="${fb.id}" class="px-3 py-1.5 text-xs bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors inline-flex items-center gap-1 justify-center">
-                    <span>❌</span> Block
-                  </button>
-                  <div class="flex items-center gap-2">
-                    <button data-action="markAsRead" data-id="${fb.id}" class="flex-1 px-3 py-1.5 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors inline-flex items-center gap-1 justify-center">
-                      <span>✓</span> Mark as Read
-                    </button>
-                    ${fb.is_read ? `<span class="text-xs text-gray-600 font-medium">Read</span>` : ''}
-                  </div>
-                </div>
-              </div>
-            </div>
-          `}).join('');
+        if (data.success && data.feedback) {
+          allFeedback = data.feedback;
+          updateFeedbackStats();
+          renderFeedbackList();
         } else {
-          container.innerHTML = '<p class="text-sm text-gray-500 text-center py-12">No feedback received yet</p>';
+          allFeedback = [];
+          updateFeedbackStats();
+          renderFeedbackList();
         }
       } catch (error) {
         console.error('Error loading feedback:', error);
       }
     }
+    
+    function updateFeedbackStats() {
+      const unreadCount = allFeedback.filter(fb => fb.status === 'unread' || (!fb.is_read && fb.status !== 'read')).length;
+      const avgRating = allFeedback.length > 0 
+        ? (allFeedback.reduce((sum, fb) => sum + fb.rating, 0) / allFeedback.length).toFixed(1) 
+        : 0;
+      
+      document.getElementById('feedback-unread-count').textContent = `${unreadCount} Unread`;
+      document.getElementById('feedback-avg-rating').textContent = `Avg. Rating: ${avgRating} ⭐`;
+    }
+    
+    function renderFeedbackList() {
+      const container = document.getElementById('feedback-list');
+      
+      let filtered = [...allFeedback];
+      if (currentFeedbackFilter === 'unread') {
+        filtered = filtered.filter(fb => fb.status === 'unread' || (!fb.is_read && fb.status !== 'read'));
+      } else if (currentFeedbackFilter === 'in_progress') {
+        filtered = filtered.filter(fb => fb.feedback_status === 'in_progress' || (fb.sms_sent_at || fb.called_at) && !fb.is_read);
+      } else if (currentFeedbackFilter === 'resolved') {
+        filtered = filtered.filter(fb => fb.feedback_status === 'resolved' || fb.is_read);
+      }
+      
+      if (currentFeedbackSort === 'newest') {
+        filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      } else if (currentFeedbackSort === 'oldest') {
+        filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      } else if (currentFeedbackSort === 'rating') {
+        filtered.sort((a, b) => a.rating - b.rating);
+      }
+      
+      if (filtered.length > 0) {
+        container.innerHTML = filtered.map(fb => {
+          const smsSentDate = fb.sms_sent_at ? new Date(fb.sms_sent_at).toLocaleDateString() : null;
+          const calledDate = fb.called_at ? new Date(fb.called_at).toLocaleDateString() : null;
+          
+          return `
+          <div class="p-4 rounded-lg ${fb.status === 'unread' && !fb.is_read ? 'bg-amber-50 border-l-4 border-l-amber-500' : 'hover:bg-gray-50'}" id="feedback-item-${fb.id}">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex gap-3">
+                <div class="w-10 h-10 rounded-full ${fb.rating <= 3 ? 'bg-red-100' : 'bg-green-100'} flex items-center justify-center flex-shrink-0">
+                  <span class="${fb.rating <= 3 ? 'text-red-600' : 'text-green-600'}">${fb.rating <= 3 ? '😞' : '😊'}</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="font-medium text-gray-900">${fb.customer_name}</span>
+                    <span class="text-xs px-2 py-1 rounded-full ${fb.rating <= 3 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                      ${'⭐'.repeat(fb.rating)}
+                    </span>
+                    ${fb.status === 'unread' && !fb.is_read ? '<span class="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">New</span>' : ''}
+                  </div>
+                  <div class="text-sm text-gray-500">${fb.customer_phone}</div>
+                  ${fb.feedback_text ? `<div class="mt-2 p-3 bg-white rounded-lg border border-gray-100 text-sm text-gray-700">"${fb.feedback_text}"</div>` : ''}
+                  <div class="text-xs text-gray-400 mt-2">${new Date(fb.created_at).toLocaleString()}</div>
+                </div>
+              </div>
+              <div class="flex flex-col gap-2 min-w-[160px]">
+                <div class="flex items-center gap-2">
+                  <a href="tel:${fb.customer_phone}" data-action="callCustomer" data-id="${fb.id}" data-phone="${fb.customer_phone}" class="flex-1 px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors inline-flex items-center gap-1 justify-center cursor-pointer">
+                    <span>📞</span> Call
+                  </a>
+                  ${calledDate ? `<span class="text-xs text-green-600 font-medium whitespace-nowrap">Called ${calledDate}</span>` : ''}
+                </div>
+                <div class="flex items-center gap-2">
+                  <button data-action="smsApology" data-id="${fb.id}" data-name="${fb.customer_name.replace(/"/g, '&quot;')}" data-phone="${fb.customer_phone}" class="flex-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1 justify-center">
+                    <span>💬</span> SMS Apology
+                  </button>
+                  ${smsSentDate ? `<span class="text-xs text-blue-600 font-medium whitespace-nowrap">Sent ${smsSentDate}</span>` : ''}
+                </div>
+                <button data-action="blockFeedback" data-id="${fb.id}" class="px-3 py-1.5 text-xs bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors inline-flex items-center gap-1 justify-center">
+                  <span>❌</span> Block
+                </button>
+                <div class="flex items-center gap-2">
+                  <button data-action="markAsRead" data-id="${fb.id}" class="flex-1 px-3 py-1.5 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors inline-flex items-center gap-1 justify-center">
+                    <span>✓</span> Mark as Read
+                  </button>
+                  ${fb.is_read ? `<span class="text-xs text-gray-600 font-medium">Read</span>` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        `}).join('');
+      } else {
+        container.innerHTML = '<p class="text-sm text-gray-500 text-center py-12">No feedback received yet</p>';
+      }
+    }
+    
+    document.querySelectorAll('.feedback-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.feedback-tab').forEach(t => {
+          t.classList.remove('border-blue-500', 'text-blue-600', 'font-medium');
+          t.classList.add('text-gray-500', 'border-transparent');
+        });
+        tab.classList.add('border-blue-500', 'text-blue-600', 'font-medium');
+        tab.classList.remove('text-gray-500', 'border-transparent');
+        currentFeedbackFilter = tab.dataset.filter;
+        renderFeedbackList();
+      });
+    });
+    
+    document.getElementById('feedback-sort')?.addEventListener('change', (e) => {
+      currentFeedbackSort = e.target.value;
+      renderFeedbackList();
+    });
 
     window.markFeedbackRead = async function markFeedbackRead(feedbackId) {
       try {
