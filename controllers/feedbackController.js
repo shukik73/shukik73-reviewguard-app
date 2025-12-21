@@ -260,11 +260,11 @@ export const getFeedback = (pool) => async (req, res) => {
     console.log(`[GET FEEDBACK] ✓ Authenticated - Fetching feedback for user_id: ${userId}`);
 
     // Get all feedback for this user (strict tenant filtering - SECURITY MAINTAINED)
-    // Exclude 'ignored' feedback (blocked/spam)
+    // Exclude 'ignored' feedback (blocked/spam) and already read feedback
     const result = await pool.query(
-      `SELECT id, message_id, customer_name, customer_phone, rating, feedback_text, created_at, status
+      `SELECT id, message_id, customer_name, customer_phone, rating, feedback_text, created_at, status, sms_sent_at, called_at, is_read
        FROM internal_feedback
-       WHERE user_id = $1 AND (status IS NULL OR status != 'ignored')
+       WHERE user_id = $1 AND (status IS NULL OR status != 'ignored') AND (is_read IS NULL OR is_read = FALSE)
        ORDER BY created_at DESC`,
       [userId]
     );
@@ -432,6 +432,143 @@ export const blockFeedback = (pool) => async (req, res) => {
 
   } catch (error) {
     console.error('Error blocking feedback:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const markSmsSent = (pool) => async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId || !id) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Feedback ID and authentication required' 
+      });
+    }
+
+    console.log(`[MARK SMS SENT] User ${userId} marking feedback ${id} as SMS sent`);
+
+    const result = await pool.query(
+      `UPDATE internal_feedback
+       SET sms_sent_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND user_id = $2
+       RETURNING id, sms_sent_at`,
+      [id, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Feedback not found or access denied' 
+      });
+    }
+
+    console.log(`[MARK SMS SENT] Successfully marked feedback ${id} as SMS sent at ${result.rows[0].sms_sent_at}`);
+
+    res.json({ 
+      success: true, 
+      message: 'SMS sent status recorded',
+      sms_sent_at: result.rows[0].sms_sent_at
+    });
+
+  } catch (error) {
+    console.error('Error marking SMS sent:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const markCalled = (pool) => async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId || !id) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Feedback ID and authentication required' 
+      });
+    }
+
+    console.log(`[MARK CALLED] User ${userId} marking feedback ${id} as called`);
+
+    const result = await pool.query(
+      `UPDATE internal_feedback
+       SET called_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND user_id = $2
+       RETURNING id, called_at`,
+      [id, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Feedback not found or access denied' 
+      });
+    }
+
+    console.log(`[MARK CALLED] Successfully marked feedback ${id} as called at ${result.rows[0].called_at}`);
+
+    res.json({ 
+      success: true, 
+      message: 'Call status recorded',
+      called_at: result.rows[0].called_at
+    });
+
+  } catch (error) {
+    console.error('Error marking called:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const markAsRead = (pool) => async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId || !id) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Feedback ID and authentication required' 
+      });
+    }
+
+    console.log(`[MARK AS READ] User ${userId} marking feedback ${id} as read`);
+
+    const result = await pool.query(
+      `UPDATE internal_feedback
+       SET is_read = TRUE, status = 'read'
+       WHERE id = $1 AND user_id = $2
+       RETURNING id`,
+      [id, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Feedback not found or access denied' 
+      });
+    }
+
+    console.log(`[MARK AS READ] Successfully marked feedback ${id} as read`);
+
+    res.json({ 
+      success: true, 
+      message: 'Feedback marked as read'
+    });
+
+  } catch (error) {
+    console.error('Error marking as read:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 

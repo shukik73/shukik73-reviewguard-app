@@ -12,6 +12,10 @@ export default function createFeedbackRoutes(pool, requireAuth) {
   router.get('/api/feedback', requireAuth, basicAuth, feedbackController.getFeedback(pool));
   router.post('/api/feedback/mark-read', requireAuth, basicAuth, feedbackController.markFeedbackAsRead(pool));
   router.post('/api/feedback/block', requireAuth, basicAuth, feedbackController.blockFeedback(pool));
+  
+  router.post('/api/feedback/:id/sms-sent', requireAuth, basicAuth, feedbackController.markSmsSent(pool));
+  router.post('/api/feedback/:id/called', requireAuth, basicAuth, feedbackController.markCalled(pool));
+  router.post('/api/feedback/:id/mark-read', requireAuth, basicAuth, feedbackController.markAsRead(pool));
 
   return router;
 }

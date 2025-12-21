@@ -1531,8 +1531,12 @@
         
         const container = document.getElementById('feedback-list');
         if (data.success && data.feedback && data.feedback.length > 0) {
-          container.innerHTML = data.feedback.map(fb => `
-            <div class="p-4 rounded-lg ${fb.status === 'unread' ? 'bg-amber-50 border-l-4 border-l-amber-500' : 'hover:bg-gray-50'}">
+          container.innerHTML = data.feedback.map(fb => {
+            const smsSentDate = fb.sms_sent_at ? new Date(fb.sms_sent_at).toLocaleDateString() : null;
+            const calledDate = fb.called_at ? new Date(fb.called_at).toLocaleDateString() : null;
+            
+            return `
+            <div class="p-4 rounded-lg ${fb.status === 'unread' ? 'bg-amber-50 border-l-4 border-l-amber-500' : 'hover:bg-gray-50'}" id="feedback-item-${fb.id}">
               <div class="flex items-start justify-between gap-4">
                 <div class="flex gap-3">
                   <div class="w-10 h-10 rounded-full ${fb.rating <= 3 ? 'bg-red-100' : 'bg-green-100'} flex items-center justify-center flex-shrink-0">
@@ -1551,25 +1555,35 @@
                     <div class="text-xs text-gray-400 mt-2">${new Date(fb.created_at).toLocaleString()}</div>
                   </div>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                  <a href="tel:${fb.customer_phone}" class="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors inline-flex items-center gap-1">
-                    <span>📞</span> Call
-                  </a>
-                  <button data-action="smsApology" data-name="${fb.customer_name.replace(/"/g, '&quot;')}" data-phone="${fb.customer_phone}" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1">
-                    <span>💬</span> SMS Apology
-                  </button>
-                  <button data-action="blockFeedback" data-id="${fb.id}" class="px-3 py-1.5 text-xs bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors inline-flex items-center gap-1">
+                <div class="flex flex-col gap-2 min-w-[140px]">
+                  ${calledDate ? `
+                    <div class="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg inline-flex items-center gap-1 justify-center">
+                      <span>📞</span> Called ${calledDate}
+                    </div>
+                  ` : `
+                    <a href="tel:${fb.customer_phone}" data-action="callCustomer" data-id="${fb.id}" data-phone="${fb.customer_phone}" class="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors inline-flex items-center gap-1 justify-center cursor-pointer">
+                      <span>📞</span> Call
+                    </a>
+                  `}
+                  ${smsSentDate ? `
+                    <div class="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-lg inline-flex items-center gap-1 justify-center">
+                      <span>💬</span> Sent ${smsSentDate}
+                    </div>
+                  ` : `
+                    <button data-action="smsApology" data-id="${fb.id}" data-name="${fb.customer_name.replace(/"/g, '&quot;')}" data-phone="${fb.customer_phone}" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1 justify-center">
+                      <span>💬</span> SMS Apology
+                    </button>
+                  `}
+                  <button data-action="blockFeedback" data-id="${fb.id}" class="px-3 py-1.5 text-xs bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors inline-flex items-center gap-1 justify-center">
                     <span>❌</span> Block
                   </button>
-                  ${fb.status === 'unread' ? `
-                    <button data-action="markFeedbackRead" data-id="${fb.id}" class="px-3 py-1.5 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                      Mark Read
-                    </button>
-                  ` : ''}
+                  <button data-action="markAsRead" data-id="${fb.id}" class="px-3 py-1.5 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors inline-flex items-center gap-1 justify-center">
+                    <span>✓</span> Mark as Read
+                  </button>
                 </div>
               </div>
             </div>
-          `).join('');
+          `}).join('');
         } else {
           container.innerHTML = '<p class="text-sm text-gray-500 text-center py-12">No feedback received yet</p>';
         }
@@ -2097,8 +2111,11 @@
     // SMS Apology Modal Functions
     let apologyCustomerPhone = '';
     
-    window.openApologyModal = function(name, phone) {
+    let apologyFeedbackId = null;
+    
+    window.openApologyModal = function(name, phone, feedbackId) {
       apologyCustomerPhone = phone;
+      apologyFeedbackId = feedbackId || null;
       document.getElementById('apology-customer-info').textContent = `${name} (${phone})`;
       document.getElementById('apology-message').value = `Hi ${name}, this is Shuki the owner. I saw your feedback about the repair. I am so sorry. I want to make it right. Can we chat?`;
       document.getElementById('sms-apology-modal').classList.remove('hidden');
@@ -2107,6 +2124,7 @@
     window.closeApologyModal = function() {
       document.getElementById('sms-apology-modal').classList.add('hidden');
       apologyCustomerPhone = '';
+      apologyFeedbackId = null;
     };
     
     window.sendApologySMS = async function() {
@@ -2141,7 +2159,18 @@
         
         const data = await response.json();
         if (data.success) {
+          if (apologyFeedbackId) {
+            try {
+              await fetch(`/api/feedback/${apologyFeedbackId}/sms-sent`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+              });
+            } catch (e) {
+              console.error('Error tracking SMS sent:', e);
+            }
+          }
           window.closeApologyModal();
+          loadFeedback();
           showNotification('Apology SMS sent successfully!', 'success');
         } else {
           window.closeApologyModal();
@@ -3370,8 +3399,46 @@
       }
       
       else if (action === 'smsApology') {
-        const { name, phone } = btn.dataset;
-        window.openApologyModal(name, phone);
+        const { id, name, phone } = btn.dataset;
+        window.openApologyModal(name, phone, id);
+      }
+      
+      else if (action === 'callCustomer') {
+        const { id } = btn.dataset;
+        try {
+          const response = await fetch(`/api/feedback/${id}/called`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          const data = await response.json();
+          if (data.success) {
+            loadFeedback();
+            showNotification('Call tracked successfully', 'success');
+          }
+        } catch (error) {
+          console.error('Error tracking call:', error);
+        }
+      }
+      
+      else if (action === 'markAsRead') {
+        const { id } = btn.dataset;
+        try {
+          const response = await fetch(`/api/feedback/${id}/mark-read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          const data = await response.json();
+          if (data.success) {
+            const item = document.getElementById(`feedback-item-${id}`);
+            if (item) item.remove();
+            showNotification('Feedback marked as read', 'success');
+          } else {
+            showNotification(data.error || 'Failed to mark as read', 'error');
+          }
+        } catch (error) {
+          console.error('Error marking as read:', error);
+          showNotification('Failed to mark as read', 'error');
+        }
       }
       
       else if (action === 'blockFeedback') {
