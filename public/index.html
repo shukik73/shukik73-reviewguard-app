@@ -1574,6 +1574,23 @@
       document.getElementById('feedback-avg-rating').textContent = `Avg. Rating: ${avgRating} ⭐`;
     }
     
+    function getRelativeTime(dateStr) {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      const diffWeeks = Math.floor(diffDays / 7);
+      
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins} min ago`;
+      if (diffHours < 24) return `${diffHours} hr ago`;
+      if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+      if (diffWeeks < 4) return `${diffWeeks} week${diffWeeks > 1 ? 's' : ''} ago`;
+      return date.toLocaleDateString();
+    }
+    
     function renderFeedbackList() {
       const container = document.getElementById('feedback-list');
       
@@ -1598,49 +1615,45 @@
         container.innerHTML = filtered.map(fb => {
           const smsSentDate = fb.sms_sent_at ? new Date(fb.sms_sent_at).toLocaleDateString() : null;
           const calledDate = fb.called_at ? new Date(fb.called_at).toLocaleDateString() : null;
+          const relativeTime = getRelativeTime(fb.created_at);
+          const feedbackDate = new Date(fb.created_at).toLocaleDateString();
+          const isUnread = fb.status === 'unread' && !fb.is_read;
           
           return `
-          <div class="p-4 rounded-lg ${fb.status === 'unread' && !fb.is_read ? 'bg-amber-50 border-l-4 border-l-amber-500' : 'hover:bg-gray-50'}" id="feedback-item-${fb.id}">
-            <div class="flex items-start justify-between gap-4">
-              <div class="flex gap-3">
-                <div class="w-10 h-10 rounded-full ${fb.rating <= 3 ? 'bg-red-100' : 'bg-green-100'} flex items-center justify-center flex-shrink-0">
-                  <span class="${fb.rating <= 3 ? 'text-red-600' : 'text-green-600'}">${fb.rating <= 3 ? '😞' : '😊'}</span>
+          <div class="p-3 rounded-lg border ${isUnread ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-100 hover:bg-gray-50'} mb-2" id="feedback-item-${fb.id}">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-semibold text-gray-900">${fb.customer_name}</span>
+                  <span class="text-sm">${'⭐'.repeat(fb.rating)}</span>
+                  <span class="text-xs text-gray-400">${relativeTime}</span>
+                  ${isUnread ? '<span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">New</span>' : ''}
                 </div>
-                <div>
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="font-medium text-gray-900">${fb.customer_name}</span>
-                    <span class="text-xs px-2 py-1 rounded-full ${fb.rating <= 3 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
-                      ${'⭐'.repeat(fb.rating)}
-                    </span>
-                    ${fb.status === 'unread' && !fb.is_read ? '<span class="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">New</span>' : ''}
-                  </div>
-                  <div class="text-sm text-gray-500">${fb.customer_phone}</div>
-                  ${fb.feedback_text ? `<div class="mt-2 p-3 bg-white rounded-lg border border-gray-100 text-sm text-gray-700">"${fb.feedback_text}"</div>` : ''}
-                  <div class="text-xs text-gray-400 mt-2">${new Date(fb.created_at).toLocaleString()}</div>
+                ${fb.feedback_text ? `<div class="text-sm text-gray-700 mt-1">"${fb.feedback_text}"</div>` : ''}
+                <div class="flex items-center gap-2 mt-2 text-xs text-gray-500 flex-wrap">
+                  <span class="${fb.rating <= 2 ? 'text-red-500' : 'text-yellow-500'}">●</span>
+                  <span>${fb.rating <= 2 ? 'Needs attention' : 'Moderate'}</span>
+                  <span class="text-gray-300">·</span>
+                  <span>🔧 ${feedbackDate}</span>
+                  ${fb.assigned_to ? `<span class="text-gray-300">·</span><span>Tech - ${fb.assigned_to}</span>` : ''}
+                  ${calledDate ? `<span class="text-green-600">📞 ${calledDate}</span>` : ''}
+                  ${smsSentDate ? `<span class="text-blue-600">💬 ${smsSentDate}</span>` : ''}
                 </div>
+                <div class="text-xs text-gray-400 mt-1">${fb.customer_phone}</div>
               </div>
-              <div class="flex flex-col gap-2 min-w-[160px]">
-                <div class="flex items-center gap-2">
-                  <a href="tel:${fb.customer_phone}" data-action="callCustomer" data-id="${fb.id}" data-phone="${fb.customer_phone}" class="flex-1 px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors inline-flex items-center gap-1 justify-center cursor-pointer">
-                    <span>📞</span> Call
-                  </a>
-                  ${calledDate ? `<span class="text-xs text-green-600 font-medium whitespace-nowrap">Called ${calledDate}</span>` : ''}
-                </div>
-                <div class="flex items-center gap-2">
-                  <button data-action="smsApology" data-id="${fb.id}" data-name="${fb.customer_name.replace(/"/g, '&quot;')}" data-phone="${fb.customer_phone}" class="flex-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1 justify-center">
-                    <span>💬</span> SMS Apology
-                  </button>
-                  ${smsSentDate ? `<span class="text-xs text-blue-600 font-medium whitespace-nowrap">Sent ${smsSentDate}</span>` : ''}
-                </div>
-                <button data-action="blockFeedback" data-id="${fb.id}" class="px-3 py-1.5 text-xs bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors inline-flex items-center gap-1 justify-center">
-                  <span>❌</span> Block
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <a href="tel:${fb.customer_phone}" data-action="callCustomer" data-id="${fb.id}" data-phone="${fb.customer_phone}" class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Call">
+                  <span>📞</span>
+                </a>
+                <button data-action="smsApology" data-id="${fb.id}" data-name="${fb.customer_name.replace(/"/g, '&quot;')}" data-phone="${fb.customer_phone}" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Send SMS">
+                  <span>💬</span>
                 </button>
-                <div class="flex items-center gap-2">
-                  <button data-action="markAsRead" data-id="${fb.id}" class="flex-1 px-3 py-1.5 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors inline-flex items-center gap-1 justify-center">
-                    <span>✓</span> Mark as Read
-                  </button>
-                  ${fb.is_read ? `<span class="text-xs text-gray-600 font-medium">Read</span>` : ''}
-                </div>
+                <button data-action="markAsRead" data-id="${fb.id}" class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Mark as Read">
+                  <span>✓</span>
+                </button>
+                <button data-action="blockFeedback" data-id="${fb.id}" class="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors" title="Block">
+                  <span>🚫</span>
+                </button>
               </div>
             </div>
           </div>
