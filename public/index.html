@@ -1206,6 +1206,70 @@
           </div>
         </section>
 
+        <!-- Slide-in Feedback Response Panel -->
+        <div id="feedback-panel" class="hidden fixed top-0 right-0 w-96 h-full bg-white shadow-xl border-l z-50 overflow-y-auto transform translate-x-full transition-transform duration-300">
+          <div class="p-4 border-b bg-gray-50">
+            <div class="flex justify-between items-center">
+              <h3 class="font-bold text-lg text-gray-900">Respond to Feedback</h3>
+              <button onclick="closeFeedbackPanel()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+          </div>
+          <div id="feedback-panel-content" class="p-4">
+            <!-- Customer Info -->
+            <div class="text-center mb-6">
+              <div id="fp-customer-avatar" class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-2">
+                <span class="text-2xl">😠</span>
+              </div>
+              <h4 id="fp-customer-name" class="font-bold text-gray-900 text-lg">Customer Name</h4>
+              <p id="fp-customer-phone" class="text-sm text-gray-500">+1 (555) 123-4567</p>
+              <div class="flex items-center justify-center gap-2 mt-2">
+                <span id="fp-sentiment-badge" class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">😠 Very unhappy</span>
+                <span id="fp-avg-rating" class="text-lg font-bold text-red-600">⭐ 1.2</span>
+              </div>
+            </div>
+
+            <!-- Original Feedback -->
+            <div class="mb-6">
+              <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Original Feedback</h5>
+              <div id="fp-original-feedback" class="p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
+                "No feedback text"
+              </div>
+            </div>
+
+            <!-- Response Composer -->
+            <div class="mb-6">
+              <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Compose Response</h5>
+              <select id="fp-template-select" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2" onchange="applyFpTemplate()">
+                <option value="">Select Template...</option>
+                <option value="apologetic">🙏 Apologetic</option>
+                <option value="friendly">😊 Friendly</option>
+                <option value="professional">💼 Professional</option>
+              </select>
+              <textarea id="fp-response-text" rows="4" placeholder="Type your response message..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" oninput="updateFpCharCount()"></textarea>
+              <div class="flex justify-between items-center mt-1">
+                <span class="text-xs text-gray-400"><span id="fp-char-count">0</span>/160</span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-2">
+              <button id="fp-send-btn" class="w-full py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                <span>💬</span> Send SMS Response
+              </button>
+              <div class="grid grid-cols-2 gap-2">
+                <button id="fp-call-btn" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center justify-center gap-1">
+                  <span>📞</span> Call
+                </button>
+                <button id="fp-resolve-btn" class="px-3 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-700 flex items-center justify-center gap-1">
+                  <span>✓</span> Mark Resolved
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Overlay for slide-in panel -->
+        <div id="feedback-panel-overlay" class="hidden fixed inset-0 bg-black bg-opacity-30 z-40" onclick="closeFeedbackPanel()"></div>
+
         <section id="settings" class="section hidden">
           <div class="grid lg:grid-cols-2 gap-6">
             <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
@@ -1937,7 +2001,9 @@
       console.log('[FeedbackPanel] Opening for phone:', phone);
       console.log('[FeedbackPanel] allFeedback count:', allFeedback.length);
       
-      const panel = document.getElementById('feedback-context-panel');
+      const panel = document.getElementById('feedback-panel');
+      const overlay = document.getElementById('feedback-panel-overlay');
+      
       if (!panel) {
         console.error('[FeedbackPanel] ERROR: Panel element not found!');
         showNotification('Error: Panel not found', 'error');
@@ -1970,50 +2036,35 @@
         sentiment = { emoji: '😐', text: 'Neutral', avatarBg: 'bg-yellow-100', textColor: 'text-yellow-600', badgeBg: 'bg-yellow-100', badgeText: 'text-yellow-700' };
       }
       
-      document.getElementById('panel-customer-name').textContent = latest.customer_name;
-      document.getElementById('panel-customer-phone').textContent = phone;
-      document.getElementById('panel-avg-rating').textContent = `⭐ ${avgRating}`;
-      document.getElementById('panel-avg-rating').className = `text-lg font-bold ${sentiment.textColor}`;
+      // Update slide-in panel elements
+      document.getElementById('fp-customer-name').textContent = latest.customer_name;
+      document.getElementById('fp-customer-phone').textContent = phone;
+      document.getElementById('fp-avg-rating').textContent = `⭐ ${avgRating}`;
+      document.getElementById('fp-avg-rating').className = `text-lg font-bold ${sentiment.textColor}`;
       
-      const avatarEl = document.getElementById('panel-customer-avatar');
+      const avatarEl = document.getElementById('fp-customer-avatar');
       avatarEl.className = `w-16 h-16 rounded-full ${sentiment.avatarBg} flex items-center justify-center mx-auto mb-2`;
       avatarEl.innerHTML = `<span class="text-2xl">${sentiment.emoji}</span>`;
       
-      const badgeEl = document.getElementById('panel-sentiment-badge');
+      const badgeEl = document.getElementById('fp-sentiment-badge');
       badgeEl.className = `px-3 py-1 rounded-full text-sm font-medium ${sentiment.badgeBg} ${sentiment.badgeText}`;
       badgeEl.textContent = `${sentiment.emoji} ${sentiment.text}`;
       
-      document.getElementById('panel-feedback-count').textContent = customerFeedback.length;
+      // Show original feedback
+      document.getElementById('fp-original-feedback').textContent = latest.feedback_text ? `"${latest.feedback_text}"` : 'No feedback text provided';
       
-      const historyEl = document.getElementById('panel-feedback-history');
-      historyEl.classList.add('hidden');
-      historyEl.innerHTML = customerFeedback.map(f => {
-        const date = new Date(f.created_at).toLocaleDateString();
-        const status = f.is_read || f.sms_sent_at || f.called_at ? 'Handled' : 'Unanswered';
-        const statusClass = status === 'Handled' ? 'text-green-600' : 'text-orange-600';
-        return `
-          <div class="p-2 bg-gray-50 rounded-lg text-sm">
-            <div class="flex items-center justify-between mb-1">
-              <span class="font-medium">${'⭐'.repeat(f.rating)}</span>
-              <span class="text-xs ${statusClass}">${status}</span>
-            </div>
-            ${f.feedback_text ? `<p class="text-gray-600 text-xs mb-1">"${f.feedback_text}"</p>` : ''}
-            <p class="text-xs text-gray-400">${date}</p>
-          </div>
-        `;
-      }).join('');
-      
-      document.getElementById('panel-call-btn').onclick = () => {
+      // Setup button handlers
+      document.getElementById('fp-call-btn').onclick = () => {
         window.location.href = `tel:${phone}`;
         trackFeedbackCall(latest.id);
       };
-      document.getElementById('panel-send-sms-btn').onclick = async () => {
-        const message = document.getElementById('panel-response-text').value.trim();
+      
+      document.getElementById('fp-send-btn').onclick = async () => {
+        const message = document.getElementById('fp-response-text').value.trim();
         if (!message) {
           showNotification('Please enter a message', 'error');
           return;
         }
-        updateDeliveryStatus('sending', null);
         try {
           const response = await fetch('/api/send-sms', {
             method: 'POST',
@@ -2029,43 +2080,80 @@
           if (data.success) {
             showNotification('SMS sent successfully!', 'success');
             trackFeedbackSms(latest.id);
-            document.getElementById('panel-response-text').value = '';
-            updatePanelCharCount();
-            updateDeliveryStatus('sent', new Date());
+            document.getElementById('fp-response-text').value = '';
+            updateFpCharCount();
+            closeFeedbackPanel();
+            loadFeedback();
           } else {
             showNotification(data.error || 'Failed to send SMS', 'error');
-            updateDeliveryStatus('failed', new Date());
           }
         } catch (e) {
           showNotification('Failed to send SMS', 'error');
-          updateDeliveryStatus('failed', new Date());
         }
       };
-      document.getElementById('panel-resolve-btn').onclick = () => {
+      
+      document.getElementById('fp-resolve-btn').onclick = () => {
         markFeedbackRead(latest.id);
         closeFeedbackPanel();
       };
       
-      document.getElementById('panel-response-text').value = '';
-      document.getElementById('panel-template-select').value = '';
-      updatePanelCharCount();
+      // Reset form
+      document.getElementById('fp-response-text').value = '';
+      document.getElementById('fp-template-select').value = '';
+      updateFpCharCount();
       
-      // Initialize delivery status based on sms_sent_at
-      if (latest.sms_sent_at) {
-        updateDeliveryStatus('sent', latest.sms_sent_at);
-      } else {
-        updateDeliveryStatus('pending', null);
-      }
-      
-      document.getElementById('feedback-context-panel').classList.remove('hidden');
+      // Show panel with slide animation
+      panel.classList.remove('hidden');
+      if (overlay) overlay.classList.remove('hidden');
+      setTimeout(() => {
+        panel.classList.remove('translate-x-full');
+      }, 10);
     }
     window.openFeedbackPanel = openFeedbackPanel;
     
     function closeFeedbackPanel() {
-      document.getElementById('feedback-context-panel').classList.add('hidden');
+      const panel = document.getElementById('feedback-panel');
+      const overlay = document.getElementById('feedback-panel-overlay');
+      if (panel) {
+        panel.classList.add('translate-x-full');
+        setTimeout(() => {
+          panel.classList.add('hidden');
+        }, 300);
+      }
+      if (overlay) {
+        overlay.classList.add('hidden');
+      }
       selectedFeedbackCustomer = null;
     }
     window.closeFeedbackPanel = closeFeedbackPanel;
+    
+    // Template functions for slide-in panel
+    const fpTemplates = {
+      apologetic: "Hi {name}, we're truly sorry about your recent experience. We take all feedback seriously and would love the chance to make it right. Please call us at your convenience.",
+      friendly: "Hi {name}! Thanks so much for your feedback. We really appreciate you taking the time to let us know. Is there anything we can do to help?",
+      professional: "Dear {name}, thank you for your feedback. We value your input and are committed to improving our service. Please contact us if you have any further concerns."
+    };
+    
+    function applyFpTemplate() {
+      const select = document.getElementById('fp-template-select');
+      const textarea = document.getElementById('fp-response-text');
+      const template = fpTemplates[select.value];
+      if (template && selectedFeedbackCustomer) {
+        const name = selectedFeedbackCustomer.feedback[0]?.customer_name || 'there';
+        textarea.value = template.replace('{name}', name);
+        updateFpCharCount();
+      }
+    }
+    window.applyFpTemplate = applyFpTemplate;
+    
+    function updateFpCharCount() {
+      const textarea = document.getElementById('fp-response-text');
+      const countEl = document.getElementById('fp-char-count');
+      if (textarea && countEl) {
+        countEl.textContent = textarea.value.length;
+      }
+    }
+    window.updateFpCharCount = updateFpCharCount;
     
     function togglePanelHistory() {
       const historyEl = document.getElementById('panel-feedback-history');
