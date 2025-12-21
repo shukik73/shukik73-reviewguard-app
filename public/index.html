@@ -1655,18 +1655,19 @@
               <button onclick="toggleCustomerHistory('${fb.customer_phone}')" class="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700">
                 <span>⏱</span>
                 <span>${customerMessages.length} messages from this customer</span>
-                <span>•••</span>
+                <span>▼</span>
               </button>
-              <div id="history-${phoneKey}" class="hidden mt-2 pl-4 border-l-2 border-gray-200 space-y-2">
-                ${otherMessages.map(h => {
+              <div id="history-${phoneKey}" class="hidden mt-2 pl-4 border-l-2 border-gray-200">
+                ${otherMessages.map((h, idx) => {
                   const hDate = new Date(h.created_at).toLocaleDateString();
                   const hUnanswered = !h.sms_sent_at && !h.called_at && !h.is_read;
+                  const feedbackPreview = h.feedback_text ? h.feedback_text.substring(0, 30) + (h.feedback_text.length > 30 ? '...' : '') : 'No comment';
                   return `
-                    <div class="text-xs text-gray-600 py-1">
+                    <div class="text-xs text-gray-600 py-1.5 ${idx > 0 ? 'border-t border-gray-100' : ''}">
                       <div class="flex items-center gap-2">
-                        <span>└─</span>
-                        <span class="truncate max-w-[200px]">"${(h.feedback_text || 'No comment').substring(0, 30)}${(h.feedback_text || '').length > 30 ? '...' : ''}"</span>
-                        ${hUnanswered ? '<span class="text-orange-500">[Unanswered]</span>' : '<span class="text-green-500">[Handled]</span>'}
+                        <span class="text-gray-400">└─</span>
+                        <span class="text-gray-700">"${feedbackPreview}"</span>
+                        ${hUnanswered ? '<span class="text-orange-500 font-medium">[Unanswered]</span>' : '<span class="text-green-600 font-medium">[Handled]</span>'}
                       </div>
                       <div class="pl-6 text-gray-400 mt-0.5">🔧 ${hDate}${h.assigned_to ? ` · Tech - ${h.assigned_to}` : ''}</div>
                     </div>
