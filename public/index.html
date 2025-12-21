@@ -1098,8 +1098,11 @@
                 </div>
                 
                 <div class="border-t border-gray-100 pt-4">
-                  <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Feedback History</h5>
-                  <div id="panel-feedback-history" class="space-y-3 max-h-48 overflow-y-auto">
+                  <div class="flex items-center justify-between mb-3">
+                    <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide">Feedback (<span id="panel-feedback-count">1</span>)</h5>
+                    <button onclick="togglePanelHistory()" class="text-xs text-blue-600 hover:text-blue-800">History ▶</button>
+                  </div>
+                  <div id="panel-feedback-history" class="space-y-3 max-h-48 overflow-y-auto hidden">
                   </div>
                 </div>
                 
@@ -1685,7 +1688,10 @@
       badgeEl.className = `px-3 py-1 rounded-full text-sm font-medium bg-${sentiment.color}-100 text-${sentiment.color}-700`;
       badgeEl.textContent = `${sentiment.emoji} ${sentiment.text}`;
       
+      document.getElementById('panel-feedback-count').textContent = customerFeedback.length;
+      
       const historyEl = document.getElementById('panel-feedback-history');
+      historyEl.classList.add('hidden');
       historyEl.innerHTML = customerFeedback.map(f => {
         const date = new Date(f.created_at).toLocaleDateString();
         const status = f.is_read || f.sms_sent_at || f.called_at ? 'Handled' : 'Unanswered';
@@ -1726,6 +1732,19 @@
       selectedFeedbackCustomer = null;
     }
     window.closeFeedbackPanel = closeFeedbackPanel;
+    
+    function togglePanelHistory() {
+      const historyEl = document.getElementById('panel-feedback-history');
+      const btn = event.target;
+      if (historyEl.classList.contains('hidden')) {
+        historyEl.classList.remove('hidden');
+        btn.textContent = 'History ▼';
+      } else {
+        historyEl.classList.add('hidden');
+        btn.textContent = 'History ▶';
+      }
+    }
+    window.togglePanelHistory = togglePanelHistory;
     
     async function trackFeedbackCall(id) {
       try {
