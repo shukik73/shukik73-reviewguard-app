@@ -1107,13 +1107,27 @@
                 </div>
                 
                 <div class="border-t border-gray-100 pt-4 mt-4">
+                  <div class="flex items-center justify-between mb-2">
+                    <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide">Respond via SMS</h5>
+                    <span class="text-xs text-gray-400"><span id="panel-char-count">0</span>/160</span>
+                  </div>
+                  <select id="panel-template-select" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2" onchange="applyPanelTemplate()">
+                    <option value="">Select template...</option>
+                    <option value="apologetic">Apologetic</option>
+                    <option value="followup">Follow-up</option>
+                    <option value="resolution">Resolution offer</option>
+                  </select>
+                  <textarea id="panel-response-text" rows="3" placeholder="Type your response..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" oninput="updatePanelCharCount()"></textarea>
+                </div>
+                
+                <div class="border-t border-gray-100 pt-4 mt-4">
                   <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Quick Actions</h5>
                   <div class="grid grid-cols-2 gap-2">
                     <button id="panel-call-btn" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center justify-center gap-1">
                       <span>📞</span> Call
                     </button>
-                    <button id="panel-sms-btn" class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center justify-center gap-1">
-                      <span>💬</span> SMS
+                    <button id="panel-send-sms-btn" class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center justify-center gap-1">
+                      <span>💬</span> Send SMS
                     </button>
                     <button id="panel-resolve-btn" class="px-3 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-700 flex items-center justify-center gap-1 col-span-2">
                       <span>✓</span> Mark Resolved
@@ -1712,16 +1726,44 @@
         window.location.href = `tel:${phone}`;
         trackFeedbackCall(latest.id);
       };
-      document.getElementById('panel-sms-btn').onclick = () => {
-        document.getElementById('customer-name').value = latest.customer_name;
-        document.getElementById('customer-phone').value = phone;
-        showSection('send-sms');
-        trackFeedbackSms(latest.id);
+      document.getElementById('panel-send-sms-btn').onclick = async () => {
+        const message = document.getElementById('panel-response-text').value.trim();
+        if (!message) {
+          showNotification('Please enter a message', 'error');
+          return;
+        }
+        try {
+          const response = await fetch('/api/send-sms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              customerName: latest.customer_name, 
+              customerPhone: phone, 
+              message,
+              tcpaConsent: true
+            })
+          });
+          const data = await response.json();
+          if (data.success) {
+            showNotification('SMS sent successfully!', 'success');
+            trackFeedbackSms(latest.id);
+            document.getElementById('panel-response-text').value = '';
+            updatePanelCharCount();
+          } else {
+            showNotification(data.error || 'Failed to send SMS', 'error');
+          }
+        } catch (e) {
+          showNotification('Failed to send SMS', 'error');
+        }
       };
       document.getElementById('panel-resolve-btn').onclick = () => {
         markFeedbackRead(latest.id);
         closeFeedbackPanel();
       };
+      
+      document.getElementById('panel-response-text').value = '';
+      document.getElementById('panel-template-select').value = '';
+      updatePanelCharCount();
       
       document.getElementById('feedback-context-panel').classList.remove('hidden');
     }
@@ -1745,6 +1787,32 @@
       }
     }
     window.togglePanelHistory = togglePanelHistory;
+    
+    const panelTemplates = {
+      apologetic: "Hi {name}, we're truly sorry about your recent experience. We take all feedback seriously and would love the chance to make it right. Please call us at your convenience.",
+      followup: "Hi {name}, thank you for your feedback. We wanted to follow up and see if there's anything we can do to improve your experience with us.",
+      resolution: "Hi {name}, we've reviewed your feedback and would like to offer a solution. Please contact us so we can discuss how to resolve this for you."
+    };
+    
+    function applyPanelTemplate() {
+      const select = document.getElementById('panel-template-select');
+      const textarea = document.getElementById('panel-response-text');
+      const template = panelTemplates[select.value];
+      if (template && selectedFeedbackCustomer) {
+        const name = selectedFeedbackCustomer.feedback[0]?.customer_name || 'there';
+        textarea.value = template.replace('{name}', name);
+        updatePanelCharCount();
+      }
+    }
+    window.applyPanelTemplate = applyPanelTemplate;
+    
+    function updatePanelCharCount() {
+      const textarea = document.getElementById('panel-response-text');
+      const countEl = document.getElementById('panel-char-count');
+      countEl.textContent = textarea.value.length;
+      countEl.className = textarea.value.length > 160 ? 'text-red-600 font-bold' : '';
+    }
+    window.updatePanelCharCount = updatePanelCharCount;
     
     async function trackFeedbackCall(id) {
       try {
