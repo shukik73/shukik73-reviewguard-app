@@ -1591,6 +1591,26 @@
       return date.toLocaleDateString();
     }
     
+    function groupFeedbackByCustomer(feedbackList) {
+      const grouped = {};
+      feedbackList.forEach(fb => {
+        const key = fb.customer_phone;
+        if (!grouped[key]) {
+          grouped[key] = [];
+        }
+        grouped[key].push(fb);
+      });
+      return grouped;
+    }
+    
+    function toggleCustomerHistory(phone) {
+      const historyEl = document.getElementById(`history-${phone.replace(/[^a-zA-Z0-9]/g, '')}`);
+      if (historyEl) {
+        historyEl.classList.toggle('hidden');
+      }
+    }
+    window.toggleCustomerHistory = toggleCustomerHistory;
+    
     function renderFeedbackList() {
       const container = document.getElementById('feedback-list');
       
@@ -1612,12 +1632,49 @@
       }
       
       if (filtered.length > 0) {
+        const grouped = groupFeedbackByCustomer(filtered);
+        const processedPhones = new Set();
+        
         container.innerHTML = filtered.map(fb => {
           const smsSentDate = fb.sms_sent_at ? new Date(fb.sms_sent_at).toLocaleDateString() : null;
           const calledDate = fb.called_at ? new Date(fb.called_at).toLocaleDateString() : null;
           const relativeTime = getRelativeTime(fb.created_at);
           const feedbackDate = new Date(fb.created_at).toLocaleDateString();
           const isUnread = fb.status === 'unread' && !fb.is_read;
+          const isUnanswered = !fb.sms_sent_at && !fb.called_at && !fb.is_read;
+          
+          const customerMessages = grouped[fb.customer_phone] || [];
+          const otherMessages = customerMessages.filter(m => m.id !== fb.id);
+          const hasHistory = otherMessages.length > 0;
+          const phoneKey = fb.customer_phone.replace(/[^a-zA-Z0-9]/g, '');
+          const isFirstForPhone = !processedPhones.has(fb.customer_phone);
+          if (isFirstForPhone) processedPhones.add(fb.customer_phone);
+          
+          const historyHtml = hasHistory && isFirstForPhone ? `
+            <div class="mt-2 pt-2 border-t border-gray-100">
+              <button onclick="toggleCustomerHistory('${fb.customer_phone}')" class="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700">
+                <span>⏱</span>
+                <span>${customerMessages.length} messages from this customer</span>
+                <span>•••</span>
+              </button>
+              <div id="history-${phoneKey}" class="hidden mt-2 pl-4 border-l-2 border-gray-200 space-y-2">
+                ${otherMessages.map(h => {
+                  const hDate = new Date(h.created_at).toLocaleDateString();
+                  const hUnanswered = !h.sms_sent_at && !h.called_at && !h.is_read;
+                  return `
+                    <div class="text-xs text-gray-600 py-1">
+                      <div class="flex items-center gap-2">
+                        <span>└─</span>
+                        <span class="truncate max-w-[200px]">"${(h.feedback_text || 'No comment').substring(0, 30)}${(h.feedback_text || '').length > 30 ? '...' : ''}"</span>
+                        ${hUnanswered ? '<span class="text-orange-500">[Unanswered]</span>' : '<span class="text-green-500">[Handled]</span>'}
+                      </div>
+                      <div class="pl-6 text-gray-400 mt-0.5">🔧 ${hDate}${h.assigned_to ? ` · Tech - ${h.assigned_to}` : ''}</div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          ` : '';
           
           return `
           <div class="p-3 rounded-lg border ${isUnread ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-100 hover:bg-gray-50'} mb-2" id="feedback-item-${fb.id}">
@@ -1628,6 +1685,7 @@
                   <span class="text-sm">${'⭐'.repeat(fb.rating)}</span>
                   <span class="text-xs text-gray-400">${relativeTime}</span>
                   ${isUnread ? '<span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">New</span>' : ''}
+                  ${isUnanswered ? '<span class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">Unanswered</span>' : ''}
                 </div>
                 ${fb.feedback_text ? `<div class="text-sm text-gray-700 mt-1">"${fb.feedback_text}"</div>` : ''}
                 <div class="flex items-center gap-2 mt-2 text-xs text-gray-500 flex-wrap">
@@ -1640,6 +1698,7 @@
                   ${smsSentDate ? `<span class="text-blue-600">💬 ${smsSentDate}</span>` : ''}
                 </div>
                 <div class="text-xs text-gray-400 mt-1">${fb.customer_phone}</div>
+                ${historyHtml}
               </div>
               <div class="flex items-center gap-1 flex-shrink-0">
                 <a href="tel:${fb.customer_phone}" data-action="callCustomer" data-id="${fb.id}" data-phone="${fb.customer_phone}" class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Call">
