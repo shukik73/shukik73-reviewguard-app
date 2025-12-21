@@ -1152,6 +1152,22 @@
                     </button>
                   </div>
                 </div>
+                
+                <div class="border-t border-gray-100 pt-4 mt-4">
+                  <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Delivery Status</h5>
+                  <div id="panel-delivery-status" class="space-y-2">
+                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                      <div class="flex items-center gap-2">
+                        <span id="delivery-status-icon" class="text-gray-400">📤</span>
+                        <span id="delivery-status-text" class="text-sm text-gray-600">No SMS sent yet</span>
+                      </div>
+                      <span id="delivery-status-badge" class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Pending</span>
+                    </div>
+                    <div id="delivery-timestamp" class="text-xs text-gray-400 hidden">
+                      Last attempt: <span id="delivery-time"></span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1750,6 +1766,7 @@
           showNotification('Please enter a message', 'error');
           return;
         }
+        updateDeliveryStatus('sending', null);
         try {
           const response = await fetch('/api/send-sms', {
             method: 'POST',
@@ -1767,11 +1784,14 @@
             trackFeedbackSms(latest.id);
             document.getElementById('panel-response-text').value = '';
             updatePanelCharCount();
+            updateDeliveryStatus('sent', new Date());
           } else {
             showNotification(data.error || 'Failed to send SMS', 'error');
+            updateDeliveryStatus('failed', new Date());
           }
         } catch (e) {
           showNotification('Failed to send SMS', 'error');
+          updateDeliveryStatus('failed', new Date());
         }
       };
       document.getElementById('panel-resolve-btn').onclick = () => {
@@ -1782,6 +1802,13 @@
       document.getElementById('panel-response-text').value = '';
       document.getElementById('panel-template-select').value = '';
       updatePanelCharCount();
+      
+      // Initialize delivery status based on sms_sent_at
+      if (latest.sms_sent_at) {
+        updateDeliveryStatus('sent', latest.sms_sent_at);
+      } else {
+        updateDeliveryStatus('pending', null);
+      }
       
       document.getElementById('feedback-context-panel').classList.remove('hidden');
     }
@@ -1849,6 +1876,36 @@
       }
     }
     window.applySuggestion = applySuggestion;
+    
+    function updateDeliveryStatus(status, timestamp) {
+      const iconEl = document.getElementById('delivery-status-icon');
+      const textEl = document.getElementById('delivery-status-text');
+      const badgeEl = document.getElementById('delivery-status-badge');
+      const timestampEl = document.getElementById('delivery-timestamp');
+      const timeEl = document.getElementById('delivery-time');
+      
+      const statusConfig = {
+        pending: { icon: '📤', text: 'No SMS sent yet', badge: 'Pending', badgeClass: 'bg-gray-100 text-gray-500' },
+        sending: { icon: '⏳', text: 'Sending...', badge: 'Sending', badgeClass: 'bg-yellow-100 text-yellow-700' },
+        sent: { icon: '✅', text: 'SMS sent successfully', badge: 'Sent', badgeClass: 'bg-green-100 text-green-700' },
+        delivered: { icon: '📬', text: 'Message delivered', badge: 'Delivered', badgeClass: 'bg-blue-100 text-blue-700' },
+        failed: { icon: '❌', text: 'Failed to send', badge: 'Failed', badgeClass: 'bg-red-100 text-red-700' }
+      };
+      
+      const config = statusConfig[status] || statusConfig.pending;
+      iconEl.textContent = config.icon;
+      textEl.textContent = config.text;
+      badgeEl.textContent = config.badge;
+      badgeEl.className = `px-2 py-0.5 rounded-full text-xs font-medium ${config.badgeClass}`;
+      
+      if (timestamp) {
+        timestampEl.classList.remove('hidden');
+        timeEl.textContent = new Date(timestamp).toLocaleString();
+      } else {
+        timestampEl.classList.add('hidden');
+      }
+    }
+    window.updateDeliveryStatus = updateDeliveryStatus;
     
     async function trackFeedbackCall(id) {
       try {
