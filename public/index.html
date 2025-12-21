@@ -709,49 +709,38 @@
                 <h3 class="font-semibold text-gray-900">Message History</h3>
                 <p class="text-sm text-gray-500">Track all sent messages and follow-ups</p>
               </div>
-              <select id="history-filter" class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent">
-                <option value="all">All Messages</option>
-                <option value="clicked">Clicked Links</option>
-                <option value="reviewed">With Feedback</option>
-                <option value="needs-followup">Needs Follow-up</option>
-              </select>
+              <div class="flex items-center gap-3">
+                <button id="clear-history-filters" class="hidden px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                  ✕ Clear Filters
+                </button>
+                <select id="history-filter" class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+                  <option value="all">All Messages</option>
+                  <option value="clicked">Clicked Links</option>
+                  <option value="reviewed">With Feedback</option>
+                  <option value="needs-followup">Needs Follow-up</option>
+                </select>
+              </div>
             </div>
-            <div class="px-5 py-4 bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-100">
-              <div class="flex flex-wrap items-center gap-3 mb-3">
-                <span class="text-xs text-gray-500 font-semibold uppercase tracking-wide">Message Types:</span>
+            <div class="px-5 py-3 bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-100">
+              <div class="flex flex-wrap items-center gap-3">
+                <span class="text-xs text-gray-500 font-semibold uppercase tracking-wide">Legend:</span>
                 <div class="flex flex-wrap gap-2">
                   <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
                     <span class="w-1.5 h-1.5 bg-purple-500 rounded-full"></span> Review
                   </span>
                   <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Ready
+                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Clicked
                   </span>
-                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
-                    <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span> Follow-up
-                  </span>
-                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                    <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span> Reminder
-                  </span>
-                </div>
-              </div>
-              <div class="flex flex-wrap items-center gap-3 mb-3">
-                <span class="text-xs text-gray-500 font-semibold uppercase tracking-wide">Link Status:</span>
-                <div class="flex flex-wrap gap-2">
-                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
-                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                    Clicked - Customer opened review link
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                    <span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span> Review Posted
                   </span>
                   <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
-                    <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span> Not Clicked - Awaiting action
+                    <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span> Sent
                   </span>
                 </div>
               </div>
-              <p class="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100 flex items-center gap-2">
-                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span><strong>Tip:</strong> If a customer clicked the link but hasn't posted a review yet, you can send them a friendly reminder!</span>
-              </p>
             </div>
-            <div id="history-list" class="divide-y divide-gray-50 max-h-[500px] overflow-y-auto p-2">
+            <div id="history-list" class="max-h-[500px] overflow-y-auto p-2">
               <div class="text-center py-12 text-gray-500">Loading...</div>
             </div>
           </div>
@@ -1583,6 +1572,41 @@
       return labels[type] || type;
     }
 
+    function getDateGroup(dateStr) {
+      const date = new Date(dateStr);
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const isToday = date.toDateString() === today.toDateString();
+      const isYesterday = date.toDateString() === yesterday.toDateString();
+      
+      if (isToday) return 'Today';
+      if (isYesterday) return 'Yesterday';
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function groupMessagesByDate(messages) {
+      const groups = {};
+      messages.forEach(msg => {
+        const group = getDateGroup(msg.sent_at);
+        if (!groups[group]) groups[group] = [];
+        groups[group].push(msg);
+      });
+      
+      // Sort groups chronologically (newest first)
+      const sortedGroups = {};
+      const sortedKeys = Object.keys(groups).sort((a, b) => {
+        if (a === 'Today') return -1;
+        if (b === 'Today') return 1;
+        if (a === 'Yesterday') return -1;
+        if (b === 'Yesterday') return 1;
+        return new Date(b) - new Date(a);
+      });
+      sortedKeys.forEach(key => { sortedGroups[key] = groups[key]; });
+      return sortedGroups;
+    }
+
     async function loadHistory() {
       try {
         const response = await fetch('/api/messages');
@@ -1590,8 +1614,17 @@
         
         const container = document.getElementById('history-list');
         const filterValue = document.getElementById('history-filter').value;
+        const clearBtn = document.getElementById('clear-history-filters');
+        
+        // Show/hide clear filters button
+        if (filterValue !== 'all') {
+          clearBtn.classList.remove('hidden');
+        } else {
+          clearBtn.classList.add('hidden');
+        }
         
         let messages = data.success && data.messages ? data.messages : [];
+        const totalMessages = messages.length;
         
         if (filterValue === 'clicked') {
           messages = messages.filter(m => m.review_link_clicked_at);
@@ -1602,51 +1635,121 @@
         }
         
         if (messages.length > 0) {
-          container.innerHTML = messages.map(msg => {
-            const deviceDisplay = msg.customer_device ? `<span class="text-xs rounded-full bg-slate-100 text-slate-600 px-2 py-0.5">${msg.customer_device}</span>` : '';
+          const groupedMessages = groupMessagesByDate(messages);
+          let html = '';
+          
+          for (const [dateLabel, msgs] of Object.entries(groupedMessages)) {
+            html += `<div class="text-sm font-medium text-gray-500 py-2 px-3 border-b border-gray-100 bg-gray-50 sticky top-0">${dateLabel}</div>`;
+            html += '<div class="divide-y divide-gray-50">';
             
-            // Status badge logic: Review Posted > Clicked > Sent
-            let statusBadge = '<span class="text-xs rounded-full bg-gray-100 text-gray-600 px-2 py-0.5">Sent</span>';
-            if (msg.review_received_at || msg.feedback_rating) {
-              statusBadge = '<span class="text-xs rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 font-medium">Review Posted</span>';
-            } else if (msg.review_link_clicked_at) {
-              statusBadge = '<span class="text-xs rounded-full bg-green-100 text-green-700 px-2 py-0.5 font-medium">Clicked</span>';
-            }
-            
-            return `
-            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-              <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                <span class="text-gray-600">${msg.customer_name.charAt(0).toUpperCase()}</span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-medium text-gray-900">${msg.customer_name}</span>
-                  ${deviceDisplay}
-                  <span class="text-xs rounded-full bg-indigo-50 text-indigo-700 px-2 py-0.5">${getMessageTypeLabel(msg.message_type)}</span>
-                  ${statusBadge}
+            msgs.forEach(msg => {
+              const deviceDisplay = msg.customer_device ? `<span class="text-xs rounded-full bg-slate-100 text-slate-600 px-2 py-0.5">${msg.customer_device}</span>` : '';
+              
+              // Status badge logic: Review Posted > Clicked > Sent
+              let statusBadge = '<span class="text-xs rounded-full bg-gray-100 text-gray-600 px-2 py-0.5">Sent</span>';
+              if (msg.review_received_at || msg.feedback_rating) {
+                statusBadge = '<span class="text-xs rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 font-medium">Review Posted</span>';
+              } else if (msg.review_link_clicked_at) {
+                statusBadge = '<span class="text-xs rounded-full bg-green-100 text-green-700 px-2 py-0.5 font-medium">Clicked</span>';
+              }
+              
+              // Determine hover action based on message state
+              let hoverAction = '';
+              if (msg.message_type === 'apology') {
+                // Apology message - show View Feedback button
+                hoverAction = `
+                  <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                    <button data-action="viewFeedback" data-id="${msg.id}" class="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition-colors">
+                      📋 View Feedback
+                    </button>
+                  </div>`;
+              } else if (msg.review_link_clicked_at && !msg.feedback_rating && !msg.follow_up_sent_at) {
+                // Clicked but no review - show Send Reminder
+                hoverAction = `
+                  <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                    <button data-action="sendReminder" data-id="${msg.id}" data-name="${msg.customer_name.replace(/"/g, '&quot;')}" data-phone="${msg.customer_phone}" data-link="${msg.review_link || ''}" class="text-xs px-2 py-1 bg-purple-100 text-purple-600 rounded hover:bg-purple-200 transition-colors">
+                      📩 Send Reminder
+                    </button>
+                  </div>`;
+              } else if (!msg.review_link_clicked_at && msg.message_type !== 'apology') {
+                // Not clicked - show Resend button
+                hoverAction = `
+                  <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                    <button data-action="resendMessage" data-id="${msg.id}" data-name="${msg.customer_name.replace(/"/g, '&quot;')}" data-phone="${msg.customer_phone}" class="text-xs px-2 py-1 bg-purple-100 text-purple-600 rounded hover:bg-purple-200 transition-colors">
+                      🔄 Resend
+                    </button>
+                  </div>`;
+              }
+              
+              html += `
+              <div class="group flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  <span class="text-gray-600">${msg.customer_name.charAt(0).toUpperCase()}</span>
                 </div>
-                <div class="text-sm text-gray-500">${msg.customer_phone} • ${new Date(msg.sent_at).toLocaleString()}</div>
-              </div>
-              ${msg.review_link_clicked_at && !msg.feedback_rating && !msg.follow_up_sent_at ? `
-                <button data-action="sendReminder" data-id="${msg.id}" data-name="${msg.customer_name.replace(/"/g, '&quot;')}" data-phone="${msg.customer_phone}" data-link="${msg.review_link || ''}" class="px-3 py-1.5 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">
-                  Send Reminder
-                </button>
-              ` : ''}
-            </div>
-          `;}).join('');
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-medium text-gray-900">${msg.customer_name}</span>
+                    ${deviceDisplay}
+                    <span class="text-xs rounded-full bg-indigo-50 text-indigo-700 px-2 py-0.5">${getMessageTypeLabel(msg.message_type)}</span>
+                    ${statusBadge}
+                  </div>
+                  <div class="text-sm text-gray-500">${msg.customer_phone} • ${getTimeAgo(msg.sent_at)}</div>
+                </div>
+                ${hoverAction}
+              </div>`;
+            });
+            html += '</div>';
+          }
+          
+          container.innerHTML = html;
         } else {
-          const filterLabels = {
-            all: 'No messages in history',
-            clicked: 'No messages with clicked links',
-            reviewed: 'No messages with feedback received',
-            'needs-followup': 'No messages need follow-up'
-          };
-          container.innerHTML = `<p class="text-sm text-gray-500 text-center py-12">${filterLabels[filterValue]}</p>`;
+          // Empty states with helpful messages
+          let emptyState = '';
+          if (totalMessages === 0) {
+            emptyState = `
+              <div class="text-center py-16 px-4">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                  <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                  </svg>
+                </div>
+                <h4 class="font-medium text-gray-900 mb-1">No messages sent yet</h4>
+                <p class="text-sm text-gray-500">Send your first review request to get started!</p>
+              </div>`;
+          } else if (filterValue === 'needs-followup') {
+            emptyState = `
+              <div class="text-center py-16 px-4">
+                <div class="text-4xl mb-3">🎉</div>
+                <h4 class="font-medium text-gray-900 mb-1">All caught up!</h4>
+                <p class="text-sm text-gray-500">No follow-ups needed right now.</p>
+              </div>`;
+          } else {
+            emptyState = `
+              <div class="text-center py-16 px-4">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                  <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                  </svg>
+                </div>
+                <h4 class="font-medium text-gray-900 mb-1">No messages match these filters</h4>
+                <p class="text-sm text-gray-500 mb-3">Try adjusting your selection or clear filters to see all messages.</p>
+                <button onclick="document.getElementById('history-filter').value='all'; loadHistory();" class="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                  Clear Filters
+                </button>
+              </div>`;
+          }
+          container.innerHTML = emptyState;
         }
       } catch (error) {
         console.error('Error loading history:', error);
       }
     }
+
+    // Clear filters button handler
+    document.getElementById('clear-history-filters').addEventListener('click', function() {
+      document.getElementById('history-filter').value = 'all';
+      loadHistory();
+    });
 
     document.getElementById('history-filter').addEventListener('change', loadHistory);
 
@@ -3967,6 +4070,22 @@
           console.error('Error sending reminder:', error);
           showNotification('Failed to send reminder', 'error');
         }
+      }
+      
+      else if (action === 'resendMessage') {
+        const { name, phone } = btn.dataset;
+        if (!confirm(`Resend review request to ${name}?`)) return;
+        // Load customer data and navigate to Send SMS
+        document.getElementById('customer-name').value = name;
+        document.getElementById('customer-phone').value = phone;
+        showSection('send-sms');
+        showNotification('Customer loaded - ready to resend!', 'success');
+      }
+      
+      else if (action === 'viewFeedback') {
+        // Navigate to Feedback section
+        showSection('feedback');
+        showNotification('Viewing feedback inbox', 'success');
       }
       
       else if (action === 'loadCustomerData') {
