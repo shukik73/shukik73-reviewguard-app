@@ -1942,21 +1942,27 @@
       const latest = customerFeedback[0];
       const avgRating = (customerFeedback.reduce((sum, f) => sum + f.rating, 0) / customerFeedback.length).toFixed(1);
       
-      const sentiment = avgRating <= 1.5 ? { emoji: '😠', text: 'Very unhappy', color: 'red' }
-        : avgRating <= 2.5 ? { emoji: '😟', text: 'Unhappy', color: 'orange' }
-        : { emoji: '😐', text: 'Neutral', color: 'yellow' };
+      // Determine sentiment based on rating
+      let sentiment;
+      if (avgRating <= 1.5) {
+        sentiment = { emoji: '😠', text: 'Very unhappy', avatarBg: 'bg-red-100', textColor: 'text-red-600', badgeBg: 'bg-red-100', badgeText: 'text-red-700' };
+      } else if (avgRating <= 2.5) {
+        sentiment = { emoji: '😟', text: 'Unhappy', avatarBg: 'bg-orange-100', textColor: 'text-orange-600', badgeBg: 'bg-orange-100', badgeText: 'text-orange-700' };
+      } else {
+        sentiment = { emoji: '😐', text: 'Neutral', avatarBg: 'bg-yellow-100', textColor: 'text-yellow-600', badgeBg: 'bg-yellow-100', badgeText: 'text-yellow-700' };
+      }
       
       document.getElementById('panel-customer-name').textContent = latest.customer_name;
       document.getElementById('panel-customer-phone').textContent = phone;
       document.getElementById('panel-avg-rating').textContent = `⭐ ${avgRating}`;
-      document.getElementById('panel-avg-rating').className = `text-lg font-bold text-${sentiment.color}-600`;
+      document.getElementById('panel-avg-rating').className = `text-lg font-bold ${sentiment.textColor}`;
       
       const avatarEl = document.getElementById('panel-customer-avatar');
-      avatarEl.className = `w-16 h-16 rounded-full bg-${sentiment.color}-100 flex items-center justify-center mx-auto mb-2`;
+      avatarEl.className = `w-16 h-16 rounded-full ${sentiment.avatarBg} flex items-center justify-center mx-auto mb-2`;
       avatarEl.innerHTML = `<span class="text-2xl">${sentiment.emoji}</span>`;
       
       const badgeEl = document.getElementById('panel-sentiment-badge');
-      badgeEl.className = `px-3 py-1 rounded-full text-sm font-medium bg-${sentiment.color}-100 text-${sentiment.color}-700`;
+      badgeEl.className = `px-3 py-1 rounded-full text-sm font-medium ${sentiment.badgeBg} ${sentiment.badgeText}`;
       badgeEl.textContent = `${sentiment.emoji} ${sentiment.text}`;
       
       document.getElementById('panel-feedback-count').textContent = customerFeedback.length;
@@ -1966,12 +1972,12 @@
       historyEl.innerHTML = customerFeedback.map(f => {
         const date = new Date(f.created_at).toLocaleDateString();
         const status = f.is_read || f.sms_sent_at || f.called_at ? 'Handled' : 'Unanswered';
-        const statusColor = status === 'Handled' ? 'green' : 'orange';
+        const statusClass = status === 'Handled' ? 'text-green-600' : 'text-orange-600';
         return `
           <div class="p-2 bg-gray-50 rounded-lg text-sm">
             <div class="flex items-center justify-between mb-1">
               <span class="font-medium">${'⭐'.repeat(f.rating)}</span>
-              <span class="text-xs text-${statusColor}-600">${status}</span>
+              <span class="text-xs ${statusClass}">${status}</span>
             </div>
             ${f.feedback_text ? `<p class="text-gray-600 text-xs mb-1">"${f.feedback_text}"</p>` : ''}
             <p class="text-xs text-gray-400">${date}</p>
