@@ -1985,8 +1985,8 @@
           const feedbackDate = new Date(fb.created_at).toLocaleDateString();
           const isUnread = fb.status === 'unread' && !fb.is_read;
           const isUnanswered = !fb.sms_sent_at && !fb.called_at && !fb.is_read;
-          const feedbackStatus = fb.feedback_status || 'new';
-          const statusBadge = feedbackStatus === 'new' 
+          const feedbackStatus = fb.feedback_status || 'unread';
+          const statusBadge = (feedbackStatus === 'unread' || feedbackStatus === 'new')
             ? '<span class="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 font-medium">NEW</span>'
             : feedbackStatus === 'in_progress'
             ? '<span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">🔧 In Progress</span>'

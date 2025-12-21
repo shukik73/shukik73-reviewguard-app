@@ -622,7 +622,7 @@ export const updateFeedbackStatus = (pool) => async (req, res) => {
       return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
     
-    const validStatuses = ['new', 'in_progress', 'resolved'];
+    const validStatuses = ['unread', 'new', 'in_progress', 'resolved'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ success: false, error: 'Invalid status' });
     }
