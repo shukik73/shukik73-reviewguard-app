@@ -10,6 +10,7 @@ export default function createFeedbackRoutes(pool, requireAuth) {
   router.post('/api/public-review', feedbackController.submitPublicReview(pool));
 
   router.get('/api/feedback', requireAuth, basicAuth, feedbackController.getFeedback(pool));
+  router.get('/api/feedback/grouped', requireAuth, basicAuth, feedbackController.getGroupedFeedback(pool));
   router.post('/api/feedback/mark-read', requireAuth, basicAuth, feedbackController.markFeedbackAsRead(pool));
   router.post('/api/feedback/block', requireAuth, basicAuth, feedbackController.blockFeedback(pool));
   

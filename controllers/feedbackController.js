@@ -674,3 +674,58 @@ export const assignFeedback = (pool) => async (req, res) => {
     res.status(500).json({ success: false, error: 'Server error' });
   }
 };
+
+export const getGroupedFeedback = (pool) => async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    
+    const result = await pool.query(
+      `SELECT id, message_id, customer_name, customer_phone, rating, feedback_text, created_at, status, sms_sent_at, called_at, is_read, feedback_status, assigned_to, resolved_at
+       FROM internal_feedback
+       WHERE user_id = $1 AND (status IS NULL OR status != 'ignored')
+       ORDER BY created_at DESC`,
+      [userId]
+    );
+    
+    // Group by customer phone
+    const grouped = {};
+    for (const fb of result.rows) {
+      const phone = fb.customer_phone;
+      if (!grouped[phone]) {
+        grouped[phone] = {
+          customer_name: fb.customer_name,
+          customer_phone: phone,
+          feedback: [],
+          total_count: 0,
+          avg_rating: 0,
+          unread_count: 0,
+          latest_feedback: null
+        };
+      }
+      grouped[phone].feedback.push(fb);
+      grouped[phone].total_count++;
+      if (!fb.is_read && fb.feedback_status !== 'resolved') {
+        grouped[phone].unread_count++;
+      }
+    }
+    
+    // Calculate averages and set latest
+    for (const phone in grouped) {
+      const customer = grouped[phone];
+      customer.avg_rating = (customer.feedback.reduce((sum, f) => sum + f.rating, 0) / customer.total_count).toFixed(1);
+      customer.latest_feedback = customer.feedback[0];
+    }
+    
+    res.json({ 
+      success: true, 
+      grouped: Object.values(grouped)
+    });
+  } catch (error) {
+    console.error('Error fetching grouped feedback:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+};
