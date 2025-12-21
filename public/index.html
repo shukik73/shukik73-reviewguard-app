@@ -2049,22 +2049,15 @@
                   <button onclick="toggleFeedbackMenu(${fb.id}, event)" class="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors" title="Actions">
                     <span class="text-lg font-bold">⋮</span>
                   </button>
-                  <div id="feedback-menu-${fb.id}" class="hidden absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  <div id="feedback-menu-${fb.id}" class="hidden absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                     <a href="tel:${fb.customer_phone}" data-action="callCustomer" data-id="${fb.id}" data-phone="${fb.customer_phone}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                      <span>📞</span> Call Customer
+                      <span>📞</span> Call
                     </a>
                     <button data-action="smsApology" data-id="${fb.id}" data-name="${fb.customer_name.replace(/"/g, '&quot;')}" data-phone="${fb.customer_phone}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left">
                       <span>💬</span> Send SMS
                     </button>
-                    <button data-action="markAsRead" data-id="${fb.id}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left">
-                      <span>✓</span> Mark as Read
-                    </button>
-                    <button data-action="openAIReply" data-name="${fb.customer_name.replace(/"/g, '&quot;')}" data-rating="${fb.rating}" data-text="${(fb.feedback_text || '').replace(/"/g, '&quot;')}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left">
-                      <span>🤖</span> AI Reply
-                    </button>
-                    <hr class="my-1 border-gray-100">
                     <button data-action="blockFeedback" data-id="${fb.id}" class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left">
-                      <span>🚫</span> Block Customer
+                      <span>🚫</span> Block
                     </button>
                   </div>
                 </div>
