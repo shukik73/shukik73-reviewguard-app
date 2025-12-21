@@ -3848,7 +3848,13 @@
       }
     });
 
-    showSection('dashboard');
+    // Handle hash navigation (e.g., #feedback from /feedback.html redirect)
+    const hash = window.location.hash.replace('#', '');
+    if (hash && ['dashboard', 'send-sms', 'history', 'customers', 'reviews', 'billing', 'feedback', 'settings'].includes(hash)) {
+      showSection(hash);
+    } else {
+      showSection('dashboard');
+    }
     loadUserOnPageLoad();
     updatePreview();
 
