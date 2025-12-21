@@ -429,6 +429,7 @@
               </div>
               <div id="stat-total-customers" class="text-3xl font-bold text-gray-900">0</div>
               <div class="text-sm text-gray-500">Marketing List</div>
+              <div id="trend-customers" class="text-xs text-green-600 mt-1">+5 this week</div>
             </div>
 
             <div class="stat-card bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
@@ -441,6 +442,7 @@
               </div>
               <div id="stat-today" class="text-3xl font-bold text-gray-900">0</div>
               <div class="text-sm text-gray-500">Sent Today</div>
+              <div id="trend-today" class="text-xs text-gray-500 mt-1">vs yesterday</div>
             </div>
 
             <div class="stat-card bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
@@ -453,6 +455,7 @@
               </div>
               <div id="stat-this-week" class="text-3xl font-bold text-gray-900">0</div>
               <div class="text-sm text-gray-500">Sent This Week</div>
+              <div id="trend-week" class="text-xs text-green-600 mt-1">+12% vs last week</div>
             </div>
           </div>
 
@@ -486,6 +489,13 @@
                 </div>
                 <div>
                   <label class="text-xs font-semibold text-white/90 uppercase tracking-wide block mb-2">Message</label>
+                  <select id="quick-template" class="w-full mb-2 px-4 py-2.5 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-white/50">
+                    <option value="">Select a template...</option>
+                    <option value="pickup">📦 Device ready for pickup</option>
+                    <option value="delayed">⏳ Repair delayed - will update soon</option>
+                    <option value="review">⭐ Please leave us a review</option>
+                    <option value="custom">✏️ Custom message</option>
+                  </select>
                   <textarea id="quick-message" rows="3" placeholder="Your device is ready for pickup..." class="w-full px-4 py-3 rounded-lg bg-white text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"></textarea>
                 </div>
                 <button id="quick-send-btn" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-full transition-colors text-sm flex items-center justify-center gap-2">
@@ -1408,6 +1418,18 @@
     });
 
     document.getElementById('new-message-btn').addEventListener('click', () => showSection('send-sms'));
+    
+    document.getElementById('quick-template')?.addEventListener('change', (e) => {
+      const templates = {
+        'pickup': 'Hi! Your device is ready for pickup at Techy Miramar. See you soon!',
+        'delayed': "Hi, we wanted to let you know your repair is taking a bit longer than expected. We'll update you as soon as it's ready.",
+        'review': 'Thanks for choosing Techy Miramar! If you were happy with our service, we\'d love a Google review: [Link]',
+        'custom': ''
+      };
+      const message = templates[e.target.value] || '';
+      document.getElementById('quick-message').value = message;
+    });
+    
     document.getElementById('quick-send-btn').addEventListener('click', async () => {
       const phone = document.getElementById('quick-phone').value.trim();
       const message = document.getElementById('quick-message').value.trim();
@@ -1471,7 +1493,7 @@
           const container = document.getElementById('recent-messages');
           if (data.stats.recentMessages && data.stats.recentMessages.length > 0) {
             container.innerHTML = data.stats.recentMessages.map(msg => `
-              <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+              <div class="group flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
                 <div class="w-10 h-10 rounded-full ${msg.message_type === 'review' ? 'bg-amber-100' : 'bg-green-100'} flex items-center justify-center flex-shrink-0">
                   ${msg.message_type === 'review' ? '<span class="text-amber-600">⭐</span>' : '<span class="text-green-600">📱</span>'}
                 </div>
@@ -1479,7 +1501,17 @@
                   <div class="font-medium text-gray-900 truncate">${getMessageTypeTitle(msg.message_type)}</div>
                   <div class="text-sm text-gray-500 truncate">${msg.customer_name}</div>
                 </div>
-                <div class="text-xs text-gray-400">${getTimeAgo(msg.sent_at)}</div>
+                <div class="flex items-center gap-2">
+                  <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                    ${msg.message_type === 'review' 
+                      ? `<button onclick="showSection('customers')" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded" title="View Customer">👤</button>
+                         <button onclick="showSection('reviews')" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded" title="Reply">↩️</button>`
+                      : `<button class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded" title="Resend">📤</button>
+                         <button onclick="showSection('customers')" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded" title="View Customer">👤</button>`
+                    }
+                  </div>
+                  <div class="text-xs text-gray-400">${getTimeAgo(msg.sent_at)}</div>
+                </div>
               </div>
             `).join('');
           } else {
