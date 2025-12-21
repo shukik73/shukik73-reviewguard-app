@@ -50,6 +50,14 @@ A static HTML/CSS/JavaScript frontend with a modern, professional design, featur
 
 **Main Sections**: Dashboard, Send SMS (with OCR), History, Customers, Reviews (AI Assistant), Billing, Feedback, and Settings (including Telegram bot config).
 
+**Feedback Inbox Features** (Updated Dec 2025):
+-   **Stats Bar**: Unread count chip, average rating display, sort dropdown (Newest/Oldest/Rating).
+-   **Status Tabs**: All/Unread/In Progress/Resolved client-side filtering.
+-   **Compact Cards**: Customer name, star rating, relative time, feedback quote, status indicators (🔴 Needs attention / 🟡 Moderate), date, technician assignment.
+-   **Action Buttons**: Call (📞), SMS Apology (💬), Mark as Read (✓), Block (🚫).
+-   **Customer History Grouping**: Expandable "⏱ X messages from this customer" showing previous feedback with [Unanswered]/[Handled] status and technician info.
+-   **Action Tracking**: sms_sent_at, called_at, is_read columns track user actions on each feedback item.
+
 **UI/UX Decisions**: Emphasizes real-time validation, notifications, responsiveness, dynamic adaptation, one-click customer selection, automatic data refresh, drag-and-drop file upload, searchable tables, and a mandatory TCPA consent checkbox.
 
 **Progressive Web App (PWA)**:
