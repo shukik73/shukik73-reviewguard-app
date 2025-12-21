@@ -1118,6 +1118,24 @@
                     <option value="resolution">Resolution offer</option>
                   </select>
                   <textarea id="panel-response-text" rows="3" placeholder="Type your response..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" oninput="updatePanelCharCount()"></textarea>
+                  
+                  <div class="mt-3">
+                    <h6 class="text-xs font-medium text-gray-500 mb-2">AI Suggested Responses</h6>
+                    <div class="flex flex-wrap gap-2">
+                      <button onclick="applySuggestion('apology')" class="px-3 py-1.5 bg-red-50 text-red-700 rounded-full text-xs font-medium hover:bg-red-100 transition-colors">
+                        🙏 Apology
+                      </button>
+                      <button onclick="applySuggestion('discount')" class="px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-xs font-medium hover:bg-green-100 transition-colors">
+                        💰 Discount 20% Off
+                      </button>
+                      <button onclick="applySuggestion('callback')" class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs font-medium hover:bg-blue-100 transition-colors">
+                        📞 Callback Offer
+                      </button>
+                      <button onclick="applySuggestion('freeservice')" class="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-full text-xs font-medium hover:bg-purple-100 transition-colors">
+                        🎁 Free Service
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 
                 <div class="border-t border-gray-100 pt-4 mt-4">
@@ -1813,6 +1831,24 @@
       countEl.className = textarea.value.length > 160 ? 'text-red-600 font-bold' : '';
     }
     window.updatePanelCharCount = updatePanelCharCount;
+    
+    const aiSuggestions = {
+      apology: "Hi {name}, we're truly sorry about your experience. We take all feedback seriously and would love the opportunity to make things right. Please call us at your convenience.",
+      discount: "Hi {name}, we apologize for falling short of your expectations. As a gesture of goodwill, we'd like to offer you 20% off your next service. Please mention this text when you visit.",
+      callback: "Hi {name}, we're sorry to hear about your experience. Our manager would like to personally discuss this with you. Would you be available for a brief call today?",
+      freeservice: "Hi {name}, we sincerely apologize for your experience. We'd like to offer you a complimentary service to make it right. Please reply to schedule at your convenience."
+    };
+    
+    function applySuggestion(type) {
+      const textarea = document.getElementById('panel-response-text');
+      const suggestion = aiSuggestions[type];
+      if (suggestion && selectedFeedbackCustomer) {
+        const name = selectedFeedbackCustomer.feedback[0]?.customer_name || 'there';
+        textarea.value = suggestion.replace('{name}', name);
+        updatePanelCharCount();
+      }
+    }
+    window.applySuggestion = applySuggestion;
     
     async function trackFeedbackCall(id) {
       try {
