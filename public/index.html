@@ -1965,14 +1965,11 @@
       
       // Show panel with slide-in animation
       const overlay = document.getElementById('feedback-panel-overlay');
-      panel.classList.remove('hidden');
       if (overlay) overlay.classList.remove('hidden');
       
-      // Trigger slide animation after a brief delay for CSS transition
-      setTimeout(() => {
-        panel.classList.remove('translate-x-full');
-        panel.classList.add('translate-x-0');
-      }, 10);
+      // Remove hidden and translate-x-full, add translate-x-0 for slide-in
+      panel.classList.remove('hidden', 'translate-x-full');
+      panel.classList.add('translate-x-0');
     }
     window.openFeedbackPanel = openFeedbackPanel;
     
