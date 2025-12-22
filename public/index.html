@@ -2017,7 +2017,7 @@
     
     // Template functions for slide-in panel
     const fpTemplates = {
-      apologetic: "Hi {name}, we're truly sorry about your recent experience. We take all feedback seriously and would love the chance to make it right. Please call us at your convenience.",
+      apologetic: "Hi {name}, we sincerely apologize for your experience. We'd love the chance to make this right. Please call us at {phone} so we can resolve this for you.",
       friendly: "Hi {name}! Thanks so much for your feedback. We really appreciate you taking the time to let us know. Is there anything we can do to help?",
       professional: "Dear {name}, thank you for your feedback. We value your input and are committed to improving our service. Please contact us if you have any further concerns."
     };
@@ -2028,7 +2028,8 @@
       const template = fpTemplates[select.value];
       if (template && selectedFeedbackCustomer) {
         const name = selectedFeedbackCustomer.feedback[0]?.customer_name || 'there';
-        textarea.value = template.replace('{name}', name);
+        const storePhone = document.getElementById('settings-business-name')?.dataset?.phone || 'our store';
+        textarea.value = template.replace('{name}', name).replace('{phone}', storePhone);
         updateFpCharCount();
       }
     }
