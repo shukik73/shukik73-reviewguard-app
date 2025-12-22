@@ -1108,7 +1108,7 @@
           <div id="feedback-panel" class="hidden fixed top-0 right-0 w-96 h-full bg-white shadow-xl border-l z-50 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out">
             <div class="p-4 border-b flex justify-between items-center bg-gray-50">
               <h3 class="font-bold text-lg">Respond to Feedback</h3>
-              <button onclick="closeFeedbackPanel()" class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+              <button class="close-feedback-panel-btn text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
             </div>
             <div id="feedback-panel-content" class="p-4">
               <!-- Content will be populated by openFeedbackPanel() -->
@@ -1982,6 +1982,13 @@
         if (phone) {
           openFeedbackPanel(phone);
         }
+      }
+      
+      // Close button for feedback panel
+      const closeBtn = e.target.closest('.close-feedback-panel-btn');
+      if (closeBtn) {
+        e.stopPropagation();
+        closeFeedbackPanel();
       }
     });
     
