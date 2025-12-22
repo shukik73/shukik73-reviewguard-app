@@ -2226,8 +2226,8 @@
                 <div class="text-xs text-gray-400 mt-1">${fb.customer_phone}</div>
                 ${historyHtml}
               </div>
-              <div class="flex items-center gap-2 flex-shrink-0" onclick="event.stopPropagation()">
-                <button onclick="openFeedbackPanel('${fb.customer_phone}')" class="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <button onclick="event.stopPropagation(); openFeedbackPanel('${fb.customer_phone}')" class="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
                   Respond
                 </button>
                 <div class="relative">
