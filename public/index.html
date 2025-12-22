@@ -1104,16 +1104,18 @@
             </div>
           </div>
           
-          <!-- Feedback Response Panel (hidden by default) -->
-          <div id="feedback-panel" class="hidden fixed top-0 right-0 w-96 h-full bg-white shadow-xl border-l z-50 overflow-y-auto">
-            <div class="p-4 border-b flex justify-between items-center">
+          <!-- Feedback Response Panel (hidden by default, slides in from right) -->
+          <div id="feedback-panel" class="hidden fixed top-0 right-0 w-96 h-full bg-white shadow-xl border-l z-50 overflow-y-auto transform translate-x-full transition-transform duration-300 ease-in-out">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
               <h3 class="font-bold text-lg">Respond to Feedback</h3>
-              <button onclick="closeFeedbackPanel()" class="text-gray-500 hover:text-gray-700">&times;</button>
+              <button onclick="closeFeedbackPanel()" class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
             </div>
             <div id="feedback-panel-content" class="p-4">
               <!-- Content will be populated by openFeedbackPanel() -->
             </div>
           </div>
+          <!-- Overlay for slide-in panel -->
+          <div id="feedback-panel-overlay" class="hidden fixed inset-0 bg-black bg-opacity-30 z-40" onclick="closeFeedbackPanel()"></div>
         </section>
 
         <section id="settings" class="section hidden">
@@ -1961,16 +1963,38 @@
       document.getElementById('fp-template-select').value = '';
       updateFpCharCount();
       
-      // Show panel
+      // Show panel with slide-in animation
+      const overlay = document.getElementById('feedback-panel-overlay');
       panel.classList.remove('hidden');
+      if (overlay) overlay.classList.remove('hidden');
+      
+      // Trigger slide animation after a brief delay for CSS transition
+      setTimeout(() => {
+        panel.classList.remove('translate-x-full');
+        panel.classList.add('translate-x-0');
+      }, 10);
     }
     window.openFeedbackPanel = openFeedbackPanel;
     
     function closeFeedbackPanel() {
       const panel = document.getElementById('feedback-panel');
+      const overlay = document.getElementById('feedback-panel-overlay');
+      
       if (panel) {
-        panel.classList.add('hidden');
+        // Slide out animation
+        panel.classList.remove('translate-x-0');
+        panel.classList.add('translate-x-full');
+        
+        // Hide after animation completes
+        setTimeout(() => {
+          panel.classList.add('hidden');
+        }, 300);
       }
+      
+      if (overlay) {
+        overlay.classList.add('hidden');
+      }
+      
       selectedFeedbackCustomer = null;
     }
     window.closeFeedbackPanel = closeFeedbackPanel;
