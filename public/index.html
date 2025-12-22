@@ -1993,6 +1993,21 @@
       }
     });
     
+    // Event delegation for template dropdown (more reliable than onchange attribute)
+    document.addEventListener('change', function(e) {
+      if (e.target && e.target.id === 'fp-template-select') {
+        const select = e.target;
+        const textarea = document.getElementById('fp-response-text');
+        const template = fpTemplates[select.value];
+        if (template && selectedFeedbackCustomer) {
+          const name = selectedFeedbackCustomer.feedback[0]?.customer_name || 'there';
+          const storePhone = document.getElementById('settings-business-name')?.dataset?.phone || 'our store';
+          textarea.value = template.replace('{name}', name).replace('{phone}', storePhone);
+          updateFpCharCount();
+        }
+      }
+    });
+    
     function closeFeedbackPanel() {
       const panel = document.getElementById('feedback-panel');
       const overlay = document.getElementById('feedback-panel-overlay');
