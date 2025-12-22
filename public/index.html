@@ -1973,6 +1973,18 @@
     }
     window.openFeedbackPanel = openFeedbackPanel;
     
+    // Event delegation for Respond buttons (more reliable than inline onclick)
+    document.addEventListener('click', function(e) {
+      const respondBtn = e.target.closest('.respond-btn');
+      if (respondBtn) {
+        e.stopPropagation();
+        const phone = respondBtn.getAttribute('data-phone');
+        if (phone) {
+          openFeedbackPanel(phone);
+        }
+      }
+    });
+    
     function closeFeedbackPanel() {
       const panel = document.getElementById('feedback-panel');
       const overlay = document.getElementById('feedback-panel-overlay');
@@ -2227,7 +2239,7 @@
                 ${historyHtml}
               </div>
               <div class="flex items-center gap-2 flex-shrink-0">
-                <button onclick="event.stopPropagation(); openFeedbackPanel('${fb.customer_phone}')" class="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                <button class="respond-btn px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors" data-phone="${fb.customer_phone}">
                   Respond
                 </button>
                 <div class="relative">
