@@ -1894,8 +1894,9 @@
           <select id="fp-template-select" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2" onchange="applyFpTemplate()">
             <option value="">Select Template...</option>
             <option value="apologetic">🙏 Apologetic</option>
-            <option value="friendly">😊 Friendly</option>
-            <option value="professional">💼 Professional</option>
+            <option value="followup">📞 Follow-up</option>
+            <option value="resolution">🎁 Resolution Offer</option>
+            <option value="thankyou">💜 Thank You</option>
           </select>
           <textarea id="fp-response-text" rows="4" placeholder="Type your response message..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" oninput="updateFpCharCount()"></textarea>
           <div class="flex justify-between items-center mt-1">
@@ -2018,8 +2019,9 @@
     // Template functions for slide-in panel
     const fpTemplates = {
       apologetic: "Hi {name}, we sincerely apologize for your experience. We'd love the chance to make this right. Please call us at {phone} so we can resolve this for you.",
-      friendly: "Hi {name}! Thanks so much for your feedback. We really appreciate you taking the time to let us know. Is there anything we can do to help?",
-      professional: "Dear {name}, thank you for your feedback. We value your input and are committed to improving our service. Please contact us if you have any further concerns."
+      followup: "Hi {name}, thank you for your feedback. We want to ensure you're completely satisfied. Is there anything else we can do for you?",
+      resolution: "Hi {name}, we're sorry to hear about your experience. We'd like to offer you [discount/free service] to make things right. Please visit us or call {phone}.",
+      thankyou: "Hi {name}, thank you for your feedback! We truly value your input and will use it to improve our service."
     };
     
     function applyFpTemplate() {
