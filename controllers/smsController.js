@@ -121,7 +121,7 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
     const fromNumber = await getTwilioFromPhoneNumber();
     
     const feedbackToken = messageType === 'review' ? crypto.randomUUID() : null;
-    const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
+    const appHost = 'https://reviews.techymiramar.com';
     
     if (feedbackToken) {
       console.log(`📋 Generated Token for ${formattedPhone}:`, feedbackToken);
@@ -424,7 +424,7 @@ export const submitFeedback = (pool, getTwilioClient, getTwilioFromPhoneNumber) 
         const fromNumber = await getTwilioFromPhoneNumber();
         
         const reviewToken = crypto.randomBytes(3).toString('hex');
-        const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000';
+        const appHost = 'https://reviews.techymiramar.com';
         const trackedReviewLink = `${appHost}/r/${reviewToken}`;
         
         const reviewMessage = `Thank you for your positive feedback! 🌟 We'd love if you could share your experience on Google: ${trackedReviewLink}\n\n(Reply STOP to end)`;
@@ -1154,7 +1154,7 @@ export const sendCustomerFollowups = (pool, getTwilioClient, getTwilioFromPhoneN
 
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
-    const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
+    const appHost = 'https://reviews.techymiramar.com';
     
     let successCount = 0;
     let errors = [];
@@ -1288,7 +1288,7 @@ export const sendFollowups = (pool, getTwilioClient, getTwilioFromPhoneNumber) =
     
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
-    const appHost = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : `${req.protocol}://${req.get('host')}`;
+    const appHost = 'https://reviews.techymiramar.com';
     
     let successCount = 0;
     let errors = [];
