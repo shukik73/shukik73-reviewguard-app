@@ -1923,8 +1923,10 @@
         trackFeedbackCall(latest.id);
       };
       
-      document.getElementById('fp-send-btn').onclick = async () => {
-        const message = document.getElementById('fp-response-text').value.trim();
+// Event delegation for Send SMS Response button (more reliable than direct onclick)
+      document.addEventListener('click', async function(e) {
+            if (e.target && e.target.id === 'fp-send-btn')   {
+            const message = document.getElementById('fp-response-text').value.trim();
         if (!message) {
           showNotification('Please enter a message', 'error');
           return;
@@ -1952,8 +1954,7 @@
         } catch (e) {
           showNotification('Failed to send SMS', 'error');
         }
-      };
-      
+            }      
       document.getElementById('fp-resolve-btn').onclick = () => {
         markFeedbackRead(latest.id);
         closeFeedbackPanel();
