@@ -1,5 +1,5 @@
-const CACHE_NAME = 'reviewguard-v4';
-const LEGACY_CACHES = ['reviewguard-v1', 'reviewguard-v2', 'reviewguard-v3'];
+const CACHE_NAME = 'reviewguard-v5';
+const LEGACY_CACHES = ['reviewguard-v1', 'reviewguard-v2', 'reviewguard-v3', 'reviewguard-v4'];
 
 const STATIC_ASSETS = [
   '/',
@@ -34,7 +34,7 @@ self.addEventListener('activate', (event) => {
       
       const clients = await self.clients.matchAll();
       clients.forEach(client => {
-        client.postMessage({ type: 'SW_UPDATED', version: 'v4' });
+        client.postMessage({ type: 'SW_UPDATED', version: 'v5' });
       });
     })()
   );
