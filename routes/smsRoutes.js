@@ -139,8 +139,8 @@ export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhon
 
       // Check opt-out status
       const optOutCheck = await pool.query(
-        'SELECT 1 FROM sms_optouts WHERE phone = $1 AND user_id = $2',
-        [formattedPhone, userId]
+        'SELECT 1 FROM sms_optouts WHERE phone = $1',
+        [formattedPhone]
       );
       if (optOutCheck.rows.length > 0) {
         return res.status(400).json({ success: false, error: 'Customer has opted out of SMS messages' });
