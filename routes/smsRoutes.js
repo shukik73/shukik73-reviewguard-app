@@ -105,6 +105,71 @@ export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhon
   });
 
   router.post('/api/send-review-request', smsLimiter, requireAuth, upload.single('photo'), smsController.sendReviewRequest(pool, getTwilioClient, getTwilioFromPhoneNumber, validateAndFormatPhone, upload));
+
+  // Simple SMS endpoint for feedback responses (no review link, just direct SMS)
+  router.post('/api/send-sms', smsLimiter, requireAuth, async (req, res) => {
+    try {
+      const { customerName, customerPhone, message, tcpaConsent } = req.body;
+      const userEmail = req.session.userEmail;
+
+      if (!customerName || !customerPhone || !message) {
+        return res.status(400).json({ success: false, error: 'Customer name, phone, and message are required' });
+      }
+
+      if (!tcpaConsent) {
+        return res.status(400).json({ success: false, error: 'SMS consent required', code: 'CONSENT_REQUIRED' });
+      }
+
+      if (!userEmail) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      const userResult = await pool.query('SELECT id FROM users WHERE company_email = $1', [userEmail]);
+      if (userResult.rows.length === 0) {
+        return res.status(401).json({ success: false, error: 'User not found' });
+      }
+      const userId = userResult.rows[0].id;
+
+      let formattedPhone;
+      try {
+        formattedPhone = validateAndFormatPhone(customerPhone);
+      } catch (error) {
+        return res.status(400).json({ success: false, error: error.message });
+      }
+
+      // Check opt-out status
+      const optOutCheck = await pool.query(
+        'SELECT 1 FROM sms_optouts WHERE phone_number = $1 AND user_id = $2',
+        [formattedPhone, userId]
+      );
+      if (optOutCheck.rows.length > 0) {
+        return res.status(400).json({ success: false, error: 'Customer has opted out of SMS messages' });
+      }
+
+      // Get Twilio client and send SMS
+      const twilioClient = getTwilioClient();
+      const fromNumber = getTwilioFromPhoneNumber();
+
+      const twilioMessage = await twilioClient.messages.create({
+        body: message,
+        from: fromNumber,
+        to: formattedPhone
+      });
+
+      // Log message to database
+      await pool.query(
+        `INSERT INTO messages (customer_name, customer_phone, message_type, message_text, user_id, tcpa_consent)
+         VALUES ($1, $2, 'response', $3, $4, true)`,
+        [customerName, formattedPhone, message, userId]
+      );
+
+      console.log(`✅ SMS sent to ${formattedPhone} (SID: ${twilioMessage.sid})`);
+      res.json({ success: true, messageSid: twilioMessage.sid });
+    } catch (error) {
+      console.error('Send SMS error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
   
   // Secure token-based tracking route (Smart Follow-up)
   router.get('/r/:token', smsController.trackCustomerClick(pool));

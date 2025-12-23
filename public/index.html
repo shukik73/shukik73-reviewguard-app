@@ -2579,8 +2579,7 @@
             <!-- Overlay for slide-in panel -->
             <div
               id="feedback-panel-overlay"
-              class="hidden fixed inset-0 bg-black bg-opacity-30 z-40"
-              onclick="closeFeedbackPanel()"
+              class="hidden fixed inset-0 bg-black bg-opacity-30 z-40 cursor-pointer"
             ></div>
           </section>
 
@@ -3539,6 +3538,12 @@
             // Close button for feedback panel
             const closeBtn = e.target.closest('.close-feedback-panel-btn');
             if (closeBtn) {
+              e.stopPropagation();
+              closeFeedbackPanel();
+            }
+
+            // Overlay click to close feedback panel
+            if (e.target && e.target.id === 'feedback-panel-overlay') {
               e.stopPropagation();
               closeFeedbackPanel();
             }
