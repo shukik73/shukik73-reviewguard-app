@@ -139,7 +139,7 @@ export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhon
 
       // Check opt-out status
       const optOutCheck = await pool.query(
-        'SELECT 1 FROM sms_optouts WHERE phone_number = $1 AND user_id = $2',
+        'SELECT 1 FROM sms_optouts WHERE phone = $1 AND user_id = $2',
         [formattedPhone, userId]
       );
       if (optOutCheck.rows.length > 0) {
