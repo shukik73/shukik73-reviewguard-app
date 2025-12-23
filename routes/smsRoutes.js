@@ -147,8 +147,8 @@ export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhon
       }
 
       // Get Twilio client and send SMS
-      const twilioClient = getTwilioClient();
-      const fromNumber = getTwilioFromPhoneNumber();
+      const twilioClient = await getTwilioClient();
+      const fromNumber = await getTwilioFromPhoneNumber();
 
       const twilioMessage = await twilioClient.messages.create({
         body: message,
