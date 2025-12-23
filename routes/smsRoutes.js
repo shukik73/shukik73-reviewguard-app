@@ -158,9 +158,9 @@ export default function createSMSRoutes(pool, getTwilioClient, getTwilioFromPhon
 
       // Log message to database
       await pool.query(
-        `INSERT INTO messages (customer_name, customer_phone, message_type, message_text, user_id, tcpa_consent)
-         VALUES ($1, $2, 'response', $3, $4, true)`,
-        [customerName, formattedPhone, message, userId]
+        `INSERT INTO messages (customer_name, customer_phone, message_type, twilio_sid, user_id, user_email, additional_info, sms_consent_confirmed)
+         VALUES ($1, $2, 'response', $3, $4, $5, $6, true)`,
+        [customerName, formattedPhone, twilioMessage.sid, userId, userEmail, message]
       );
 
       console.log(`✅ SMS sent to ${formattedPhone} (SID: ${twilioMessage.sid})`);
