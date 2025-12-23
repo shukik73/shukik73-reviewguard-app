@@ -3502,7 +3502,9 @@
               } catch (e) {
                 showNotification('Failed to send SMS', 'error');
               }
-                  }
+            }
+          });
+
             document.getElementById('fp-resolve-btn').onclick = () => {
               markFeedbackRead(latest.id);
               closeFeedbackPanel();
