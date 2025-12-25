@@ -25,6 +25,7 @@
     <script src="/locales/i18n.js" defer></script>
     <script src="/locales/autoTranslate.js" defer></script>
     <script src="/locales/verticalConfig.js" defer></script>
+    <script src="/locales/smartTemplates.js" defer></script>
     <style>
       :root {
         --sidebar: #1e293b;
@@ -518,6 +519,10 @@
         </nav>
 
         <div class="p-4 border-t border-slate-700">
+          <div class="flex justify-center gap-1 mb-3">
+            <button data-lang-switch="en" onclick="window.setLanguage('en')" class="px-2 py-1 rounded text-xs font-medium bg-accent text-white">EN</button>
+            <button data-lang-switch="es" onclick="window.setLanguage('es')" class="px-2 py-1 rounded text-xs font-medium bg-slate-700 text-slate-300">ES</button>
+          </div>
           <div class="flex items-center gap-3">
             <div
               id="user-avatar"
