@@ -22,9 +22,6 @@
     <link rel="icon" href="/icons/icon-192x192.png" type="image/png" />
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
     <link rel="stylesheet" href="/styles.css" />
-    <script src="/locales/i18n.js" defer></script>
-    <script src="/locales/autoTranslate.js" defer></script>
-    <script src="/locales/verticalConfig.js" defer></script>
     <style>
       :root {
         --sidebar: #1e293b;
@@ -114,6 +111,10 @@
         }
       }
     </style>
+      <script src="/locales/i18n.js" defer></script>
+    <script src="/locales/autoTranslate.js" defer></script>
+    <script src="/locales/verticalConfig.js" defer></script>
+    <script src="/locales/smartTemplates.js" defer></script>
   </head>
   <body class="bg-gray-50 text-gray-900">
     <!-- Login Modal -->
@@ -158,8 +159,7 @@
               <label
                 for="login-email"
                 class="block text-sm font-medium text-gray-700 mb-1"
-                data-i18n="login.email"
-                >Email Address</label
+                 data-i18n="login.email">Email Address</label
               >
               <input
                 type="email"
@@ -175,8 +175,7 @@
               <label
                 for="login-password"
                 class="block text-sm font-medium text-gray-700 mb-1"
-                data-i18n="login.password"
-                >Password</label
+                 data-i18n="login.password">Password</label
               >
               <input
                 type="password"
@@ -199,8 +198,7 @@
               type="submit"
               id="login-modal-btn"
               class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/30"
-              data-i18n="login.submit"
-            >
+             data-i18n="login.submit">
               Sign In
             </button>
           </form>
@@ -307,10 +305,10 @@
               <div id="sidebar-brand" class="text-white font-semibold text-sm">
                 ReviewGuard
               </div>
-              <div class="flex gap-1 mt-2">
-                <button data-lang-switch="en" class="px-2 py-1 rounded text-xs font-medium bg-accent text-white">EN</button>
-                <button data-lang-switch="es" class="px-2 py-1 rounded text-xs font-medium bg-slate-700 text-slate-300">ES</button>
-              </div>
+            <div class="flex gap-1 mt-2">
+              <button onclick="window.setLanguage('en')" id="btn-lang-en" class="px-2 py-1 rounded text-xs font-medium bg-accent text-white">EN</button>
+              <button onclick="window.setLanguage('es')" id="btn-lang-es" class="px-2 py-1 rounded text-xs font-medium bg-slate-700 text-slate-300">ES</button>
+            </div>
             </div>
           </div>
         </div>
@@ -318,7 +316,6 @@
         <nav class="flex-1 p-3 space-y-1">
           <div
             class="text-xs font-medium text-slate-400 uppercase tracking-wider px-3 py-2"
-            data-i18n="nav.mainMenu"
           >
             Main Menu
           </div>
@@ -339,8 +336,8 @@
                 stroke-width="2"
                 d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
               />
-            </svg>
-            <span data-i18n="nav.dashboard">Dashboard</span>
+            </svg data-i18n="nav.dashboard">
+            Dashboard
           </button>
 
           <button
@@ -359,8 +356,8 @@
                 stroke-width="2"
                 d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
               />
-            </svg>
-            <span data-i18n="nav.sendSms">Send SMS</span>
+            </svg data-i18n="nav.sendSms">
+            Send SMS
           </button>
 
           <button
@@ -379,8 +376,8 @@
                 stroke-width="2"
                 d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
               />
-            </svg>
-            <span data-i18n="nav.campaigns">Campaigns</span>
+            </svg data-i18n="nav.campaigns">
+            Campaigns
           </button>
 
           <button
@@ -399,8 +396,8 @@
                 stroke-width="2"
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
-            </svg>
-            <span data-i18n="nav.history">History</span>
+            </svg data-i18n="nav.history">
+            History
           </button>
 
           <button
@@ -419,8 +416,8 @@
                 stroke-width="2"
                 d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
               />
-            </svg>
-            <span data-i18n="nav.customers">Customers</span>
+            </svg data-i18n="nav.customers">
+            Customers
           </button>
 
           <button
@@ -439,8 +436,8 @@
                 stroke-width="2"
                 d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
               />
-            </svg>
-            <span data-i18n="nav.reviews">Reviews</span>
+            </svg data-i18n="nav.reviews">
+            Reviews
           </button>
 
           <button
@@ -459,13 +456,12 @@
                 stroke-width="2"
                 d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
               />
-            </svg>
-            <span data-i18n="nav.feedback">Feedback</span>
+            </svg data-i18n="nav.feedback">
+            Feedback
           </button>
 
           <div
             class="text-xs font-medium text-slate-400 uppercase tracking-wider px-3 py-2 mt-4"
-            data-i18n="nav.system"
           >
             System
           </div>
@@ -486,8 +482,8 @@
                 stroke-width="2"
                 d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
               />
-            </svg>
-            <span data-i18n="nav.billing">Billing</span>
+            </svg data-i18n="nav.billing">
+            Billing
           </button>
 
           <button
@@ -512,8 +508,8 @@
                 stroke-width="2"
                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
               />
-            </svg>
-            <span data-i18n="nav.settings">Settings</span>
+            </svg data-i18n="nav.settings">
+            Settings
           </button>
         </nav>
 
@@ -533,14 +529,13 @@
                 Loading...
               </div>
               <div id="user-email" class="text-slate-400 text-xs truncate">
-                user@example.com
+                <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="522721372012372a333f223e377c313d3f">[email&#160;protected]</a>
               </div>
             </div>
             <button
               id="logout-btn"
               class="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
               title="Sign Out"
-              data-i18n-title="nav.signOut"
             >
               <svg
                 class="w-5 h-5"
@@ -573,10 +568,10 @@
         <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div class="flex items-center justify-between px-6 py-4">
             <div>
-              <h1 id="page-title" class="text-2xl font-bold text-gray-900">
+              <h1 id="page-title" class="text-2xl font-bold text-gray-900" data-i18n="dashboard.title">
                 Dashboard
               </h1>
-              <p id="page-subtitle" class="text-sm text-gray-500">
+              <p id="page-subtitle" class="text-sm text-gray-500" data-i18n="dashboard.subtitle">
                 Overview of your messaging and reviews.
               </p>
               <p id="header-branding" class="hidden"></p>
@@ -597,7 +592,7 @@
                   stroke-width="2"
                   d="M12 4v16m8-8H4"
                 />
-              </svg>
+              </svg data-i18n="dashboard.newMessage">
               New Message
             </button>
           </div>
@@ -616,6 +611,36 @@
           </div>
         </div>
 
+        <!-- ServiceTitan Waitlist Modal (Fake Door) -->
+        <div id="servicetitan-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeServiceTitanModal()"></div>
+          <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            
+            <div class="text-center mb-4">
+              <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+              </div>
+              <h3 class="text-xl font-bold text-gray-900">ServiceTitan Integration</h3>
+              <p class="text-sm text-blue-600 font-semibold uppercase tracking-wide mt-1">Beta Access</p>
+            </div>
+
+            <p class="text-gray-600 text-center mb-6 text-sm leading-relaxed">
+              We are currently finalizing the 2-way sync with ServiceTitan. Spots for the beta program are limited to 50 HVAC companies.
+            </p>
+
+            <div class="space-y-3">
+              <button onclick="joinWaitlist('servicetitan')" id="join-waitlist-btn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2">
+                <span>🚀</span> Join Priority Waitlist
+              </button>
+              <button onclick="closeServiceTitanModal()" class="w-full py-2 text-gray-400 hover:text-gray-600 text-sm">
+                No thanks, I'll wait
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div
           id="sms-confirmation-modal"
           class="hidden fixed inset-0 z-50 flex items-center justify-center px-4"
@@ -627,12 +652,12 @@
           <div
             class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
           >
-            <h3 class="text-xl font-bold text-gray-900 mb-4">Confirm SMS</h3>
+            <h3 class="text-xl font-bold text-gray-900 mb-4" data-i18n="modals.confirmSms">Confirm SMS</h3>
             <div class="space-y-3 mb-6">
               <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 <span class="text-2xl">👤</span>
                 <div>
-                  <div class="text-xs text-gray-500">Send to</div>
+                  <div class="text-xs text-gray-500" data-i18n="modals.sendTo">Send to</div>
                   <div
                     class="font-semibold text-gray-900"
                     id="modal-customer-name"
@@ -644,7 +669,7 @@
               <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 <span class="text-2xl">📱</span>
                 <div>
-                  <div class="text-xs text-gray-500">Phone number</div>
+                  <div class="text-xs text-gray-500" data-i18n="modals.phoneNumber">Phone number</div>
                   <div
                     class="font-semibold text-gray-900"
                     id="modal-customer-phone"
@@ -654,7 +679,7 @@
                 </div>
               </div>
               <div class="p-3 bg-gray-50 rounded-lg">
-                <div class="text-xs text-gray-500 mb-2">Message preview</div>
+                <div class="text-xs text-gray-500 mb-2" data-i18n="modals.messagePreview">Message preview</div>
                 <div
                   class="text-sm text-gray-700 leading-relaxed max-h-32 overflow-y-auto"
                   id="modal-message-preview"
@@ -688,7 +713,7 @@
             class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4"
           >
             <div class="flex justify-between items-center mb-3">
-              <h3 class="text-lg font-bold text-gray-900">Take Photo</h3>
+              <h3 class="text-lg font-bold text-gray-900" data-i18n="sendSms.takePhoto">Take Photo</h3>
               <button
                 id="close-camera-btn"
                 class="text-gray-500 hover:text-gray-700 text-2xl"
@@ -747,10 +772,10 @@
               class="flex justify-between items-center p-4 border-b border-gray-100"
             >
               <div>
-                <h3 class="text-lg font-bold text-gray-900">
+                <h3 class="text-lg font-bold text-gray-900" data-i18n="modals.importRepairDesk">
                   Import from RepairDesk
                 </h3>
-                <p class="text-sm text-gray-500">
+                <p class="text-sm text-gray-500" data-i18n="modals.selectTicket">
                   Select a ticket to auto-fill customer details
                 </p>
               </div>
@@ -769,7 +794,7 @@
                 <div
                   class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"
                 ></div>
-                <p class="mt-2 text-gray-500">Loading tickets...</p>
+                <p class="mt-2 text-gray-500" data-i18n="modals.loadingTickets">Loading tickets...</p>
               </div>
               <div id="repairdesk-error" class="hidden text-center py-8">
                 <div
@@ -1036,7 +1061,7 @@
                 <div id="stat-today" class="text-3xl font-bold text-gray-900">
                   0
                 </div>
-                <div class="text-sm text-gray-500">Sent Today</div>
+                <div class="text-sm text-gray-500" data-i18n="dashboard.sentToday">Sent Today</div>
                 <div id="trend-today" class="text-xs text-gray-500 mt-1">
                   vs yesterday
                 </div>
@@ -1070,7 +1095,7 @@
                 >
                   0
                 </div>
-                <div class="text-sm text-gray-500">Sent This Week</div>
+                <div class="text-sm text-gray-500" data-i18n="dashboard.sentThisWeek">Sent This Week</div>
                 <div id="trend-week" class="text-xs text-green-600 mt-1">
                   +12% vs last week
                 </div>
@@ -1085,8 +1110,8 @@
                   class="flex items-center justify-between p-5 border-b border-gray-100"
                 >
                   <div>
-                    <h3 class="font-semibold text-gray-900">Recent Activity</h3>
-                    <p class="text-sm text-gray-500">
+                    <h3 class="font-semibold text-gray-900" data-i18n="dashboard.recentActivity">Recent Activity</h3>
+                    <p class="text-sm text-gray-500" data-i18n="dashboard.realtimeUpdates">
                       Real-time updates from your shop
                     </p>
                   </div>
@@ -1101,7 +1126,7 @@
                   id="recent-messages"
                   class="divide-y divide-gray-50 p-2 max-h-80 overflow-y-auto"
                 >
-                  <div class="text-center py-12 text-gray-500">Loading...</div>
+                  <div class="text-center py-12 text-gray-500" data-i18n="common.loading">Loading...</div>
                 </div>
               </div>
 
@@ -1133,8 +1158,8 @@
                     />
                   </svg>
                 </div>
-                <h3 class="text-xl font-bold italic mb-1">Quick Send</h3>
-                <p class="text-white/80 text-sm mb-5">
+                <h3 class="text-xl font-bold italic mb-1" data-i18n="dashboard.quickSend">Quick Send</h3>
+                <p class="text-white/80 text-sm mb-5" data-i18n="dashboard.quickSendDesc">
                   Instantly reach a customer without leaving the dashboard.
                 </p>
 
@@ -1266,10 +1291,10 @@
                         />
                       </svg>
                     </div>
-                    <h3 class="font-semibold text-gray-900 mb-1">
+                    <h3 class="font-semibold text-gray-900 mb-1" data-i18n="sendSms.dragDrop">
                       Drag & Drop Receipt
                     </h3>
-                    <p class="text-sm text-gray-500 mb-4">
+                    <p class="text-sm text-gray-500 mb-4" data-i18n="sendSms.supports">
                       Supports JPG, HEIC, PNG
                     </p>
                     <button
@@ -1354,7 +1379,7 @@
                       </svg>
                     </div>
                     <div>
-                      <p class="text-sm font-medium text-blue-900">
+                      <p class="text-sm font-medium text-blue-900" data-i18n="sendSms.privacyFirst">
                         Privacy First
                       </p>
                       <p class="text-xs text-blue-700">
@@ -1495,7 +1520,7 @@
                     </div>
                   </div>
 
-                  <div>
+                  <div class="mb-4" id="customer-phone-wrapper">
                     <label
                       class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5"
                       >Phone Number</label
@@ -1531,11 +1556,12 @@
                     <div>
                       <label
                         class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5"
-                        >Device</label
+                        data-vertical="itemLabel">Device</label
                       >
                       <input
                         type="text"
                         id="device"
+                        data-vertical="itemPlaceholder"
                         placeholder="Device Model"
                         class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
                       />
@@ -1557,7 +1583,7 @@
                   <div>
                     <label
                       class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5"
-                      >Repair Type</label
+                      data-vertical="serviceLabel">Repair Type</label
                     >
                     <div class="relative">
                       <span
@@ -1671,7 +1697,7 @@
                   >
                     📤 Send Welcome SMS
                   </button>
-                  <p class="text-xs text-gray-500 mt-1 text-center">
+                  <p class="text-xs text-gray-500 mt-1 text-center" data-i18n="sendSms.sendImmediately">
                     This will send an SMS immediately
                   </p>
                 </div>
@@ -1685,8 +1711,8 @@
                 class="flex items-center justify-between p-5 border-b border-gray-100"
               >
                 <div>
-                  <h3 class="font-semibold text-gray-900">Message History</h3>
-                  <p class="text-sm text-gray-500">
+                  <h3 class="font-semibold text-gray-900" data-i18n="history.title">Message History</h3>
+                  <p class="text-sm text-gray-500" data-i18n="history.subtitle">
                     Track all sent messages and follow-ups
                   </p>
                 </div>
@@ -1701,10 +1727,10 @@
                     id="history-filter"
                     class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
                   >
-                    <option value="all">All Messages</option>
-                    <option value="clicked">Clicked Links</option>
-                    <option value="reviewed">With Feedback</option>
-                    <option value="needs-followup">Needs Follow-up</option>
+                    <option value="all" data-i18n="history.allMessages">All Messages</option>
+                    <option value="clicked" data-i18n="history.clickedLinks">Clicked Links</option>
+                    <option value="reviewed" data-i18n="history.withFeedback">With Feedback</option>
+                    <option value="needs-followup" data-i18n="history.needsFollowup">Needs Follow-up</option>
                   </select>
                 </div>
               </div>
@@ -1751,7 +1777,7 @@
                 </div>
               </div>
               <div id="history-list" class="max-h-[500px] overflow-y-auto p-2">
-                <div class="text-center py-12 text-gray-500">Loading...</div>
+                <div class="text-center py-12 text-gray-500" data-i18n="common.loading">Loading...</div>
               </div>
             </div>
           </section>
@@ -1762,8 +1788,8 @@
                 class="flex items-center justify-between p-5 border-b border-gray-100"
               >
                 <div>
-                  <h3 class="font-semibold text-gray-900">Customer Database</h3>
-                  <p class="text-sm text-gray-500">
+                  <h3 class="font-semibold text-gray-900" data-i18n="customers.title">Customer Database</h3>
+                  <p class="text-sm text-gray-500" data-i18n="customers.subtitle">
                     Manage your customer contacts
                   </p>
                 </div>
@@ -1772,7 +1798,7 @@
                 id="customers-list"
                 class="divide-y divide-gray-50 max-h-[500px] overflow-y-auto p-2"
               >
-                <div class="text-center py-12 text-gray-500">Loading...</div>
+                <div class="text-center py-12 text-gray-500" data-i18n="common.loading">Loading...</div>
               </div>
             </div>
           </section>
@@ -1788,7 +1814,7 @@
                 >
                   0
                 </div>
-                <div class="text-sm text-gray-500">Pending Reviews</div>
+                <div class="text-sm text-gray-500" data-i18n="reviews.pendingReviews">Pending Reviews</div>
               </div>
               <div
                 class="bg-white rounded-xl border border-gray-100 shadow-sm p-4"
@@ -1799,7 +1825,7 @@
                 >
                   0
                 </div>
-                <div class="text-sm text-gray-500">Posted Replies</div>
+                <div class="text-sm text-gray-500" data-i18n="reviews.postedReplies">Posted Replies</div>
               </div>
               <div
                 class="bg-white rounded-xl border border-gray-100 shadow-sm p-4"
@@ -1810,7 +1836,7 @@
                 >
                   0
                 </div>
-                <div class="text-sm text-gray-500">Ignored</div>
+                <div class="text-sm text-gray-500" data-i18n="reviews.ignored">Ignored</div>
               </div>
               <div
                 class="bg-white rounded-xl border border-gray-100 shadow-sm p-4"
@@ -2565,7 +2591,7 @@
                   id="feedback-list"
                   class="divide-y divide-gray-50 max-h-[500px] overflow-y-auto p-2"
                 >
-                  <div class="text-center py-12 text-gray-500">Loading...</div>
+                  <div class="text-center py-12 text-gray-500" data-i18n="common.loading">Loading...</div>
                 </div>
               </div>
             </div>
@@ -2609,19 +2635,7 @@
                 </p>
 
                 <div class="space-y-4">
-                  <div>
-                    <label
-                      class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5"
-                      >Business Name</label
-                    >
-                    <input
-                      type="text"
-                      id="settings-business-name"
-                      placeholder="Your Business Name"
-                      class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-                    />
-                  </div>
-                  <div>
+                  <div class="mb-4">
                     <label
                       class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5"
                       >Business Type / Industry</label
@@ -2633,8 +2647,6 @@
                       <optgroup label="In-Shop (Customer comes to you)">
                         <option value="repair">🔧 Repair Shop (Electronics, Phone, Computer)</option>
                         <option value="auto">🚗 Auto Repair</option>
-                        <option value="beauty">💅 Nail Salon / Spa</option>
-                        <option value="barber">💈 Barber Shop</option>
                       </optgroup>
                       <optgroup label="Field Service (You go to customer)">
                         <option value="hvac">❄️ HVAC / Air Conditioning</option>
@@ -2642,8 +2654,20 @@
                       </optgroup>
                     </select>
                     <p class="text-xs text-gray-500 mt-1">
-                      This changes templates and terminology to match your industry
+                      Changes templates and terminology to match your industry
                     </p>
+                  </div>
+                  <div>
+                    <label
+                      class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5"
+                      >Business Name</label
+                    >
+                    <input
+                      type="text"
+                      id="settings-business-name"
+                      placeholder="Your Business Name"
+                      class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                    />
                   </div>
                   <div>
                     <label
@@ -2774,7 +2798,7 @@
       </main>
     </div>
 
-    <script>
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
           let businessName = 'Our Store';
 
           // Forward declarations for onclick handlers - these get defined later but need to be callable
@@ -4235,10 +4259,34 @@
             const device = deviceInput.value || 'device';
             const repair = repairInput.value || 'repair';
             const custom = customMessageInput.value;
+            const address = document.getElementById('customer-address')?.value || '';
 
             let message = '';
 
-            if (type === 'review') {
+            if (typeof smartTemplates !== 'undefined' && type && type !== 'custom') {
+              const vertical = verticalConfig?.current?.id || localStorage.getItem('vertical') || 'repair';
+              const lang = localStorage.getItem('lang') || 'en';
+              const reviewLink = document.getElementById('settings-review-link')?.value || '[Feedback Link]';
+              
+              const templateMap = {
+                'review': 'review',
+                'ready': 'completion',
+                'follow_up': 'follow_up',
+                'delayed': 'delayed',
+                'maintenance': 'maintenance'
+              };
+              
+              const templateType = templateMap[type] || type;
+              
+              message = smartTemplates.generate(vertical, templateType, {
+                name: name,
+                device: device,
+                service: repair,
+                address: address,
+                business: businessName,
+                link: reviewLink
+              }, lang);
+            } else if (type === 'review') {
               const serviceDesc = device && repair ? `${device} ${repair}` : device || repair || 'service';
               message = `Hi ${name}! Thank you for choosing ${businessName} for your ${serviceDesc}. How was your experience? Please rate us: [Feedback Link]`;
             } else if (type === 'ready') {
@@ -4267,6 +4315,12 @@
           deviceInput.addEventListener('input', updatePreview);
           repairInput.addEventListener('input', updatePreview);
           customMessageInput.addEventListener('input', updatePreview);
+          
+          document.addEventListener('input', function(e) {
+            if (e.target && e.target.id === 'customer-address') {
+              updatePreview();
+            }
+          });
 
           const smsConsentCheckbox = document.getElementById('sms-consent-checkbox');
           const sendSmsBtn = document.getElementById('send-sms-btn');
@@ -5834,12 +5888,4 @@
                   })
                 );
 
-                console.log('All service workers and caches cleared');
-              } catch (error) {
-                console.log('Cleanup error:', error);
-              }
-            });
-          }
-    </script>
-  </body>
-</html>
+      

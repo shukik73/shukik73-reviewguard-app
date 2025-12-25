@@ -67,8 +67,9 @@ const i18n = {
 
   async setLocale(lang) {
     if (lang === this.locale) return;
-    localStorage.setItem('lang', lang);
-    location.reload();
+    await this.loadLocale(lang);
+    this.translatePage();
+    this.updateSwitcherUI();
   },
 
   bindSwitcher() {

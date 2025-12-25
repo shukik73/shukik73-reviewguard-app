@@ -1,0 +1,257 @@
+<!-- 
+  AUDIT WIDGET - Lead Magnet for HVAC/Repair Business Owners
+  
+  Usage: Embed this in your landing page to capture leads.
+  The widget shows a "health score" and competitor comparison.
+  
+  TODO: Replace the simulated API with real Google Places API call
+  to fetch actual review data.
+-->
+
+<div id="review-audit-widget" class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-center">
+    <div class="w-12 h-12 mx-auto mb-3 bg-white/20 rounded-xl flex items-center justify-center">
+      <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    </div>
+    <h3 class="text-white font-bold text-xl" data-i18n="audit.title">Check Your Reputation Health</h3>
+    <p class="text-indigo-100 text-sm mt-2" data-i18n="audit.subtitle">See how you rank against local competitors.</p>
+  </div>
+  
+  <div class="p-6">
+    <!-- Form -->
+    <form id="audit-form" onsubmit="runReviewAudit(event)">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1.5" data-i18n="audit.businessName">Business Name</label>
+          <input 
+            type="text" 
+            id="audit-biz-name" 
+            required 
+            placeholder="e.g. Joe's HVAC Miami" 
+            data-i18n-placeholder="audit.businessPlaceholder"
+            class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+          >
+        </div>
+        
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1.5" data-i18n="audit.industry">Industry</label>
+          <select 
+            id="audit-industry" 
+            class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="hvac">❄️ HVAC / Air Conditioning</option>
+            <option value="repair">🔧 Repair Shop</option>
+            <option value="auto">🚗 Auto Repair</option>
+            <option value="plumbing">🔧 Plumbing</option>
+            <option value="other">🏢 Other Service Business</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1.5" data-i18n="audit.email">Email (for report)</label>
+          <input 
+            type="email" 
+            id="audit-email" 
+            required 
+            placeholder="you@company.com"
+            class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+          >
+        </div>
+
+        <button 
+          type="submit" 
+          id="audit-btn" 
+          class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all shadow-lg shadow-indigo-500/30"
+        >
+          <span data-i18n="audit.getReport">Get My Free Report</span>
+          <svg class="w-4 h-4 inline ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </button>
+      </div>
+    </form>
+
+    <!-- Loading State -->
+    <div id="audit-loading" class="hidden text-center py-8">
+      <div class="inline-block animate-spin w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full mb-4"></div>
+      <p class="text-gray-700 font-medium" data-i18n="audit.scanning">Scanning Google Maps...</p>
+      <p class="text-sm text-gray-500 mt-1" data-i18n="audit.analyzing">Analyzing competitor ratings...</p>
+      <div class="mt-4 space-y-2 text-left max-w-xs mx-auto">
+        <div class="flex items-center gap-2 text-sm text-gray-600">
+          <div class="w-4 h-4 rounded-full bg-green-500 animate-pulse"></div>
+          <span>Finding your business...</span>
+        </div>
+        <div class="flex items-center gap-2 text-sm text-gray-400">
+          <div class="w-4 h-4 rounded-full bg-gray-300"></div>
+          <span>Analyzing reviews...</span>
+        </div>
+        <div class="flex items-center gap-2 text-sm text-gray-400">
+          <div class="w-4 h-4 rounded-full bg-gray-300"></div>
+          <span>Comparing competitors...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="audit-result" class="hidden">
+      <!-- Grade -->
+      <div class="text-center py-6 border-b border-gray-100">
+        <div class="inline-block px-6 py-4 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200">
+          <div id="audit-grade" class="text-5xl font-bold text-amber-500 mb-1">C+</div>
+          <p class="text-sm text-amber-700 font-medium">Reputation Score</p>
+        </div>
+      </div>
+
+      <!-- Risk Assessment -->
+      <div class="py-4 text-center">
+        <p class="text-gray-700">
+          <span data-i18n="audit.riskLabel">Potential Revenue Risk:</span>
+          <span id="audit-risk" class="font-bold text-red-600 ml-1">High</span>
+        </p>
+        <p id="audit-revenue-loss" class="text-2xl font-bold text-red-500 mt-2">~$8,500/month</p>
+        <p class="text-xs text-gray-500 mt-1" data-i18n="audit.lostLeads">in lost leads to competitors</p>
+      </div>
+      
+      <!-- Comparison Table -->
+      <div class="bg-gray-50 p-4 rounded-xl text-sm space-y-3 my-4">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-600" data-i18n="audit.yourRating">Your Rating:</span>
+          <span id="audit-your-rating" class="font-bold text-lg">4.2 ⭐</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-600" data-i18n="audit.topCompetitor">Top Competitor:</span>
+          <span id="audit-competitor-rating" class="font-bold text-lg text-green-600">4.9 ⭐</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2 my-2">
+          <div id="audit-rating-bar" class="bg-amber-500 h-2 rounded-full" style="width: 84%"></div>
+        </div>
+        <div class="flex justify-between items-center pt-2 border-t border-gray-200">
+          <span class="text-gray-600" data-i18n="audit.reviewsNeeded">Reviews Needed to Catch Up:</span>
+          <span id="audit-reviews-needed" class="font-bold text-red-500">~87</span>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <button 
+        onclick="window.location.href='/signup.html?source=audit'" 
+        class="w-full py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-lg transition-all shadow-lg shadow-green-500/30 animate-pulse"
+      >
+        <span data-i18n="audit.fixRating">Start Fixing My Rating</span>
+        <span class="ml-2">→</span>
+      </button>
+      <p class="text-xs text-center text-gray-500 mt-3" data-i18n="audit.trial">14-day free trial • No credit card required</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const auditWidget = {
+  grades: {
+    'A+': { min: 4.9, color: 'text-green-500', risk: 'Low', revenueLoss: '$0' },
+    'A': { min: 4.7, color: 'text-green-500', risk: 'Low', revenueLoss: '~$1,000/month' },
+    'B+': { min: 4.5, color: 'text-blue-500', risk: 'Medium', revenueLoss: '~$3,500/month' },
+    'B': { min: 4.3, color: 'text-blue-500', risk: 'Medium', revenueLoss: '~$5,000/month' },
+    'C+': { min: 4.1, color: 'text-amber-500', risk: 'High', revenueLoss: '~$8,500/month' },
+    'C': { min: 3.9, color: 'text-amber-500', risk: 'High', revenueLoss: '~$12,000/month' },
+    'D': { min: 3.5, color: 'text-orange-500', risk: 'Very High', revenueLoss: '~$18,000/month' },
+    'F': { min: 0, color: 'text-red-500', risk: 'Critical', revenueLoss: '~$25,000/month' }
+  },
+
+  calculateGrade(rating) {
+    for (const [grade, data] of Object.entries(this.grades)) {
+      if (rating >= data.min) return { grade, ...data };
+    }
+    return { grade: 'F', ...this.grades['F'] };
+  },
+
+  calculateReviewsNeeded(yourRating, competitorRating, yourReviewCount = 50) {
+    const ratingGap = competitorRating - yourRating;
+    const reviewsPerPoint = 25;
+    return Math.ceil(ratingGap * reviewsPerPoint * (1 + Math.random() * 0.5));
+  },
+
+  async simulateAudit(businessName, industry) {
+    const yourRating = 3.8 + Math.random() * 0.8;
+    const competitorRating = 4.6 + Math.random() * 0.3;
+    const reviewsNeeded = this.calculateReviewsNeeded(yourRating, competitorRating);
+    const gradeData = this.calculateGrade(yourRating);
+
+    return {
+      businessName,
+      industry,
+      yourRating: yourRating.toFixed(1),
+      competitorRating: competitorRating.toFixed(1),
+      reviewsNeeded,
+      ...gradeData
+    };
+  }
+};
+
+async function runReviewAudit(e) {
+  e.preventDefault();
+  
+  const form = document.getElementById('audit-form');
+  const loading = document.getElementById('audit-loading');
+  const result = document.getElementById('audit-result');
+  
+  const businessName = document.getElementById('audit-biz-name').value;
+  const industry = document.getElementById('audit-industry').value;
+  const email = document.getElementById('audit-email').value;
+
+  form.classList.add('hidden');
+  loading.classList.remove('hidden');
+
+  const steps = loading.querySelectorAll('.flex.items-center');
+  for (let i = 0; i < steps.length; i++) {
+    await new Promise(r => setTimeout(r, 800));
+    if (steps[i]) {
+      const dot = steps[i].querySelector('div');
+      dot.classList.remove('bg-gray-300');
+      dot.classList.add('bg-green-500', 'animate-pulse');
+      steps[i].classList.remove('text-gray-400');
+      steps[i].classList.add('text-gray-600');
+    }
+  }
+
+  await new Promise(r => setTimeout(r, 500));
+
+  const data = await auditWidget.simulateAudit(businessName, industry);
+
+  document.getElementById('audit-grade').textContent = data.grade;
+  document.getElementById('audit-grade').className = `text-5xl font-bold ${data.color} mb-1`;
+  document.getElementById('audit-risk').textContent = data.risk;
+  document.getElementById('audit-revenue-loss').textContent = data.revenueLoss;
+  document.getElementById('audit-your-rating').textContent = `${data.yourRating} ⭐`;
+  document.getElementById('audit-competitor-rating').textContent = `${data.competitorRating} ⭐`;
+  document.getElementById('audit-reviews-needed').textContent = `~${data.reviewsNeeded}`;
+  
+  const ratingPercent = (parseFloat(data.yourRating) / parseFloat(data.competitorRating)) * 100;
+  document.getElementById('audit-rating-bar').style.width = `${ratingPercent}%`;
+
+  loading.classList.add('hidden');
+  result.classList.remove('hidden');
+
+  console.log('Lead captured:', { businessName, industry, email, ...data });
+
+  if (typeof fetch !== 'undefined') {
+    fetch('/api/leads/audit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ businessName, industry, email, ...data })
+    }).catch(err => console.log('Lead API not configured:', err));
+  }
+}
+</script>
+
+<style>
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+</style>
