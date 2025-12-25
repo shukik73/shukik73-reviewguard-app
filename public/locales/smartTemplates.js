@@ -160,10 +160,3 @@ const smartTemplates = {
   }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    if (typeof verticalConfig !== 'undefined') {
-      const vertical = verticalConfig?.current?.id || localStorage.getItem('vertical') || 'repair';
-    }
-  }, 200);
-});

@@ -519,10 +519,22 @@
         </nav>
 
         <div class="p-4 border-t border-slate-700">
-          <div class="flex justify-center gap-1 mb-3">
-            <button data-lang-switch="en" onclick="window.setLanguage('en')" class="px-2 py-1 rounded text-xs font-medium bg-accent text-white">EN</button>
-            <button data-lang-switch="es" onclick="window.setLanguage('es')" class="px-2 py-1 rounded text-xs font-medium bg-slate-700 text-slate-300">ES</button>
+          <div class="flex justify-center gap-1 mb-3" id="lang-switcher-container">
+            <button data-lang-switch="en" onclick="window.setLanguage('en')" class="px-2 py-1 rounded text-xs font-medium bg-slate-700 text-slate-300 hover:bg-slate-600">EN</button>
+            <button data-lang-switch="es" onclick="window.setLanguage('es')" class="px-2 py-1 rounded text-xs font-medium bg-slate-700 text-slate-300 hover:bg-slate-600">ES</button>
           </div>
+          <script>
+            (function() {
+              const lang = localStorage.getItem('lang') || 'en';
+              const btns = document.querySelectorAll('[data-lang-switch]');
+              btns.forEach(btn => {
+                if (btn.dataset.langSwitch === lang) {
+                  btn.classList.remove('bg-slate-700', 'text-slate-300');
+                  btn.classList.add('bg-accent', 'text-white');
+                }
+              });
+            })();
+          </script>
           <div class="flex items-center gap-3">
             <div
               id="user-avatar"
