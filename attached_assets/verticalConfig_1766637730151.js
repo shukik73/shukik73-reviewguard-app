@@ -138,7 +138,7 @@ const verticalConfig = {
 
   applyVertical() {
     const v = this.current;
-    const lang = typeof i18n !== 'undefined' ? i18n.locale : 'en';
+    const lang = i18n?.locale || 'en';
     const isEs = lang === 'es';
 
     document.querySelectorAll('[data-vertical="itemLabel"]').forEach(el => {
@@ -207,7 +207,7 @@ const verticalConfig = {
     const phoneField = document.getElementById('customer-phone')?.closest('.mb-4');
     if (!phoneField) return;
 
-    const lang = typeof i18n !== 'undefined' ? i18n.locale : 'en';
+    const lang = i18n?.locale || 'en';
     const isEs = lang === 'es';
 
     const wrapper = document.createElement('div');
@@ -234,7 +234,7 @@ const verticalConfig = {
   injectFakeDoorButton(container, v) {
     if (document.getElementById('servicetitan-btn')) return;
 
-    const lang = typeof i18n !== 'undefined' ? i18n.locale : 'en';
+    const lang = i18n?.locale || 'en';
     const isEs = lang === 'es';
 
     const btn = document.createElement('button');
@@ -268,7 +268,7 @@ const verticalConfig = {
 
   getCompletionMessage(customerName) {
     const v = this.current;
-    const lang = typeof i18n !== 'undefined' ? i18n.locale : 'en';
+    const lang = i18n?.locale || 'en';
     const template = lang === 'es' ? v.completionTemplateEs : v.completionTemplate;
     return template.replace('{{name}}', customerName || '');
   }

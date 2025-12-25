@@ -2629,11 +2629,16 @@
                       data-vertical-selector
                       class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
                     >
-                      <option value="repair">🔧 Repair Shop (Electronics, Phone, Computer)</option>
-                      <option value="auto">🚗 Auto Repair</option>
-                      <option value="hvac">❄️ HVAC / Field Service</option>
-                      <option value="beauty">💅 Nail Salon / Spa</option>
-                      <option value="barber">💈 Barber Shop</option>
+                      <optgroup label="In-Shop (Customer comes to you)">
+                        <option value="repair">🔧 Repair Shop (Electronics, Phone, Computer)</option>
+                        <option value="auto">🚗 Auto Repair</option>
+                        <option value="beauty">💅 Nail Salon / Spa</option>
+                        <option value="barber">💈 Barber Shop</option>
+                      </optgroup>
+                      <optgroup label="Field Service (You go to customer)">
+                        <option value="hvac">❄️ HVAC / Air Conditioning</option>
+                        <option value="plumbing">🔧 Plumbing</option>
+                      </optgroup>
                     </select>
                     <p class="text-xs text-gray-500 mt-1">
                       This changes templates and terminology to match your industry
