@@ -33,10 +33,10 @@ export function createRateLimiters() {
 
   const smsLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
-    max: 5,
+    max: 10,
     message: {
       success: false,
-      error: 'Too many SMS requests. Maximum 5 messages per hour allowed.',
+      error: 'Too many SMS requests. Maximum 10 messages per hour allowed.',
       code: 'RATE_LIMIT_EXCEEDED'
     },
     standardHeaders: true,
@@ -45,7 +45,7 @@ export function createRateLimiters() {
     handler: (req, res) => {
       res.status(429).json({
         success: false,
-        error: 'Too many SMS requests. Maximum 5 messages per hour allowed. Please try again later.',
+        error: 'Too many SMS requests. Maximum 10 messages per hour allowed. Please try again later.',
         code: 'RATE_LIMIT_EXCEEDED'
       });
     }

@@ -1,0 +1,126 @@
+Fix 4 bugs in ReviewGuard:
+
+## BUG 1: Landing page ES button doesn't translate
+
+The landing page is missing the landingTranslate.js script and language buttons.
+
+### Fix 1a: Add script to landing page <head>:
+```html
+<script src="/locales/landingTranslate.js" defer></script>
+```
+
+### Fix 1b: Add EN/ES buttons to the navbar (next to "Log in"):
+```html
+<div class="flex items-center gap-1 mr-4">
+  <button onclick="setLandingLang('en')" id="btn-lang-en" class="px-2 py-1 rounded text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">EN</button>
+  <button onclick="setLandingLang('es')" id="btn-lang-es" class="px-2 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">ES</button>
+</div>
+```
+
+### Fix 1c: Make sure public/locales/landingTranslate.js exists (create if missing)
+
+---
+
+## BUG 2: Login modal doesn't close when clicking outside
+
+The login modal stays open when clicking outside of it. Add click-outside-to-close.
+
+### Find the login modal wrapper div (the overlay/backdrop) and add onclick:
+
+Change from something like:
+```html
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" id="login-modal">
+```
+
+To:
+```html
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" id="login-modal" onclick="if(event.target === this) closeLoginModal()">
+```
+
+### Or if using a separate backdrop div, add onclick to the backdrop:
+```html
+<div class="absolute inset-0 bg-black/50" onclick="closeLoginModal()"></div>
+```
+
+### Make sure closeLoginModal() function exists:
+```javascript
+function closeLoginModal() {
+  const modal = document.getElementById('login-modal');
+  if (modal) modal.classList.add('hidden');
+}
+```
+
+### Also add a close button (X) to the login modal for accessibility:
+```html
+<button onclick="closeLoginModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+</button>
+```
+
+---
+
+## BUG 3: Change SMS rate limit from 5 to 10 per hour
+
+Find the rate limiting code in the backend (likely in server.js, routes/sms.js, or similar).
+
+Look for something like:
+```javascript
+const RATE_LIMIT = 5;
+// or
+maxRequests: 5
+// or
+limit: 5
+```
+
+Change to:
+```javascript
+const RATE_LIMIT = 10;
+// or
+maxRequests: 10
+// or
+limit: 10
+```
+
+Also check for any frontend validation that mentions "5 per hour" and change to "10 per hour".
+
+---
+
+## BUG 4: Feedback inbox error message appears behind modal
+
+The error toast/notification has a lower z-index than the response modal.
+
+### Find the toast/error notification CSS and increase z-index:
+
+Look for toast styles (might be in CSS or inline) and change:
+```css
+.toast, .notification, .error-message, [data-toast] {
+  z-index: 9999 !important;
+}
+```
+
+### Or if it's a specific element, find it and add higher z-index:
+```html
+<div id="toast" class="fixed ... z-[9999]">
+```
+
+The feedback response modal is likely z-50 (z-index: 50), so the toast needs to be higher like z-[9999] or z-[100].
+
+### If using a toast library or custom toast function, update the z-index there:
+```javascript
+function showToast(message, type) {
+  const toast = document.createElement('div');
+  toast.className = '... z-[9999]';  // Make sure z-index is very high
+  // ...
+}
+```
+
+---
+
+## VERIFICATION
+After fixes:
+1. Landing page → Click ES → All text translates to Spanish
+2. Click "Log in" → Click outside modal → Modal closes
+3. Send 10 SMS in an hour → Should work (previously failed at 5)
+4. Feedback inbox → Click Respond → Try to send with error → Error message visible above modal
