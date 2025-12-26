@@ -1,0 +1,115 @@
+Fix both login and signup API routes. Both are returning 404 or connection errors.
+
+## 1. Check if server is running
+Look at the Replit console - is there an error on startup?
+
+## 2. Check/create routes/auth.js with BOTH routes:
+```javascript
+const express = require('express');
+const router = express.Router();
+const bcrypt = require('bcrypt');
+const pool = require('../db');
+
+// LOGIN
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log('Login attempt:', email);
+    
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    
+    const user = result.rows[0];
+    const validPassword = await bcrypt.compare(password, user.password);
+    
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    
+    // Set session
+    req.session.userId = user.id;
+    req.session.email = user.email;
+    req.session.businessName = user.business_name;
+    
+    // Update last login
+    await pool.query('UPDATE users SET last_active_at = NOW() WHERE id = $1', [user.id]);
+    
+    res.json({ success: true, redirect: '/app' });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Connection error. Please try again.' });
+  }
+});
+
+// SIGNUP
+router.post('/signup', async (req, res) => {
+  try {
+    const { companyName, firstName, lastName, email, password, street, city, state, zip, country, plan } = req.body;
+    console.log('Signup attempt:', email);
+    
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const result = await pool.query(
+      `INSERT INTO users (business_name, first_name, last_name, email, password, street, city, state, zip, country, plan, created_at, last_active_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+       RETURNING id, email, business_name`,
+      [companyName, firstName, lastName, email, hashedPassword, street, city, state, zip, country, plan || 'free_trial']
+    );
+    
+    req.session.userId = result.rows[0].id;
+    req.session.email = result.rows[0].email;
+    req.session.businessName = result.rows[0].business_name;
+    
+    res.json({ success: true, redirect: '/app' });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ error: 'Signup failed. Please try again.' });
+  }
+});
+
+// LOGOUT
+router.post('/logout', (req, res) => {
+  req.session.destroy();
+  res.json({ success: true, redirect: '/' });
+});
+
+module.exports = router;
+```
+
+## 3. Make sure it's mounted in server.js:
+```javascript
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+```
+
+## 4. Check database connection in db.js or server.js:
+```javascript
+const { Pool } = require('pg');
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
+// Test connection
+pool.query('SELECT NOW()', (err, res) => {
+  if (err) {
+    console.error('Database connection error:', err);
+  } else {
+    console.log('Database connected:', res.rows[0].now);
+  }
+});
+
+module.exports = pool;
+```
+
+## 5. Check if DATABASE_URL is set in Replit Secrets
+
+## 6. Restart the server after changes
