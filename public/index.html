@@ -4992,7 +4992,7 @@
                 const data = await response.json();
 
                 if (data.success) {
-                  showLoginModal();
+                  window.location.href = '/landing.html';
                 } else {
                   showNotification('Logout failed', 'error');
                 }
