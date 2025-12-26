@@ -1,0 +1,82 @@
+Fix the signup 404 error. The form is posting to /api/auth/signup but getting 404.
+
+## Check these things:
+
+### 1. Does routes/auth.js exist?
+If yes, make sure it has:
+```javascript
+router.post('/signup', async (req, res) => {
+  // signup logic
+});
+```
+
+### 2. Is the auth router mounted in server.js?
+Look for:
+```javascript
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+```
+
+If missing, add it.
+
+### 3. If no auth routes exist, create them:
+
+Create `routes/auth.js`:
+```javascript
+const express = require('express');
+const router = express.Router();
+const bcrypt = require('bcrypt');
+const pool = require('../db');
+
+router.post('/signup', async (req, res) => {
+  try {
+    const { companyName, firstName, lastName, email, password, street, city, state, zip, country, plan } = req.body;
+    
+    // Check if user exists
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Insert user
+    const result = await pool.query(
+      `INSERT INTO users (business_name, first_name, last_name, email, password, street, city, state, zip, country, plan, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+       RETURNING id, email, business_name`,
+      [companyName, firstName, lastName, email, hashedPassword, street, city, state, zip, country, plan || 'free_trial']
+    );
+    
+    // Set session
+    req.session.userId = result.rows[0].id;
+    req.session.email = result.rows[0].email;
+    
+    res.json({ success: true, redirect: '/app' });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ error: 'Signup failed. Please try again.' });
+  }
+});
+
+module.exports = router;
+```
+
+### 4. Add to server.js:
+```javascript
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+```
+
+### 5. Make sure users table has all columns:
+```sql
+ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS street VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS city VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS state VARCHAR(50);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS zip VARCHAR(20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR(50);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(50) DEFAULT 'free_trial';
+```
