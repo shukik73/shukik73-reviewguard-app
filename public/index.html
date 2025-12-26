@@ -4817,10 +4817,10 @@
                   statusClass = 'bg-blue-100 text-blue-700';
                 }
                 const smsSentBadge = ticket.sms_sent_at 
-                  ? `<span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 ml-1">📨 SMS Sent</span>`
+                  ? `<span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 ml-1 font-medium">⚠️ Already Sent</span>`
                   : '';
                 const ticketClass = ticket.sms_sent_at 
-                  ? 'ticket-row p-3 border border-purple-300 rounded-lg bg-purple-50 opacity-70 cursor-pointer transition-colors border-l-4 border-l-purple-500' 
+                  ? 'ticket-row p-3 border border-red-300 rounded-lg bg-red-50 opacity-80 cursor-pointer transition-colors border-l-4 border-l-red-500' 
                   : 'ticket-row p-3 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 cursor-pointer transition-colors';
                 return `
                 <div class="${ticketClass}"

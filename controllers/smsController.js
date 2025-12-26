@@ -536,9 +536,21 @@ export const trackCustomerClick = (pool) => async (req, res) => {
     
     const customer = result.rows[0];
     
-    // Track the click
+    // Track the click in customers table
     await pool.query(
       'UPDATE customers SET link_clicked = TRUE WHERE id = $1',
+      [customer.id]
+    );
+    
+    // Also update the most recent message for this customer to show "Clicked" in History
+    await pool.query(
+      `UPDATE messages 
+       SET review_link_clicked_at = CURRENT_TIMESTAMP, review_status = 'link_clicked'
+       WHERE id = (
+         SELECT id FROM messages 
+         WHERE customer_id = $1 AND review_link_clicked_at IS NULL
+         ORDER BY sent_at DESC LIMIT 1
+       )`,
       [customer.id]
     );
     
