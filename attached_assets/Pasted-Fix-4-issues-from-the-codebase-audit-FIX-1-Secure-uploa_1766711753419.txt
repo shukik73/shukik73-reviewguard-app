@@ -1,0 +1,182 @@
+Fix 4 issues from the codebase audit:
+
+## FIX 1: Secure uploads against XSS (CRITICAL)
+
+File: server.js
+
+Find:
+```javascript
+app.use('/uploads', express.static(...))
+```
+
+Replace with secure serving that forces download and validates file types:
+```javascript
+const path = require('path');
+
+app.get('/uploads/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filepath = path.join(__dirname, 'uploads', filename);
+  
+  // Whitelist allowed extensions
+  const allowedExt = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf'];
+  const ext = path.extname(filename).toLowerCase();
+  
+  if (!allowedExt.includes(ext)) {
+    return res.status(403).send('File type not allowed');
+  }
+  
+  // Prevent directory traversal
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return res.status(403).send('Invalid filename');
+  }
+  
+  // Force download for non-image files, set security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'");
+  
+  if (ext === '.pdf') {
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  }
+  
+  res.sendFile(filepath);
+});
+```
+
+---
+
+## FIX 2: Remove Replit lock-in from Twilio
+
+File: utils/twilio.js
+
+Add fallback to standard environment variables. Change the credential fetching logic:
+```javascript
+async function getTwilioCredentials() {
+  // First try standard env vars (works on any platform)
+  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    return {
+      accountSid: process.env.TWILIO_ACCOUNT_SID,
+      authToken: process.env.TWILIO_AUTH_TOKEN,
+      phoneNumber: process.env.TWILIO_PHONE_NUMBER
+    };
+  }
+  
+  // Fallback to Replit connector if available
+  if (process.env.REPL_IDENTITY) {
+    try {
+      const response = await fetch(`https://${process.env.replit_connectors_hostname}/twilio/credentials`, {
+        headers: { 'Authorization': `Bearer ${process.env.REPL_IDENTITY}` }
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (err) {
+      console.warn('Replit connector failed, falling back to env vars');
+    }
+  }
+  
+  throw new Error('Twilio credentials not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER');
+}
+```
+
+---
+
+## FIX 3: Extract HTML from controller to view file
+
+File: controllers/smsController.js
+
+Find the `trackCustomerClick` function with the embedded HTML (the "Star Filter" page).
+
+### Step 3a: Create views/star-filter.html
+Extract all the HTML from the function into a new file `views/star-filter.html`. Use template placeholders:
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rate Your Experience - {{businessName}}</title>
+  <!-- rest of the HTML -->
+</head>
+<body>
+  <!-- Use {{variable}} placeholders for dynamic data -->
+  <h1>How was your experience at {{businessName}}?</h1>
+  <input type="hidden" id="customer-id" value="{{customerId}}">
+  <input type="hidden" id="google-review-link" value="{{googleReviewLink}}">
+  <!-- rest of the page -->
+</body>
+</html>
+```
+
+### Step 3b: Update the controller to use the template
+```javascript
+const fs = require('fs');
+const path = require('path');
+
+async function trackCustomerClick(req, res) {
+  try {
+    const { id } = req.params;
+    // ... existing database logic ...
+    
+    // Load template and replace placeholders
+    let template = fs.readFileSync(path.join(__dirname, '../views/star-filter.html'), 'utf8');
+    
+    template = template
+      .replace(/\{\{businessName\}\}/g, businessName || 'Our Business')
+      .replace(/\{\{customerId\}\}/g, id)
+      .replace(/\{\{googleReviewLink\}\}/g, googleReviewLink || '#')
+      .replace(/\{\{customerName\}\}/g, customerName || 'Valued Customer');
+    
+    res.send(template);
+  } catch (error) {
+    console.error('Error in trackCustomerClick:', error);
+    res.status(500).send('Something went wrong');
+  }
+}
+```
+
+---
+
+## FIX 4: Move hardcoded URLs to config
+
+### Step 4a: Create config/index.js
+```javascript
+module.exports = {
+  baseUrl: process.env.BASE_URL || 'https://reviews.techymiramar.com',
+  apiUrl: process.env.API_URL || 'https://reviews.techymiramar.com/api',
+  appName: process.env.APP_NAME || 'ReviewGuard',
+  
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID,
+    authToken: process.env.TWILIO_AUTH_TOKEN,
+    phoneNumber: process.env.TWILIO_PHONE_NUMBER
+  },
+  
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET
+  },
+  
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY
+  },
+  
+  database: {
+    url: process.env.DATABASE_URL
+  }
+};
+```
+
+### Step 4b: Update files to use config
+
+In smsController.js and other files, replace:
+```javascript
+const reviewLink = `https://reviews.techymiramar.com/review/${customerId}`;
+```
+
+With:
+```javascript
+const config = require('../config');
+const reviewLink = `${config.baseUrl}/review/${customerId}`;
+```
+
+### Step 4c: Add to .env.example

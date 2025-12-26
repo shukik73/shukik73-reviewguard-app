@@ -30,6 +30,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync, realpathSync } from 'fs';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import { pool } from './config/database.js';
@@ -127,7 +128,54 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.get('/uploads/:filename', (req, res) => {
+  let filename;
+  try {
+    filename = decodeURIComponent(req.params.filename);
+  } catch (e) {
+    return res.status(403).send('Invalid filename encoding');
+  }
+  
+  const safeFilenameRegex = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,62}[a-zA-Z0-9]\.(jpg|jpeg|png|gif|webp|pdf)$/i;
+  if (!safeFilenameRegex.test(filename) || (filename.match(/\./g) || []).length !== 1) {
+    return res.status(403).send('Invalid filename');
+  }
+  
+  const safeFilename = path.basename(filename);
+  const ext = path.extname(safeFilename).toLowerCase();
+  
+  let uploadsDir;
+  try {
+    uploadsDir = realpathSync(path.join(__dirname, 'uploads'));
+  } catch (e) {
+    return res.status(500).send('Server error');
+  }
+  
+  const candidatePath = path.join(uploadsDir, safeFilename);
+  
+  if (!existsSync(candidatePath)) {
+    return res.status(404).send('File not found');
+  }
+  
+  let resolvedPath;
+  try {
+    resolvedPath = realpathSync(candidatePath);
+    if (!resolvedPath.startsWith(uploadsDir + path.sep) && resolvedPath !== path.join(uploadsDir, safeFilename)) {
+      return res.status(403).send('Invalid path');
+    }
+  } catch (e) {
+    return res.status(404).send('File not found');
+  }
+  
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'");
+  
+  if (ext === '.pdf') {
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+  }
+  
+  res.sendFile(resolvedPath);
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 async function startServer() {

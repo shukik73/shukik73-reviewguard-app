@@ -32,7 +32,9 @@ The application follows an **MVC (Model-View-Controller)** architecture with mod
 -   **AI-Powered Review Reply Assistant**: Utilizes OpenAI (gpt-4o-mini via Replit AI Integrations) to generate SEO-optimized Google Review responses, with server-side validation.
 -   **Google Reviews Management**: Full review management dashboard with n8n webhook ingestion (`POST /api/reviews/ingest`), pending/posted/ignored status tracking, editable AI draft replies, and outbound webhook to post replies. Protected by `x-n8n-secret` header validation.
 -   **Telegram Autopilot Review Loop (Multi-Tenant)**: AI-to-Telegram integration for review management. Each user configures their own bot for notifications and approval workflows via a `pending_reviews` table and Telegram approval mechanism.
--   **Security Layer**: Implements Helmet.js with CSP, `express-rate-limit` with Redis-backed storage for API protection.
+-   **Security Layer**: Implements Helmet.js with CSP, `express-rate-limit` with Redis-backed storage for API protection. Hardened upload handler with strict filename regex validation, realpathSync containment checks, and single-dot enforcement. Template rendering uses context-aware escaping (HTML entities, URL encoding, JSON.stringify) with whitelist-only placeholder substitution and unresolved placeholder rejection.
+-   **XSS Prevention**: Star-filter template uses escapeHtml() helper, URL validation with protocol/hostname checks, and JSON.stringify for JavaScript contexts.
+-   **Path Traversal Protection**: Upload handler decodes filenames, validates against `/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,62}[a-zA-Z0-9]\.(ext)$/i`, enforces single-dot, and uses realpathSync for containment validation.
 -   **SMS Opt-Out Compliance**: Full TCPA/CAN-SPAM compliance with automatic STOP/START keyword handling via Twilio webhooks and an `sms_optouts` database table.
 
 ## Communication Layer

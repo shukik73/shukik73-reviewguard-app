@@ -1,5 +1,12 @@
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { isCloudinaryEnabled } from '../utils/multerConfig.js';
+import config from '../config/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function checkOptOut(pool, phone) {
   const result = await pool.query(
@@ -121,7 +128,7 @@ export const sendReviewRequest = (pool, getTwilioClient, getTwilioFromPhoneNumbe
     const fromNumber = await getTwilioFromPhoneNumber();
     
     const feedbackToken = messageType === 'review' ? crypto.randomUUID() : null;
-    const appHost = 'https://reviews.techymiramar.com';
+    const appHost = config.baseUrl;
     
     if (feedbackToken) {
       console.log(`📋 Generated Token for ${formattedPhone}:`, feedbackToken);
@@ -424,7 +431,7 @@ export const submitFeedback = (pool, getTwilioClient, getTwilioFromPhoneNumber) 
         const fromNumber = await getTwilioFromPhoneNumber();
         
         const reviewToken = crypto.randomBytes(3).toString('hex');
-        const appHost = 'https://reviews.techymiramar.com';
+        const appHost = config.baseUrl;
         const trackedReviewLink = `${appHost}/r/${reviewToken}`;
         
         const reviewMessage = `Thank you for your positive feedback! 🌟 We'd love if you could share your experience on Google: ${trackedReviewLink}\n\n(Reply STOP to end)`;
@@ -544,445 +551,39 @@ export const trackCustomerClick = (pool) => async (req, res) => {
     if (googleLink && googleLink.trim()) {
       console.log(`🌟 Showing Star Filter page for ${customer.name}`);
       
-      const starFilterHtml = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>How Was Your Experience? - ${businessName}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
-      color: #fff;
-      text-align: center;
-      padding: 20px;
-    }
-    .container {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(20px);
-      border-radius: 28px;
-      padding: 48px 36px;
-      max-width: 420px;
-      width: 100%;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .logo {
-      width: 64px;
-      height: 64px;
-      background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 20px;
-      font-size: 28px;
-    }
-    .business-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: rgba(255,255,255,0.7);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 24px;
-    }
-    h1 {
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      line-height: 1.2;
-    }
-    .subtitle {
-      font-size: 16px;
-      color: rgba(255,255,255,0.75);
-      margin-bottom: 32px;
-    }
-    .stars-container {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 24px;
-    }
-    .star-btn {
-      width: 56px;
-      height: 56px;
-      background: rgba(255,255,255,0.1);
-      border: 2px solid rgba(255,255,255,0.2);
-      border-radius: 12px;
-      cursor: pointer;
-      font-size: 28px;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .star-btn:hover {
-      background: rgba(255,255,255,0.2);
-      transform: scale(1.1);
-    }
-    .star-btn.selected {
-      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-      border-color: #fbbf24;
-      transform: scale(1.1);
-    }
-    .star-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: rgba(255,255,255,0.5);
-      margin-top: 8px;
-      padding: 0 4px;
-    }
-    
-    /* Priority Resolution Form (1-3 stars) */
-    .priority-form {
-      display: none;
-      text-align: left;
-      margin-top: 24px;
-      padding-top: 24px;
-      border-top: 1px solid rgba(255,255,255,0.15);
-      animation: slideIn 0.4s ease;
-    }
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .priority-form.show { display: block; }
-    .priority-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .priority-icon {
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-    }
-    .priority-text h2 {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 2px;
-    }
-    .priority-text p {
-      font-size: 13px;
-      color: rgba(255,255,255,0.7);
-    }
-    .vip-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      margin-bottom: 16px;
-    }
-    .form-textarea {
-      width: 100%;
-      min-height: 120px;
-      padding: 14px;
-      border: 2px solid rgba(255,255,255,0.2);
-      border-radius: 12px;
-      background: rgba(255,255,255,0.05);
-      color: #fff;
-      font-size: 15px;
-      resize: none;
-      transition: border-color 0.2s;
-    }
-    .form-textarea:focus {
-      outline: none;
-      border-color: #a855f7;
-    }
-    .form-textarea::placeholder {
-      color: rgba(255,255,255,0.4);
-    }
-    .submit-btn {
-      width: 100%;
-      margin-top: 16px;
-      padding: 16px;
-      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
-      border: none;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .submit-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4);
-    }
-    .submit-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
-    .privacy-note {
-      font-size: 11px;
-      color: rgba(255,255,255,0.5);
-      margin-top: 12px;
-      text-align: center;
-    }
-    
-    /* Awesome Screen (4-5 stars) */
-    .awesome-screen {
-      display: none;
-      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    @keyframes popIn {
-      0% { opacity: 0; transform: scale(0.8); }
-      100% { opacity: 1; transform: scale(1); }
-    }
-    .awesome-screen.show { display: block; }
-    .awesome-icon {
-      font-size: 80px;
-      margin-bottom: 20px;
-      animation: bounce 0.6s ease infinite alternate;
-    }
-    @keyframes bounce {
-      from { transform: translateY(0); }
-      to { transform: translateY(-10px); }
-    }
-    .awesome-title {
-      font-size: 36px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 12px;
-    }
-    .awesome-subtitle {
-      font-size: 16px;
-      color: rgba(255,255,255,0.8);
-    }
-    
-    /* Success Screen */
-    .success-screen {
-      display: none;
-      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .success-screen.show { display: block; }
-    .success-icon {
-      width: 80px;
-      height: 80px;
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 20px;
-      font-size: 40px;
-    }
-    .success-title {
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-    .success-subtitle {
-      font-size: 16px;
-      color: rgba(255,255,255,0.8);
-    }
-    
-    /* Initial/Rating Screen */
-    .rating-screen { display: block; }
-    .rating-screen.hide { display: none; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <!-- Initial Rating Screen -->
-    <div id="rating-screen" class="rating-screen">
-      <div class="logo">⭐</div>
-      <div class="business-name">${businessName}</div>
-      <h1>How was your experience?</h1>
-      <p class="subtitle">Your feedback helps us serve you better</p>
+      const escapeHtml = (str) => String(str).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
       
-      <div class="stars-container">
-        <button class="star-btn" data-rating="1">1</button>
-        <button class="star-btn" data-rating="2">2</button>
-        <button class="star-btn" data-rating="3">3</button>
-        <button class="star-btn" data-rating="4">4</button>
-        <button class="star-btn" data-rating="5">5</button>
-      </div>
-      <div class="star-labels">
-        <span>Poor</span>
-        <span>Excellent</span>
-      </div>
+      const isValidHttpsUrl = (url) => {
+        try {
+          const parsed = new URL(url);
+          return (parsed.protocol === 'https:' || parsed.protocol === 'http:') && 
+                 /^[a-zA-Z0-9.-]+$/.test(parsed.hostname);
+        } catch { return false; }
+      };
       
-      <!-- No-JS Fallback Form -->
-      <noscript>
-        <style>.stars-container, .star-labels { display: none !important; }</style>
-        <form action="/r/${token}" method="POST" style="margin-top: 20px;">
-          <p style="margin-bottom: 16px; color: rgba(255,255,255,0.8);">Please rate your experience:</p>
-          <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 20px;">
-            <label style="text-align: center; cursor: pointer;">
-              <input type="radio" name="rating" value="1" required style="display: block; margin: 0 auto 4px;">
-              <span>1</span>
-            </label>
-            <label style="text-align: center; cursor: pointer;">
-              <input type="radio" name="rating" value="2" style="display: block; margin: 0 auto 4px;">
-              <span>2</span>
-            </label>
-            <label style="text-align: center; cursor: pointer;">
-              <input type="radio" name="rating" value="3" style="display: block; margin: 0 auto 4px;">
-              <span>3</span>
-            </label>
-            <label style="text-align: center; cursor: pointer;">
-              <input type="radio" name="rating" value="4" style="display: block; margin: 0 auto 4px;">
-              <span>4</span>
-            </label>
-            <label style="text-align: center; cursor: pointer;">
-              <input type="radio" name="rating" value="5" style="display: block; margin: 0 auto 4px;">
-              <span>5</span>
-            </label>
-          </div>
-          <div style="margin-bottom: 16px;">
-            <label style="display: block; margin-bottom: 8px; color: rgba(255,255,255,0.8);">Feedback (optional):</label>
-            <textarea name="feedback" rows="4" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: #fff;" placeholder="Tell us about your experience..."></textarea>
-          </div>
-          <button type="submit" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); border: none; border-radius: 8px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;">Submit Rating</button>
-        </form>
-      </noscript>
+      const safeGoogleLink = isValidHttpsUrl(googleLink) ? googleLink : '#';
       
-      <!-- Priority Resolution Form (1-3 Stars) -->
-      <div id="priority-form" class="priority-form">
-        <div class="priority-header">
-          <div class="priority-icon">🎯</div>
-          <div class="priority-text">
-            <h2>We want to make this right.</h2>
-            <p>Message the owner directly so we can fix this immediately.</p>
-          </div>
-        </div>
-        
-        <div class="vip-badge">
-          <span>👑</span> VIP Priority Resolution
-        </div>
-        
-        <textarea id="feedback-text" class="form-textarea" placeholder="Tell us what happened and how we can make it right. The owner will personally review your message..."></textarea>
-        
-        <button id="submit-feedback" class="submit-btn">Send Direct Message to Owner</button>
-        
-        <p class="privacy-note">🔒 This goes directly to the owner - not posted publicly</p>
-      </div>
-    </div>
-    
-    <!-- Awesome Screen (4-5 Stars) -->
-    <div id="awesome-screen" class="awesome-screen">
-      <div class="awesome-icon">🎉</div>
-      <h1 class="awesome-title">Awesome!</h1>
-      <p class="awesome-subtitle">Thank you! Directing you to Google...</p>
-    </div>
-    
-    <!-- Success Screen (After Feedback Submission) -->
-    <div id="success-screen" class="success-screen">
-      <div class="success-icon">✓</div>
-      <h1 class="success-title">Message Received!</h1>
-      <p class="success-subtitle">Thank you for reaching out. The owner will<br>review your message and get back to you soon.</p>
-    </div>
-  </div>
-  
-  <script>
-    const token = '${token}';
-    let selectedRating = 0;
-    
-    const starBtns = document.querySelectorAll('.star-btn');
-    const ratingScreen = document.getElementById('rating-screen');
-    const priorityForm = document.getElementById('priority-form');
-    const awesomeScreen = document.getElementById('awesome-screen');
-    const successScreen = document.getElementById('success-screen');
-    const submitBtn = document.getElementById('submit-feedback');
-    const feedbackText = document.getElementById('feedback-text');
-    
-    starBtns.forEach(btn => {
-      btn.addEventListener('click', function() {
-        selectedRating = parseInt(this.dataset.rating);
-        
-        // Update star visual state
-        starBtns.forEach((b, i) => {
-          if (i < selectedRating) {
-            b.classList.add('selected');
-            b.textContent = '★';
-          } else {
-            b.classList.remove('selected');
-            b.textContent = (i + 1).toString();
-          }
-        });
-        
-        // Route based on rating
-        if (selectedRating >= 4) {
-          // High rating: Show Awesome screen then auto-redirect to Google
-          setTimeout(() => {
-            ratingScreen.classList.add('hide');
-            awesomeScreen.classList.add('show');
-            // Auto-redirect to Google after 500ms
-            setTimeout(() => {
-              window.location.href = '${googleLink}';
-            }, 500);
-          }, 400);
-        } else {
-          // Low rating: Show Priority Resolution Form
-          priorityForm.classList.add('show');
-        }
+      const templateData = {
+        businessName: escapeHtml(businessName),
+        tokenUrl: encodeURIComponent(token),
+        tokenJson: JSON.stringify(token),
+        googleLinkJson: JSON.stringify(safeGoogleLink),
+        customerName: escapeHtml(customer.name || 'Valued Customer')
+      };
+      
+      let template = fs.readFileSync(path.join(__dirname, '../views/star-filter.html'), 'utf8');
+      
+      template = template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+        return Object.prototype.hasOwnProperty.call(templateData, key) ? templateData[key] : '';
       });
-    });
-    
-    submitBtn.addEventListener('click', async function() {
-      const text = feedbackText.value.trim();
       
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Sending...';
-      
-      try {
-        const response = await fetch('/api/internal-feedback', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            feedbackToken: token,
-            rating: selectedRating,
-            feedbackText: text
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          ratingScreen.classList.add('hide');
-          priorityForm.classList.remove('show');
-          successScreen.classList.add('show');
-        } else {
-          alert('Something went wrong. Please try again.');
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Send Direct Message to Owner';
-        }
-      } catch (err) {
-        alert('Connection error. Please try again.');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Send Direct Message to Owner';
+      if (/\{\{[^}]+\}\}/.test(template)) {
+        console.error('⚠️ Unresolved template placeholders detected');
+        return res.status(500).send('Template error');
       }
-    });
-  </script>
-</body>
-</html>`;
       
-      res.send(starFilterHtml);
+      res.send(template);
     } else {
-      // Fallback: Show thank you page when Google link is not configured
       console.log(`⚠️ No Google Review link configured for user_id: ${customer.user_id}`);
       res.redirect(302, `/thank-you.html?business=${encodeURIComponent(businessName)}`);
     }
@@ -1154,7 +755,7 @@ export const sendCustomerFollowups = (pool, getTwilioClient, getTwilioFromPhoneN
 
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
-    const appHost = 'https://reviews.techymiramar.com';
+    const appHost = config.baseUrl;
     
     let successCount = 0;
     let errors = [];
@@ -1288,7 +889,7 @@ export const sendFollowups = (pool, getTwilioClient, getTwilioFromPhoneNumber) =
     
     const client = await getTwilioClient();
     const fromNumber = await getTwilioFromPhoneNumber();
-    const appHost = 'https://reviews.techymiramar.com';
+    const appHost = config.baseUrl;
     
     let successCount = 0;
     let errors = [];
