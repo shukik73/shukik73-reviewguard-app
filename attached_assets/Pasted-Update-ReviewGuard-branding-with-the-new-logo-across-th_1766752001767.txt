@@ -1,0 +1,94 @@
+Update ReviewGuard branding with the new logo across the entire application.
+
+## LOGO FILE SETUP
+
+1. Save the uploaded logo image to: `public/images/logo.png`
+2. Create a favicon version (just the icon without text) at: `public/favicon.ico` or `public/favicon.png`
+
+## LOCATIONS TO UPDATE
+
+### 1. Sidebar Logo (App Dashboard)
+Find the logo/brand area in the sidebar and update:
+```html
+<div class="flex items-center gap-3 px-4 py-5 border-b border-slate-700">
+  <img src="/images/logo.png" alt="ReviewGuard" class="h-8 w-auto" />
+</div>
+```
+Remove any existing text-based logo like "Techy Miramar" or "ReviewGuard" text spans.
+
+### 2. Landing Page Header
+Update the navbar logo:
+```html
+<a href="/" class="flex items-center">
+  <img src="/images/logo.png" alt="ReviewGuard" class="h-8 w-auto" />
+</a>
+```
+
+### 3. Landing Page Footer
+Update footer logo:
+```html
+<div class="flex items-center gap-2 mb-4">
+  <img src="/images/logo.png" alt="ReviewGuard" class="h-6 w-auto" />
+</div>
+```
+
+### 4. Login Modal / Auth Pages
+If there's a logo on login/signup pages:
+```html
+<div class="flex justify-center mb-6">
+  <img src="/images/logo.png" alt="ReviewGuard" class="h-10 w-auto" />
+</div>
+```
+
+### 5. Favicon
+In the `<head>` section of all HTML files:
+```html
+<link rel="icon" type="image/png" href="/images/favicon.png" />
+<link rel="apple-touch-icon" href="/images/logo.png" />
+```
+
+### 6. QR Counter Stand (qrStand.js)
+Update the logo in the QR card design. Find the `.qr-stand-logo` section and replace with:
+```html
+<div class="qr-stand-logo" style="width: 60px; height: 60px; margin: 0 auto 12px;">
+  <img src="/images/logo.png" alt="ReviewGuard" style="width: 100%; height: auto;" />
+</div>
+```
+
+### 7. Email Templates (if any)
+If there are email templates in `/views/` or `/templates/`, update logo references.
+
+### 8. Mobile/PWA Manifest (if exists)
+Update `manifest.json` or `site.webmanifest`:
+```json
+{
+  "name": "ReviewGuard",
+  "short_name": "ReviewGuard",
+  "icons": [
+    {
+      "src": "/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
+```
+
+## COLOR SCHEME REFERENCE
+Based on the logo, use these brand colors throughout:
+- Primary Teal: `#0d9488` or `#14b8a6`
+- Accent Green: `#22c55e` or `#4ade80`  
+- Dark Gray: `#475569`
+
+## CLEANUP
+- Remove any hardcoded "Techy Miramar" text references
+- Remove any old logo files
+- Ensure alt text says "ReviewGuard" everywhere
+
+## VERIFICATION
+After changes:
+1. App sidebar shows new logo
+2. Landing page header/footer shows new logo
+3. Browser tab shows favicon
+4. QR Counter Stand preview shows logo
+5. No broken image icons anywhere
