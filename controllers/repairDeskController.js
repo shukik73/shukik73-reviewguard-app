@@ -6,6 +6,9 @@ export async function getRecentTickets(req, res) {
     const apiKey = process.env.REPAIRDESK_API_KEY;
     const userId = req.session?.user?.id;
     
+    console.log('[RepairDesk] Session user:', req.session?.user);
+    console.log('[RepairDesk] User ID:', userId);
+    
     if (!apiKey) {
       throw new Error('Missing API Key in Secrets');
     }
@@ -54,6 +57,7 @@ export async function getRecentTickets(req, res) {
     
     let smsHistory = {};
     if (phoneNumbers.length > 0 && userId) {
+      console.log('[RepairDesk] Looking up SMS history for userId:', userId);
       const smsResult = await pool.query(`
         SELECT DISTINCT ON (RIGHT(REGEXP_REPLACE(customer_phone, '[^0-9]', '', 'g'), 10))
           RIGHT(REGEXP_REPLACE(customer_phone, '[^0-9]', '', 'g'), 10) as phone_last10,
@@ -64,12 +68,16 @@ export async function getRecentTickets(req, res) {
         ORDER BY RIGHT(REGEXP_REPLACE(customer_phone, '[^0-9]', '', 'g'), 10), sent_at DESC
       `, [userId]);
       
+      console.log('[RepairDesk] SMS history found:', smsResult.rows.length, 'records');
       smsResult.rows.forEach(row => {
         smsHistory[row.phone_last10] = {
           sent_at: row.sent_at,
           message_type: row.message_type
         };
       });
+      console.log('[RepairDesk] SMS history phones:', Object.keys(smsHistory));
+    } else {
+      console.log('[RepairDesk] Skipping SMS lookup - phoneNumbers:', phoneNumbers.length, 'userId:', userId);
     }
     
     cleanTickets = cleanTickets.map(ticket => {
