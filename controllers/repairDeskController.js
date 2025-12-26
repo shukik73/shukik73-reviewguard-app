@@ -4,9 +4,8 @@ import { pool } from '../config/database.js';
 export async function getRecentTickets(req, res) {
   try {
     const apiKey = process.env.REPAIRDESK_API_KEY;
-    const userId = req.session?.user?.id;
+    const userId = req.user?.id || req.session?.userId;
     
-    console.log('[RepairDesk] Session user:', req.session?.user);
     console.log('[RepairDesk] User ID:', userId);
     
     if (!apiKey) {
@@ -124,7 +123,7 @@ export async function getRecentTickets(req, res) {
 
 export async function checkSmsHistory(req, res) {
   try {
-    const userId = req.session?.user?.id;
+    const userId = req.user?.id || req.session?.userId;
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
