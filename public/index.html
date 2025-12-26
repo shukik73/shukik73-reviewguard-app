@@ -232,6 +232,14 @@
       .animate-fade-in {
         animation: fade-in 0.3s ease-out;
       }
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateX(100px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+      @keyframes slideOut {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(100px); }
+      }
     </style>
 
     <div class="flex min-h-screen">
@@ -1541,6 +1549,15 @@
                         placeholder="+1..."
                         class="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
                       />
+                    </div>
+                    <div id="sms-sent-warning" class="hidden mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div class="flex items-center gap-2">
+                        <span class="text-red-500">⚠️</span>
+                        <div>
+                          <p class="text-sm font-medium text-red-700">SMS Already Sent</p>
+                          <p class="text-xs text-red-600" id="sms-sent-details">Review request sent recently</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -4287,6 +4304,58 @@
 
           const smsConsentCheckbox = document.getElementById('sms-consent-checkbox');
           const sendSmsBtn = document.getElementById('send-sms-btn');
+          const customerPhoneInput = document.getElementById('customer-phone');
+          const smsSentWarning = document.getElementById('sms-sent-warning');
+          const smsSentDetails = document.getElementById('sms-sent-details');
+          
+          function getTimeAgo(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 60) return `${diffMins} minutes ago`;
+            if (diffHours < 24) return `${diffHours} hours ago`;
+            return `${diffDays} days ago`;
+          }
+          
+          async function checkSmsHistory(phone) {
+            const cleanPhone = phone.replace(/\D/g, '');
+            if (cleanPhone.length < 10) {
+              smsSentWarning.classList.add('hidden');
+              customerPhoneInput.classList.remove('border-red-300', 'bg-red-50');
+              return;
+            }
+            
+            try {
+              const response = await fetch(`/api/check-sms-history/${cleanPhone}`);
+              const data = await response.json();
+              
+              if (data.hasSms) {
+                const timeAgo = getTimeAgo(data.lastSentAt);
+                smsSentDetails.textContent = `${data.messageType || 'SMS'} sent ${timeAgo}`;
+                smsSentWarning.classList.remove('hidden');
+                customerPhoneInput.classList.add('border-red-300', 'bg-red-50');
+              } else {
+                smsSentWarning.classList.add('hidden');
+                customerPhoneInput.classList.remove('border-red-300', 'bg-red-50');
+              }
+            } catch (error) {
+              console.error('Error checking SMS history:', error);
+            }
+          }
+          
+          let phoneCheckTimeout;
+          customerPhoneInput.addEventListener('input', function() {
+            clearTimeout(phoneCheckTimeout);
+            phoneCheckTimeout = setTimeout(() => checkSmsHistory(this.value), 500);
+          });
+          
+          customerPhoneInput.addEventListener('blur', function() {
+            checkSmsHistory(this.value);
+          });
 
           smsConsentCheckbox.addEventListener('change', function() {
             sendSmsBtn.disabled = !this.checked;
@@ -4355,6 +4424,8 @@
               const data = await response.json();
 
               if (data.success) {
+                showSmsSentConfirmation();
+                
                 if (messageType === 'review') {
                   showNotification('Feedback request sent! Customer will receive a link to rate their experience.', 'success');
                 } else {
@@ -4368,6 +4439,8 @@
                 customMessageInput.value = '';
                 smsConsentCheckbox.checked = false;
                 sendSmsBtn.disabled = true;
+                smsSentWarning.classList.add('hidden');
+                customerPhoneInput.classList.remove('border-red-300', 'bg-red-50');
                 updatePreview();
               } else {
                 showNotification('Error: ' + data.error, 'error');
@@ -4431,6 +4504,27 @@
             window.closeSmsConfirmationModal();
             await sendSMS();
           };
+          
+          function showSmsSentConfirmation() {
+            const banner = document.createElement('div');
+            banner.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-[9999] flex items-center gap-3';
+            banner.innerHTML = `
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <div>
+                <span class="font-bold text-lg">SMS SENT!</span>
+                <p class="text-sm opacity-90">Message delivered successfully</p>
+              </div>
+            `;
+            banner.style.animation = 'slideIn 0.3s ease-out';
+            document.body.appendChild(banner);
+            
+            setTimeout(() => {
+              banner.style.animation = 'slideOut 0.3s ease-out forwards';
+              setTimeout(() => banner.remove(), 300);
+            }, 3000);
+          }
 
           document.getElementById('modal-cancel-btn').addEventListener('click', window.closeSmsConfirmationModal);
           document.getElementById('modal-confirm-btn').addEventListener('click', window.confirmAndSendSMS);
@@ -4722,16 +4816,23 @@
                 } else if (ticket.status === 'In Progress') {
                   statusClass = 'bg-blue-100 text-blue-700';
                 }
+                const smsSentBadge = ticket.sms_sent_at 
+                  ? `<span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 ml-1">📨 SMS Sent</span>`
+                  : '';
+                const ticketClass = ticket.sms_sent_at 
+                  ? 'ticket-row p-3 border border-purple-300 rounded-lg bg-purple-50 opacity-70 cursor-pointer transition-colors border-l-4 border-l-purple-500' 
+                  : 'ticket-row p-3 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 cursor-pointer transition-colors';
                 return `
-                <div class="ticket-row p-3 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 cursor-pointer transition-colors"
+                <div class="${ticketClass}"
                      data-name="${ticket.customer_name}"
                      data-phone="${ticket.customer_phone}"
                      data-device="${ticket.device_name}">
                   <div class="flex items-center justify-between">
                     <div class="flex-1">
-                      <div class="flex items-center gap-2 mb-1">
+                      <div class="flex items-center gap-2 mb-1 flex-wrap">
                         <span class="text-xs font-mono text-gray-500">#${ticket.id}</span>
                         <span class="text-xs px-2 py-0.5 rounded-full ${statusClass}">${ticket.status}</span>
+                        ${smsSentBadge}
                       </div>
                       <div class="font-medium text-gray-900">${ticket.customer_name}</div>
                       <div class="text-sm text-gray-500">${ticket.device_name}</div>
@@ -4762,6 +4863,10 @@
                   updatePreview();
                   closeRepairDeskModal();
                   showNotification(`Imported: ${name}`, 'success');
+                  
+                  if (phone) {
+                    checkSmsHistory(phone);
+                  }
                 });
               });
 

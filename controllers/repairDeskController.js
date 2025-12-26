@@ -1,8 +1,10 @@
 import axios from 'axios';
+import { pool } from '../config/database.js';
 
 export async function getRecentTickets(req, res) {
   try {
     const apiKey = process.env.REPAIRDESK_API_KEY;
+    const userId = req.session?.user?.id;
     
     if (!apiKey) {
       throw new Error('Missing API Key in Secrets');
@@ -48,6 +50,38 @@ export async function getRecentTickets(req, res) {
       };
     });
 
+    const phoneNumbers = cleanTickets.map(t => t.customer_phone.replace(/\D/g, '').slice(-10)).filter(p => p.length === 10);
+    
+    let smsHistory = {};
+    if (phoneNumbers.length > 0 && userId) {
+      const smsResult = await pool.query(`
+        SELECT DISTINCT ON (RIGHT(REGEXP_REPLACE(phone_number, '[^0-9]', '', 'g'), 10))
+          RIGHT(REGEXP_REPLACE(phone_number, '[^0-9]', '', 'g'), 10) as phone_last10,
+          sent_at,
+          message_type
+        FROM messages
+        WHERE user_id = $1
+        ORDER BY RIGHT(REGEXP_REPLACE(phone_number, '[^0-9]', '', 'g'), 10), sent_at DESC
+      `, [userId]);
+      
+      smsResult.rows.forEach(row => {
+        smsHistory[row.phone_last10] = {
+          sent_at: row.sent_at,
+          message_type: row.message_type
+        };
+      });
+    }
+    
+    cleanTickets = cleanTickets.map(ticket => {
+      const phoneLast10 = ticket.customer_phone.replace(/\D/g, '').slice(-10);
+      const sms = smsHistory[phoneLast10];
+      return {
+        ...ticket,
+        sms_sent_at: sms?.sent_at || null,
+        sms_message_type: sms?.message_type || null
+      };
+    });
+
     cleanTickets.sort((a, b) => {
       const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
       const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
@@ -77,5 +111,43 @@ export async function getRecentTickets(req, res) {
       error: 'Failed to fetch tickets from RepairDesk',
       details: error.message
     });
+  }
+}
+
+export async function checkSmsHistory(req, res) {
+  try {
+    const userId = req.session?.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    const phone = req.params.phone.replace(/\D/g, '');
+    const phoneLast10 = phone.slice(-10);
+    
+    if (phoneLast10.length < 10) {
+      return res.json({ hasSms: false });
+    }
+    
+    const result = await pool.query(`
+      SELECT sent_at, message_type 
+      FROM messages 
+      WHERE user_id = $1 
+        AND RIGHT(REGEXP_REPLACE(phone_number, '[^0-9]', '', 'g'), 10) = $2
+      ORDER BY sent_at DESC
+      LIMIT 1
+    `, [userId, phoneLast10]);
+    
+    if (result.rows.length > 0) {
+      res.json({
+        hasSms: true,
+        lastSentAt: result.rows[0].sent_at,
+        messageType: result.rows[0].message_type
+      });
+    } else {
+      res.json({ hasSms: false });
+    }
+  } catch (error) {
+    console.error('Check SMS history error:', error);
+    res.status(500).json({ error: 'Failed to check SMS history' });
   }
 }
