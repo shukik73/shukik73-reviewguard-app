@@ -55,13 +55,13 @@ export async function getRecentTickets(req, res) {
     let smsHistory = {};
     if (phoneNumbers.length > 0 && userId) {
       const smsResult = await pool.query(`
-        SELECT DISTINCT ON (RIGHT(REGEXP_REPLACE(phone_number, '[^0-9]', '', 'g'), 10))
-          RIGHT(REGEXP_REPLACE(phone_number, '[^0-9]', '', 'g'), 10) as phone_last10,
+        SELECT DISTINCT ON (RIGHT(REGEXP_REPLACE(customer_phone, '[^0-9]', '', 'g'), 10))
+          RIGHT(REGEXP_REPLACE(customer_phone, '[^0-9]', '', 'g'), 10) as phone_last10,
           sent_at,
           message_type
         FROM messages
         WHERE user_id = $1
-        ORDER BY RIGHT(REGEXP_REPLACE(phone_number, '[^0-9]', '', 'g'), 10), sent_at DESC
+        ORDER BY RIGHT(REGEXP_REPLACE(customer_phone, '[^0-9]', '', 'g'), 10), sent_at DESC
       `, [userId]);
       
       smsResult.rows.forEach(row => {
@@ -132,7 +132,7 @@ export async function checkSmsHistory(req, res) {
       SELECT sent_at, message_type 
       FROM messages 
       WHERE user_id = $1 
-        AND RIGHT(REGEXP_REPLACE(phone_number, '[^0-9]', '', 'g'), 10) = $2
+        AND RIGHT(REGEXP_REPLACE(customer_phone, '[^0-9]', '', 'g'), 10) = $2
       ORDER BY sent_at DESC
       LIMIT 1
     `, [userId, phoneLast10]);
