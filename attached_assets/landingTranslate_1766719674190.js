@@ -173,12 +173,9 @@ const landingTranslate = {
     }
     
     textNodes.forEach(textNode => {
-      const originalText = textNode.textContent;
-      const text = originalText.trim();
+      const text = textNode.textContent.trim();
       if (text && dict[text]) {
-        const leadingSpace = originalText.match(/^\s*/)[0];
-        const trailingSpace = originalText.match(/\s*$/)[0];
-        textNode.textContent = leadingSpace + dict[text] + trailingSpace;
+        textNode.textContent = textNode.textContent.replace(text, dict[text]);
       }
     });
 
