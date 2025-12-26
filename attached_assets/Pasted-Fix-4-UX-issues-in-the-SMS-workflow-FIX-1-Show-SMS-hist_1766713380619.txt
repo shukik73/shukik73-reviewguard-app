@@ -1,0 +1,295 @@
+Fix 4 UX issues in the SMS workflow:
+
+## FIX 1: Show SMS history in RepairDesk import modal
+
+When importing from RepairDesk POS, show if the customer already received an SMS to prevent duplicates.
+
+### 1a. Update the API endpoint that fetches RepairDesk tickets
+In the route that returns tickets for the modal (likely /api/repairdesk/tickets or similar), join with the messages table to check SMS history:
+```javascript
+// When fetching tickets, also check if customer already got SMS
+const tickets = await pool.query(`
+  SELECT 
+    t.*,
+    m.id as message_id,
+    m.sent_at as sms_sent_at,
+    m.message_type
+  FROM repairdesk_tickets t
+  LEFT JOIN messages m ON t.phone = m.phone_number
+  ORDER BY t.created_at DESC
+  LIMIT 50
+`);
+```
+
+### 1b. Update the modal HTML to show SMS status badge
+In the RepairDesk modal ticket list, add a badge showing if SMS was sent:
+```html
+<div class="ticket-item flex justify-between items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+  <div>
+    <span class="text-xs text-gray-500">#T-{{ticketId}}</span>
+    <span class="px-2 py-0.5 text-xs rounded-full {{statusClass}}">{{status}}</span>
+    <!-- ADD THIS: SMS sent indicator -->
+    {{#if smsSentAt}}
+    <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700 ml-1">📨 SMS Sent</span>
+    {{/if}}
+    <p class="font-medium">{{customerName}}</p>
+    <p class="text-sm text-gray-500">{{device}}</p>
+  </div>
+  <span class="text-sm text-gray-600">{{phone}}</span>
+</div>
+```
+
+### 1c. Style tickets with SMS already sent
+Add visual distinction - grey out or add purple border for customers who already received SMS:
+```css
+.ticket-item.sms-sent {
+  background-color: #f3f0ff; /* light purple */
+  border-left: 3px solid #8b5cf6; /* purple border */
+  opacity: 0.7;
+}
+```
+
+Or in Tailwind in the JS that renders tickets:
+```javascript
+const ticketClass = ticket.sms_sent_at 
+  ? 'bg-purple-50 border-l-4 border-purple-500 opacity-70' 
+  : 'hover:bg-gray-50';
+```
+
+---
+
+## FIX 2: Fix click tracking not updating in history
+
+The link click tracking isn't reflecting in the Message History view.
+
+### 2a. Check the click tracking endpoint
+In controllers/smsController.js, find the trackCustomerClick function and verify it updates the database:
+```javascript
+async function trackCustomerClick(req, res) {
+  const { id } = req.params;
+  
+  try {
+    // Update the message record to mark as clicked
+    await pool.query(`
+      UPDATE messages 
+      SET 
+        clicked = true,
+        clicked_at = NOW()
+      WHERE customer_id = $1 OR id = $1
+    `, [id]);
+    
+    // Also update the customer record if you have one
+    await pool.query(`
+      UPDATE customers 
+      SET 
+        link_clicked = true,
+        clicked_at = NOW()
+      WHERE id = $1
+    `, [id]);
+    
+    // ... rest of the function (render star filter page)
+  } catch (error) {
+    console.error('Click tracking error:', error);
+  }
+}
+```
+
+### 2b. Verify the History page queries the clicked status
+Make sure the history API returns the clicked status:
+```javascript
+// In the route that fetches message history
+const messages = await pool.query(`
+  SELECT 
+    m.*,
+    c.name as customer_name,
+    c.phone_number,
+    c.device,
+    m.clicked,
+    m.clicked_at
+  FROM messages m
+  LEFT JOIN customers c ON m.customer_id = c.id
+  ORDER BY m.sent_at DESC
+`);
+```
+
+### 2c. Update the History UI to show clicked status
+The legend shows "Clicked" in green - make sure the row reflects this:
+```html
+<!-- In message history row -->
+<div class="message-row">
+  <span class="name">{{customerName}}</span>
+  {{#if clicked}}
+  <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">● Clicked</span>
+  {{/if}}
+  <span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700">⭐ Review</span>
+  <span class="text-gray-500">Sent</span>
+</div>
+```
+
+---
+
+## FIX 3: Visual indicator in Send SMS for customers who already got SMS
+
+In the Send SMS / New Customer Onboarding section, show if the phone number already received an SMS.
+
+### 3a. Add phone number lookup on input
+When user enters a phone number or imports from POS, check if they already got SMS:
+```javascript
+// Add event listener to phone input
+document.getElementById('customer-phone').addEventListener('blur', async function() {
+  const phone = this.value.replace(/\D/g, '');
+  if (phone.length >= 10) {
+    const response = await fetch(`/api/check-sms-history/${phone}`);
+    const data = await response.json();
+    
+    if (data.hasSms) {
+      showSmsSentWarning(data.lastSentAt, data.messageType);
+    } else {
+      hideSmsSentWarning();
+    }
+  }
+});
+```
+
+### 3b. Create the API endpoint
+```javascript
+app.get('/api/check-sms-history/:phone', async (req, res) => {
+  const phone = req.params.phone.replace(/\D/g, '');
+  
+  const result = await pool.query(`
+    SELECT sent_at, message_type 
+    FROM messages 
+    WHERE REPLACE(phone_number, '+', '') LIKE '%' || $1
+    ORDER BY sent_at DESC
+    LIMIT 1
+  `, [phone.slice(-10)]);
+  
+  if (result.rows.length > 0) {
+    res.json({
+      hasSms: true,
+      lastSentAt: result.rows[0].sent_at,
+      messageType: result.rows[0].message_type
+    });
+  } else {
+    res.json({ hasSms: false });
+  }
+});
+```
+
+### 3c. Show warning banner in the form
+Add a warning div that appears when SMS was already sent:
+```html
+<!-- Add this above or below the phone input -->
+<div id="sms-sent-warning" class="hidden mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+  <div class="flex items-center gap-2">
+    <span class="text-red-500">⚠️</span>
+    <div>
+      <p class="text-sm font-medium text-red-700">SMS Already Sent</p>
+      <p class="text-xs text-red-600" id="sms-sent-details">Review request sent 3h ago</p>
+    </div>
+  </div>
+</div>
+```
+```javascript
+function showSmsSentWarning(sentAt, messageType) {
+  const warning = document.getElementById('sms-sent-warning');
+  const details = document.getElementById('sms-sent-details');
+  
+  const timeAgo = getTimeAgo(sentAt); // implement or use existing function
+  details.textContent = `${messageType} sent ${timeAgo}`;
+  
+  warning.classList.remove('hidden');
+  
+  // Also add visual style to the phone input
+  document.getElementById('customer-phone').classList.add('border-red-300', 'bg-red-50');
+}
+
+function hideSmsSentWarning() {
+  document.getElementById('sms-sent-warning').classList.add('hidden');
+  document.getElementById('customer-phone').classList.remove('border-red-300', 'bg-red-50');
+}
+```
+
+---
+
+## FIX 4: Add red "SMS Sent" confirmation after sending
+
+After successfully sending an SMS, show a clear red indicator.
+
+### 4a. Update the send SMS success handler
+After SMS is sent successfully, show a prominent confirmation:
+```javascript
+async function sendSms() {
+  // ... existing send logic ...
+  
+  const response = await fetch('/api/send-sms', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(smsData)
+  });
+  
+  if (response.ok) {
+    // Show success with red/prominent styling
+    showSmsConfirmation();
+    
+    // Also update the form to show SMS was sent
+    markFormAsSent();
+  }
+}
+
+function showSmsConfirmation() {
+  // Create or show a prominent banner
+  const banner = document.createElement('div');
+  banner.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-pulse';
+  banner.innerHTML = `
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+    </svg>
+    <span class="font-bold">SMS SENT!</span>
+  `;
+  document.body.appendChild(banner);
+  
+  // Remove after 3 seconds
+  setTimeout(() => banner.remove(), 3000);
+}
+
+function markFormAsSent() {
+  // Grey out the form or add sent indicator
+  const form = document.getElementById('sms-form');
+  form.classList.add('opacity-50', 'pointer-events-none');
+  
+  // Add a "Sent" badge
+  const badge = document.createElement('div');
+  badge.className = 'absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold';
+  badge.textContent = '📨 SMS SENT';
+  form.style.position = 'relative';
+  form.appendChild(badge);
+}
+```
+
+### 4b. Style the send button to change after sending
+```javascript
+// After successful send, update the button
+const sendBtn = document.getElementById('send-sms-btn');
+sendBtn.disabled = true;
+sendBtn.className = 'w-full py-3 bg-red-500 text-white font-bold rounded-lg cursor-not-allowed';
+sendBtn.innerHTML = '✓ SMS Sent';
+```
+
+---
+
+## SUMMARY OF CHANGES
+
+| Location | Change |
+|----------|--------|
+| RepairDesk modal | Add red "📨 SMS Sent" badge + purple/grey styling for sent customers |
+| Click tracking | Fix database update when link is clicked |
+| Message History | Ensure "Clicked" status displays properly |
+| Send SMS form | Show red warning when phone already received SMS |
+| After sending | Show prominent red "SMS SENT!" confirmation |
+
+## COLOR SCHEME
+- **Red** = SMS already sent (warning) or just sent (confirmation)
+- **Purple/Grey** = Customer already contacted (de-emphasized)
+- **Green** = Link clicked
+- **Yellow** = Review badge

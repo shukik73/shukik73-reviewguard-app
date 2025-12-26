@@ -1,0 +1,153 @@
+Implement 4 security and architecture fixes from the codebase audit.
+
+## FIX 1: Secure uploads against XSS (CRITICAL)
+
+In server.js, find and remove:
+```javascript
+app.use('/uploads', express.static(...))
+```
+
+Replace with this secure route:
+```javascript
+app.get('/uploads/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filepath = path.join(__dirname, 'uploads', filename);
+  
+  const allowedExt = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf'];
+  const ext = path.extname(filename).toLowerCase();
+  
+  if (!allowedExt.includes(ext)) {
+    return res.status(403).send('File type not allowed');
+  }
+  
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return res.status(403).send('Invalid filename');
+  }
+  
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'");
+  
+  if (ext === '.pdf') {
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  }
+  
+  res.sendFile(filepath);
+});
+```
+
+---
+
+## FIX 2: Remove Replit lock-in from Twilio
+
+In utils/twilio.js, update getTwilioCredentials to try standard env vars first:
+```javascript
+async function getTwilioCredentials() {
+  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    return {
+      accountSid: process.env.TWILIO_ACCOUNT_SID,
+      authToken: process.env.TWILIO_AUTH_TOKEN,
+      phoneNumber: process.env.TWILIO_PHONE_NUMBER
+    };
+  }
+  
+  if (process.env.REPL_IDENTITY) {
+    try {
+      const response = await fetch(`https://${process.env.replit_connectors_hostname}/twilio/credentials`, {
+        headers: { 'Authorization': `Bearer ${process.env.REPL_IDENTITY}` }
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (err) {
+      console.warn('Replit connector failed, falling back to env vars');
+    }
+  }
+  
+  throw new Error('Twilio credentials not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER');
+}
+```
+
+---
+
+## FIX 3: Extract HTML from smsController.js
+
+Find the trackCustomerClick function that has hundreds of lines of embedded HTML.
+
+### 3a. Create file: views/star-filter.html
+Move all the HTML from trackCustomerClick into this new file. Replace dynamic values with {{placeholders}}:
+- {{businessName}}
+- {{customerId}} 
+- {{googleReviewLink}}
+- {{customerName}}
+
+### 3b. Update trackCustomerClick in controllers/smsController.js:
+```javascript
+const fs = require('fs');
+const path = require('path');
+
+async function trackCustomerClick(req, res) {
+  try {
+    const { id } = req.params;
+    // ... keep existing database logic to fetch customer/business data ...
+    
+    let template = fs.readFileSync(path.join(__dirname, '../views/star-filter.html'), 'utf8');
+    
+    template = template
+      .replace(/\{\{businessName\}\}/g, businessName || 'Our Business')
+      .replace(/\{\{customerId\}\}/g, id)
+      .replace(/\{\{googleReviewLink\}\}/g, googleReviewLink || '#')
+      .replace(/\{\{customerName\}\}/g, customerName || 'Valued Customer');
+    
+    res.send(template);
+  } catch (error) {
+    console.error('Error in trackCustomerClick:', error);
+    res.status(500).send('Something went wrong');
+  }
+}
+```
+
+---
+
+## FIX 4: Centralize configuration
+
+### 4a. Create file: config/index.js
+```javascript
+module.exports = {
+  baseUrl: process.env.BASE_URL || 'https://reviews.techymiramar.com',
+  apiUrl: process.env.API_URL || 'https://reviews.techymiramar.com/api',
+  appName: process.env.APP_NAME || 'ReviewGuard',
+  
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID,
+    authToken: process.env.TWILIO_AUTH_TOKEN,
+    phoneNumber: process.env.TWILIO_PHONE_NUMBER
+  },
+  
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET
+  },
+  
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY
+  },
+  
+  database: {
+    url: process.env.DATABASE_URL
+  }
+};
+```
+
+### 4b. Find all hardcoded URLs in the codebase
+Search for `reviews.techymiramar.com` and replace with config:
+```javascript
+const config = require('../config');
+// or
+const config = require('./config');
+
+// Replace hardcoded URLs:
+// FROM: `https://reviews.techymiramar.com/review/${id}`
+// TO:   `${config.baseUrl}/review/${id}`
+```
+
+### 4c. Create file: .env.example
