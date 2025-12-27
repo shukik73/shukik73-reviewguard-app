@@ -91,7 +91,13 @@ app.use(session({
 app.use('/api/stripe-webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(cors());
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? [process.env.BASE_URL, 'https://reviews.techymiramar.com'].filter(Boolean)
+    : true,
+  credentials: true
+};
+app.use(cors(corsOptions));
 
 // Performance logging middleware for API requests
 app.use((req, res, next) => {
