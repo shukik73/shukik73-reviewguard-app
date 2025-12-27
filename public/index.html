@@ -906,6 +906,29 @@
           }
         </style>
 
+        <!-- QR Stand Modal -->
+        <div id="qr-stand-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4">
+          <div class="absolute inset-0 bg-black/60" onclick="closeQRStandModal()"></div>
+          <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-slate-900">QR Counter Stand Preview</h3>
+              <button onclick="closeQRStandModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            <div id="qr-stand-preview" class="flex justify-center"></div>
+            <div class="flex gap-3 mt-4">
+              <button onclick="printQRStand(); closeQRStandModal();" class="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors">Print Stand</button>
+              <button onclick="downloadQRCode()" class="flex-1 px-4 py-3 bg-white border border-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition-colors">Download QR</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden Print Container -->
+        <div id="qr-stand-print-container" class="hidden print:block"></div>
+
         <!-- SMS Apology Modal -->
         <div
           id="sms-apology-modal"

@@ -311,7 +311,7 @@ class QRGenerator {
           <div class="qr-stand-stars">★★★★★</div>
           
           <div class="qr-stand-qr-wrapper">
-            <div id="qr-stand-qr-code" class="qr-stand-qr"></div>
+            <div class="qr-stand-qr qr-code-target"></div>
           </div>
           
           <div class="qr-stand-scan-text">
@@ -356,7 +356,7 @@ class QRGenerator {
     
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    const qrContainer = document.getElementById('qr-stand-qr-code');
+    const qrContainer = container.querySelector('.qr-code-target');
     if (qrContainer) {
       await this.generateQRCode(qrContainer, 180);
     }
