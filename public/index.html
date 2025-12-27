@@ -2667,16 +2667,32 @@
                     </p>
                   </div>
                   <div>
-                    <label
-                      class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5"
-                      >Google Review Link</label
-                    >
+                    <div class="flex items-center justify-between mb-1.5">
+                      <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Google Review Link</label>
+                      <div class="relative group">
+                        <button type="button" class="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-700 font-medium">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                          <span>How to find?</span>
+                        </button>
+                        <div class="absolute right-0 top-6 w-72 p-4 bg-slate-900 text-white text-sm rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                          <div class="absolute -top-2 right-4 w-4 h-4 bg-slate-900 rotate-45"></div>
+                          <p class="font-bold text-purple-300 mb-2">Find Your Link:</p>
+                          <ol class="space-y-1 text-slate-300 text-xs">
+                            <li>1. Go to <strong class="text-white">Google Maps</strong></li>
+                            <li>2. Search <strong class="text-white">your business</strong></li>
+                            <li>3. Click <strong class="text-white">"Write a review"</strong></li>
+                            <li>4. Copy <strong class="text-white">URL from browser</strong></li>
+                          </ol>
+                        </div>
+                      </div>
+                    </div>
                     <input
                       type="url"
                       id="settings-review-link"
                       placeholder="https://g.page/r/..."
                       class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
                     />
+                    <p class="text-xs text-purple-600 mt-1">This link powers your QR Stand & SMS reviews</p>
                   </div>
                   <div>
                     <label
