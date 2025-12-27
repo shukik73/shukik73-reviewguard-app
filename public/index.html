@@ -250,6 +250,13 @@
         from { opacity: 1; transform: translateX(0); }
         to { opacity: 0; transform: translateX(100px); }
       }
+      @keyframes badge-pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+      .badge-pulse:not(.hidden) {
+        animation: badge-pulse 2s ease-in-out infinite;
+      }
     </style>
 
     <div class="flex min-h-screen">
@@ -412,7 +419,7 @@
 
           <button
             data-section="reviews"
-            class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm font-medium"
+            class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm font-medium relative"
           >
             <svg
               class="w-5 h-5"
@@ -428,11 +435,12 @@
               />
             </svg>
             <span data-i18n="nav.reviews">Reviews</span>
+            <span id="reviews-badge" class="hidden absolute right-2 min-w-[20px] h-5 px-1.5 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center badge-pulse">0</span>
           </button>
 
           <button
             data-section="feedback"
-            class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm font-medium"
+            class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 text-sm font-medium relative"
           >
             <svg
               class="w-5 h-5"
@@ -448,6 +456,7 @@
               />
             </svg>
             <span data-i18n="nav.feedback">Feedback</span>
+            <span id="feedback-badge" class="hidden absolute right-2 min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center badge-pulse">0</span>
           </button>
 
           <div
@@ -5925,6 +5934,40 @@
           }
           loadUserOnPageLoad();
           updatePreview();
+          updateNotificationBadges();
+          setInterval(updateNotificationBadges, 60000);
+
+          function updateNotificationBadges() {
+            fetch('/api/feedback/unread-count')
+              .then(res => res.json())
+              .then(data => {
+                const badge = document.getElementById('feedback-badge');
+                if (badge && data.count !== undefined) {
+                  if (data.count > 0) {
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    badge.classList.remove('hidden');
+                  } else {
+                    badge.classList.add('hidden');
+                  }
+                }
+              })
+              .catch(err => console.error('Feedback badge error:', err));
+
+            fetch('/api/reviews/pending-count')
+              .then(res => res.json())
+              .then(data => {
+                const badge = document.getElementById('reviews-badge');
+                if (badge && data.count !== undefined) {
+                  if (data.count > 0) {
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    badge.classList.remove('hidden');
+                  } else {
+                    badge.classList.add('hidden');
+                  }
+                }
+              })
+              .catch(err => console.error('Reviews badge error:', err));
+          }
 
           if ('serviceWorker' in navigator) {
             window.addEventListener('load', async () => {

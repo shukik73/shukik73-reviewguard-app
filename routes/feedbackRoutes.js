@@ -11,6 +11,19 @@ export default function createFeedbackRoutes(pool, requireAuth) {
 
   router.get('/api/feedback', requireAuth, basicAuth, feedbackController.getFeedback(pool));
   router.get('/api/feedback/grouped', requireAuth, basicAuth, feedbackController.getGroupedFeedback(pool));
+  router.get('/api/feedback/unread-count', requireAuth, async (req, res) => {
+    try {
+      const result = await pool.query(
+        `SELECT COUNT(*) FROM internal_feedback 
+         WHERE user_id = $1 AND is_read = false`,
+        [req.session.userId]
+      );
+      res.json({ count: parseInt(result.rows[0].count) || 0 });
+    } catch (error) {
+      console.error('Unread count error:', error);
+      res.json({ count: 0 });
+    }
+  });
   router.post('/api/feedback/mark-read', requireAuth, basicAuth, feedbackController.markFeedbackAsRead(pool));
   router.post('/api/feedback/block', requireAuth, basicAuth, feedbackController.blockFeedback(pool));
   
