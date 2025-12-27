@@ -22,10 +22,12 @@
     <link rel="icon" href="/images/logo.png" type="image/png" />
     <link rel="apple-touch-icon" href="/images/logo.png" />
     <link rel="stylesheet" href="/styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
     <script src="/locales/i18n.js" defer></script>
     <script src="/locales/autoTranslate.js" defer></script>
     <script src="/locales/verticalConfig.js" defer></script>
     <script src="/locales/smartTemplates.js" defer></script>
+    <script src="/locales/qrStand.js" defer></script>
     <style>
       :root {
         --sidebar: #1e293b;
@@ -963,6 +965,22 @@
 
         <div class="p-6 space-y-6">
           <section id="dashboard" class="section">
+            <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-100 p-6 mb-6">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <span>🖨️</span> Instant Counter Stand
+                  </h3>
+                  <p class="text-sm text-slate-600">Print a QR code. Customers scan & review in 15 seconds.</p>
+                </div>
+                <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded-full">FREE</span>
+              </div>
+              <div class="flex gap-3">
+                <button onclick="openQRStandModal()" class="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors">Preview</button>
+                <button onclick="printQRStand()" class="flex-1 px-4 py-3 bg-white border border-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition-colors">Print</button>
+              </div>
+            </div>
+
             <div
               class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
             >
