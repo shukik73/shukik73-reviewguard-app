@@ -127,18 +127,41 @@ app.use((req, res, next) => {
   next();
 });
 
+// Root route - ALWAYS show landing page
 app.get('/', (req, res) => {
-  if (req.session && req.session.userId) {
-    return res.redirect('/app');
-  }
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
 
+// Dashboard - protected route
 app.get('/app', (req, res) => {
   if (!req.session || !req.session.userId) {
-    return res.redirect('/');
+    return res.redirect('/login');
   }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Also add /dashboard as alias
+app.get('/dashboard', (req, res) => {
+  if (!req.session || !req.session.userId) {
+    return res.redirect('/login');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Login page
+app.get('/login', (req, res) => {
+  if (req.session && req.session.userId) {
+    return res.redirect('/app');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Signup page
+app.get('/signup', (req, res) => {
+  if (req.session && req.session.userId) {
+    return res.redirect('/app');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'signup.html'));
 });
 
 app.get('/api/health', (req, res) => {
