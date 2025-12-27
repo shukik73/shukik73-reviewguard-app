@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/app",
+      "dest": "server.js"
+    },
+    {
+      "src": "/login",
+      "dest": "server.js"
+    },
+    {
+      "src": "/signup",
+      "dest": "server.js"
+    },
+    {
+      "src": "/forgot-password",
+      "dest": "server.js"
+    },
+    {
+      "src": "/reset-password",
+      "dest": "server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "server.js"
+    }
+  ]
+}
