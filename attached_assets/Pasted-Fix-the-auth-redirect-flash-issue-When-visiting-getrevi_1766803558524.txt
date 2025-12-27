@@ -1,0 +1,119 @@
+Fix the auth redirect flash issue. When visiting getreviewguard.com, it briefly shows the app then jumps to landing page.
+
+## THE PROBLEM
+
+The page loads content first, THEN checks authentication, THEN redirects. This causes a flash of the app before redirect.
+
+## THE FIX
+
+### Option A: Server-side redirect (Best)
+
+In server.js, add middleware to check auth BEFORE serving index.html:
+```javascript
+// Serve landing page for unauthenticated users at root
+app.get('/', (req, res) => {
+  if (req.session && req.session.userId) {
+    // Logged in - serve the app
+    res.sendFile(path.join(__dirname, 'public', 'app.html'));
+  } else {
+    // Not logged in - serve landing page
+    res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+  }
+});
+
+// Protected app route
+app.get('/app', (req, res) => {
+  if (!req.session || !req.session.userId) {
+    return res.redirect('/login');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'app.html'));
+});
+```
+
+### Option B: If using single index.html, add loading state
+
+At the TOP of index.html <body>, add:
+```html
+<div id="auth-loading" style="position:fixed;inset:0;background:#fff;z-index:9999;display:flex;align-items:center;justify-content:center;">
+  <div style="text-align:center;">
+    <img src="/images/logo.png" alt="ReviewGuard" style="height:48px;margin-bottom:16px;">
+    <div style="color:#64748b;">Loading...</div>
+  </div>
+</div>
+```
+
+Then in your main JS, at the very start:
+```javascript
+// Check auth immediately before showing anything
+(async function checkAuthFirst() {
+  const loadingEl = document.getElementById('auth-loading');
+  
+  try {
+    const res = await fetch('/api/auth/me');
+    const data = await res.json();
+    
+    if (data.loggedIn) {
+      // User is logged in - show app, hide landing
+      document.getElementById('landing-section')?.style.display = 'none';
+      document.getElementById('app-section')?.style.display = 'block';
+      loadingEl?.remove();
+    } else {
+      // Not logged in - show landing, hide app
+      document.getElementById('app-section')?.style.display = 'none';
+      document.getElementById('landing-section')?.style.display = 'block';
+      loadingEl?.remove();
+    }
+  } catch (e) {
+    // Error - show landing by default
+    loadingEl?.remove();
+  }
+})();
+```
+
+### Option C: CSS-based hide until ready
+
+Add to your CSS:
+```css
+/* Hide app content by default */
+#app-section, #dashboard, .app-content {
+  display: none;
+}
+
+/* Show when authenticated class is added */
+body.authenticated #app-section,
+body.authenticated #dashboard,
+body.authenticated .app-content {
+  display: block;
+}
+
+body.authenticated #landing-section {
+  display: none;
+}
+```
+
+Then in JS after auth check:
+```javascript
+if (data.loggedIn) {
+  document.body.classList.add('authenticated');
+} else {
+  document.body.classList.remove('authenticated');
+}
+```
+
+## ALSO CHECK
+
+Make sure there's an `/api/auth/me` endpoint that returns:
+```javascript
+router.get('/me', (req, res) => {
+  if (req.session && req.session.userId) {
+    res.json({ 
+      loggedIn: true, 
+      userId: req.session.userId,
+      email: req.session.email,
+      businessName: req.session.businessName
+    });
+  } else {
+    res.json({ loggedIn: false });
+  }
+});
+```

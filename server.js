@@ -123,10 +123,16 @@ app.use((req, res, next) => {
 });
 
 app.get('/', (req, res) => {
+  if (req.session && req.session.userId) {
+    return res.redirect('/app');
+  }
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
 
 app.get('/app', (req, res) => {
+  if (!req.session || !req.session.userId) {
+    return res.redirect('/');
+  }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
