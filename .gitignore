@@ -1,5 +1,29 @@
-node_modules/
-uploads/
+# Environment
 .env
+.env.*
+.env.local
+.env.production
+
+# Dependencies
+node_modules/
+
+# Replit
+.replit
+replit.nix
+.cache/
+.local/
+
+# Build
+dist/
+build/
+
+# Uploads & logs
+uploads/
 *.log
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Dev artifacts
+attached_assets/
