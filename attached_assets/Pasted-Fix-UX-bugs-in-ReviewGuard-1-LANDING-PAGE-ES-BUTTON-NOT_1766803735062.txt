@@ -1,0 +1,91 @@
+Fix UX bugs in ReviewGuard.
+
+## 1. LANDING PAGE ES BUTTON NOT TRANSLATING
+
+Find the language toggle buttons on the landing page and ensure they call the translation function:
+```javascript
+// Make sure these buttons exist and work:
+<button onclick="setLang('en')" class="...">EN</button>
+<button onclick="setLang('es')" class="...">ES</button>
+
+// And setLang function triggers translation:
+function setLang(lang) {
+  localStorage.setItem('lang', lang);
+  if (typeof autoTranslate !== 'undefined') {
+    autoTranslate.setLang(lang);
+  }
+  if (typeof landingTranslate !== 'undefined') {
+    landingTranslate.translate();
+  }
+  // Update button states
+  document.querySelectorAll('[data-lang-btn]').forEach(btn => {
+    btn.classList.toggle('bg-purple-600', btn.dataset.langBtn === lang);
+    btn.classList.toggle('text-white', btn.dataset.langBtn === lang);
+  });
+}
+```
+
+Also ensure landingTranslate.js is loaded on the landing page.
+
+## 2. LOGIN MODAL CLOSE ON OUTSIDE CLICK
+
+Find the login modal backdrop and add onclick handler:
+```html
+<!-- The modal backdrop should close when clicked -->
+<div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center"
+     onclick="if(event.target === this) closeLoginModal()">
+  <!-- Modal content -->
+  <div class="bg-white rounded-xl..." onclick="event.stopPropagation()">
+    ...
+  </div>
+</div>
+```
+
+Do the same for signup modal and any other modals.
+
+## 3. SMS RATE LIMIT 5 → 10 PER HOUR
+
+Find the rate limit constant in the SMS controller or server config:
+```javascript
+// Look for something like:
+const RATE_LIMIT = 5;
+const SMS_RATE_LIMIT = 5;
+const MAX_SMS_PER_HOUR = 5;
+
+// Change to:
+const RATE_LIMIT = 10;
+// or
+const SMS_RATE_LIMIT = 10;
+// or
+const MAX_SMS_PER_HOUR = 10;
+```
+
+Check these files:
+- controllers/smsController.js
+- server.js
+- config/index.js
+- middleware/rateLimit.js
+
+## 4. FEEDBACK INBOX ERROR TOAST Z-INDEX
+
+Find the toast/notification component styles and increase z-index:
+```css
+/* Find toast styles and update */
+.toast, .notification, [class*="toast"], [class*="alert"] {
+  z-index: 9999 !important;
+}
+```
+
+Or in the JS that creates toasts:
+```javascript
+// Find showToast or similar function and ensure z-index is high
+toast.style.zIndex = '9999';
+```
+
+## 5. VERIFICATION
+
+After changes:
+1. Landing page → Click ES → All text translates
+2. Click Login → Click outside modal → Modal closes
+3. Send 6+ SMS in testing → Should allow up to 10
+4. Trigger an error in feedback inbox → Toast appears above modal
