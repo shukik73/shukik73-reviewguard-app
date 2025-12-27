@@ -93,7 +93,12 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.BASE_URL, 'https://reviews.techymiramar.com'].filter(Boolean)
+    ? [
+        process.env.BASE_URL, 
+        'https://reviews.techymiramar.com',
+        'https://getreviewguard.com',
+        'https://www.getreviewguard.com'
+      ].filter(Boolean)
     : true,
   credentials: true
 };
