@@ -130,12 +130,12 @@
   </head>
   <body class="bg-gray-50 text-gray-900">
     <!-- Login Modal -->
-    <div id="login-modal" class="fixed inset-0 z-50 hidden">
+    <div id="login-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
       <div
         class="modal-backdrop absolute inset-0"
         id="login-modal-backdrop"
       ></div>
-      <div class="relative flex items-start justify-center pt-16 px-4">
+      <div class="relative px-4 w-full max-w-md">
         <div
           class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative animate-fade-in"
         >
@@ -202,7 +202,7 @@
 
             <div class="flex justify-end mb-4">
               <a
-                href="/forgot-password.html"
+                href="/forgot-password"
                 class="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
                 >Forgot Password?</a
               >
@@ -302,10 +302,6 @@
             <div>
               <div id="sidebar-brand" class="text-white font-semibold text-sm">
                 ReviewGuard
-              </div>
-              <div class="flex gap-1 mt-2">
-                <button data-lang-switch="en" class="px-2 py-1 rounded text-xs font-medium bg-accent text-white">EN</button>
-                <button data-lang-switch="es" class="px-2 py-1 rounded text-xs font-medium bg-slate-700 text-slate-300">ES</button>
               </div>
             </div>
           </div>
@@ -623,13 +619,14 @@
 
         <div
           id="notification-container"
-          class="hidden fixed top-4 right-4 z-[9999] max-w-sm"
+          class="hidden fixed bottom-6 right-6 z-[9999] max-w-md"
         >
           <div
             id="notification-message"
-            class="rounded-lg shadow-lg px-4 py-3 text-sm font-medium text-white flex items-center gap-2"
+            class="rounded-xl shadow-2xl px-6 py-4 text-base font-semibold text-white flex items-center gap-3 border border-white/20"
+            style="min-width: 280px;"
           >
-            <span id="notification-icon"></span>
+            <span id="notification-icon" class="text-xl"></span>
             <span id="notification-text"></span>
           </div>
         </div>
@@ -988,19 +985,29 @@
 
         <div class="p-6 space-y-6">
           <section id="dashboard" class="section">
-            <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-100 p-6 mb-6">
-              <div class="flex items-start justify-between mb-4">
+            <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 p-6 mb-6">
+              <div class="flex items-start justify-between">
                 <div>
                   <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <span>🖨️</span> Instant Counter Stand
+                    <span>👋</span> Welcome to ReviewGuard!
                   </h3>
-                  <p class="text-sm text-slate-600">Print a QR code. Customers scan & review in 15 seconds.</p>
+                  <p class="text-sm text-slate-600 mt-1">Here's how to get more 5-star reviews:</p>
+                  <ul class="mt-3 space-y-2 text-sm text-slate-700">
+                    <li class="flex items-start gap-2">
+                      <span class="text-green-500 mt-0.5">✓</span>
+                      <span><strong>Send SMS</strong> - Snap a receipt photo to auto-extract customer info</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <span class="text-green-500 mt-0.5">✓</span>
+                      <span><strong>Manage Customers</strong> - Build your customer database automatically</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <span class="text-green-500 mt-0.5">✓</span>
+                      <span><strong>Track Reviews</strong> - Monitor who clicks your review links</span>
+                    </li>
+                  </ul>
                 </div>
-                <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded-full">FREE</span>
-              </div>
-              <div class="flex gap-3">
-                <button onclick="openQRStandModal()" class="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors">Preview</button>
-                <button onclick="printQRStand()" class="flex-1 px-4 py-3 bg-white border border-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition-colors">Print</button>
+                <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full">TIPS</span>
               </div>
             </div>
 

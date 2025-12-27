@@ -925,11 +925,11 @@
     </footer>
 
     <!-- Login Modal -->
-    <div id="loginModal" class="fixed inset-0 z-[100] hidden">
-      <div class="absolute inset-0 bg-black/30" onclick="closeLoginModal()"></div>
-      <div class="absolute top-16 right-4 sm:right-8 w-80" onclick="event.stopPropagation()">
+    <div id="loginModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeLoginModal()"></div>
+      <div class="relative w-full max-w-md mx-4" onclick="event.stopPropagation()">
         <div
-          class="bg-white rounded-xl shadow-xl p-5 border border-slate-200 relative"
+          class="bg-white rounded-2xl shadow-2xl p-6 border border-slate-200 relative"
         >
           <button onclick="closeLoginModal()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -967,7 +967,7 @@
             </div>
 
             <a
-              href="#"
+              href="/forgot-password"
               class="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
               >Forgot Password?</a
             >
