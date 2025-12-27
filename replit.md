@@ -86,6 +86,8 @@ A static HTML/CSS/JavaScript frontend with a modern, professional design, featur
 -   **Telegram Bot API**: For review approval workflow.
 -   **Stripe**: For subscription billing and payment processing.
 -   **Resend**: For automated email delivery.
+-   **PostHog Analytics**: Client-side product analytics tracking page views, SMS sends, QR prints, and user identification.
+-   **Tawk.to Live Chat**: Customer support chat widget embedded across all pages with user identification on login.
 
 ## Runtime Dependencies
 

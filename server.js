@@ -67,12 +67,12 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "js.stripe.com", "code.jquery.com", "cdn.jsdelivr.net", "cdnjs.cloudflare.com"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "js.stripe.com", "code.jquery.com", "cdn.jsdelivr.net", "cdnjs.cloudflare.com", "https://us-assets.i.posthog.com", "https://us.i.posthog.com", "https://embed.tawk.to", "https://va.tawk.to", "https://static.tawk.link"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://static.tawk.link"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.stripe.com"],
-      frameSrc: ["'self'", "js.stripe.com"],
-      fontSrc: ["'self'", "data:"],
+      connectSrc: ["'self'", "https://api.stripe.com", "https://us.i.posthog.com", "https://us-assets.i.posthog.com", "https://va.tawk.to", "wss://va.tawk.to"],
+      frameSrc: ["'self'", "js.stripe.com", "https://tawk.to", "https://embed.tawk.to"],
+      fontSrc: ["'self'", "data:", "https://static.tawk.link"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: []
     }

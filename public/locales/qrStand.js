@@ -391,6 +391,7 @@ class QRGenerator {
     await new Promise(resolve => setTimeout(resolve, 300));
 
     window.print();
+    if (typeof posthog !== 'undefined') posthog.capture('qr_printed');
   }
 
   async downloadQRImage() {

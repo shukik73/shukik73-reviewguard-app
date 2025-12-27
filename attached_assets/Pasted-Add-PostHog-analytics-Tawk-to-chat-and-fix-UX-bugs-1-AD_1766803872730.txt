@@ -1,0 +1,140 @@
+Add PostHog analytics, Tawk.to chat, and fix UX bugs.
+
+## 1. ADD POSTHOG ANALYTICS
+
+Add to <head> of ALL HTML pages (index.html, app.html, landing.html, login.html, signup.html):
+```html
+<script>
+  !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(var c=["capture","identify","alias","people","onFeatureFlags","onSessionId","debug"];c.length;)g(u,c.pop());u._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+  posthog.init('phc_6wz19O35nQhpSa1xhZVxYugdnQ2YfV3ZFD8vFtYhfsR', {
+    api_host: 'https://us.i.posthog.com',
+    person_profiles: 'identified_only',
+    capture_pageview: true,
+    capture_pageleave: true
+  });
+</script>
+```
+
+## 2. ADD TAWK.TO LIVE CHAT
+
+Add before </body> of ALL HTML pages:
+```html
+<!--Start of Tawk.to Script-->
+<script type="text/javascript">
+var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+(function(){
+var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+s1.async=true;
+s1.src='https://embed.tawk.to/694f477777283d197dcb802d/1jdequbfu';
+s1.charset='UTF-8';
+s1.setAttribute('crossorigin','*');
+s0.parentNode.insertBefore(s1,s0);
+})();
+</script>
+<!--End of Tawk.to Script-->
+```
+
+## 3. ADD EVENT TRACKING
+
+Find these user actions and add PostHog capture calls:
+
+### After successful SMS send (in SMS handler):
+```javascript
+if (typeof posthog !== 'undefined') {
+  posthog.capture('sms_sent', { vertical: localStorage.getItem('vertical') || 'repair' });
+}
+```
+
+### After QR Stand printed:
+```javascript
+if (typeof posthog !== 'undefined') {
+  posthog.capture('qr_printed');
+}
+```
+
+### After successful login:
+```javascript
+if (typeof posthog !== 'undefined') {
+  posthog.identify(user.email, {
+    name: user.businessName,
+    email: user.email,
+    plan: user.plan || 'free_trial'
+  });
+}
+if (typeof Tawk_API !== 'undefined' && Tawk_API.setAttributes) {
+  Tawk_API.setAttributes({ name: user.businessName, email: user.email }, function(){});
+}
+```
+
+### After language toggle:
+```javascript
+if (typeof posthog !== 'undefined') {
+  posthog.capture('language_changed', { lang: newLang });
+}
+```
+
+## 4. FIX: LANDING PAGE ES BUTTON NOT TRANSLATING
+
+Ensure landingTranslate.js is loaded and language buttons work:
+```javascript
+function setLang(lang) {
+  localStorage.setItem('lang', lang);
+  if (typeof autoTranslate !== 'undefined') autoTranslate.setLang(lang);
+  if (typeof landingTranslate !== 'undefined') landingTranslate.translate();
+  if (typeof posthog !== 'undefined') posthog.capture('language_changed', { lang });
+  
+  document.querySelectorAll('[data-lang-btn]').forEach(btn => {
+    btn.classList.toggle('bg-purple-600', btn.dataset.langBtn === lang);
+    btn.classList.toggle('text-white', btn.dataset.langBtn === lang);
+  });
+}
+```
+
+## 5. FIX: LOGIN MODAL CLOSE ON OUTSIDE CLICK
+
+Find login/signup modals and add backdrop click handler:
+```html
+<div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+     onclick="if(event.target === this) closeLoginModal()">
+  <div class="bg-white rounded-xl p-6" onclick="event.stopPropagation()">
+    <!-- modal content -->
+  </div>
+</div>
+```
+
+## 6. FIX: SMS RATE LIMIT 5 → 10 PER HOUR
+
+Search for rate limit config and change from 5 to 10:
+```javascript
+// Find and update:
+const RATE_LIMIT = 10;  // was 5
+// or
+const SMS_RATE_LIMIT = 10;  // was 5
+// or
+const MAX_SMS_PER_HOUR = 10;  // was 5
+```
+
+Check: controllers/smsController.js, server.js, config/index.js
+
+## 7. FIX: FEEDBACK INBOX ERROR TOAST Z-INDEX
+
+Find toast/notification styles and ensure high z-index:
+```css
+.toast, .notification, .alert-toast {
+  z-index: 9999 !important;
+}
+```
+
+Or in JS toast function:
+```javascript
+toast.style.zIndex = '9999';
+```
+
+## VERIFICATION CHECKLIST
+
+- [ ] PostHog script in <head> of all pages
+- [ ] Tawk.to widget appears (bottom right chat bubble)
+- [ ] Landing ES button translates page
+- [ ] Click outside login modal closes it
+- [ ] SMS rate limit is now 10/hour
+- [ ] Error toasts appear above modals
