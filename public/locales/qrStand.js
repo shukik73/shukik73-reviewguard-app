@@ -300,7 +300,7 @@ class QRGenerator {
         
         <div class="qr-stand-inner">
           <div class="qr-stand-logo" style="width: 60px; height: 60px; margin: 0 auto 12px;">
-            <img src="/images/logo.png" alt="ReviewGuard" style="width: 100%; height: auto;" />
+            <img src="/images/Logo.png" alt="ReviewGuard" style="width: 100%; height: auto;" />
           </div>
           
           <div class="qr-stand-business">${this.businessName}</div>
