@@ -987,7 +987,7 @@
           <section id="dashboard" class="section">
             <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 p-6 mb-6">
               <div class="flex items-start justify-between">
-                <div>
+                <div class="flex-1">
                   <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
                     <span>👋</span> Welcome to ReviewGuard!
                   </h3>
@@ -1006,6 +1006,12 @@
                       <span><strong>Track Reviews</strong> - Monitor who clicks your review links</span>
                     </li>
                   </ul>
+                  <div class="mt-4 pt-4 border-t border-indigo-100 flex items-center gap-3">
+                    <button onclick="openQRStandModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg font-medium transition-colors">
+                      <span>🖨️</span> Print QR Stand
+                    </button>
+                    <span class="text-xs text-slate-500">Customers scan & review in 15 seconds</span>
+                  </div>
                 </div>
                 <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full">TIPS</span>
               </div>
