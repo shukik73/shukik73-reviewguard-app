@@ -521,6 +521,8 @@ export const getMe = (pool) => async (req, res) => {
       [userEmail]
     );
 
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'k.shuki@gmail.com';
+
     res.json({
       success: true,
       user: {
@@ -529,7 +531,8 @@ export const getMe = (pool) => async (req, res) => {
         last_name: user.last_name,
         email: user.company_email,
         company_name: user.company_name,
-        business_name: settingsResult.rows[0]?.business_name || ''
+        business_name: settingsResult.rows[0]?.business_name || '',
+        is_admin: user.company_email === ADMIN_EMAIL
       }
     });
   } catch (error) {
