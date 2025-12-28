@@ -67,12 +67,37 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "js.stripe.com", "code.jquery.com", "cdn.jsdelivr.net", "cdnjs.cloudflare.com", "https://us-assets.i.posthog.com", "https://us.i.posthog.com", "https://embed.tawk.to", "https://va.tawk.to", "https://static.tawk.link"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://static.tawk.link"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.stripe.com", "https://us.i.posthog.com", "https://us-assets.i.posthog.com", "https://va.tawk.to", "wss://va.tawk.to"],
-      frameSrc: ["'self'", "js.stripe.com", "https://tawk.to", "https://embed.tawk.to"],
-      fontSrc: ["'self'", "data:", "https://static.tawk.link"],
+      scriptSrc: [
+        "'self'", 
+        "'unsafe-inline'", 
+        "'unsafe-eval'",
+        "https://js.stripe.com",
+        "https://embed.tawk.to",
+        "https://*.tawk.to",
+        "https://va.tawk.to",
+        "https://static.tawk.link",
+        "https://us.i.posthog.com",
+        "https://us-assets.i.posthog.com",
+        "https://cdn.jsdelivr.net",
+        "https://cdnjs.cloudflare.com",
+        "https://code.jquery.com"
+      ],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://static.tawk.link"],
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://static.tawk.link"],
+      imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
+      connectSrc: [
+        "'self'",
+        "https://*.tawk.to",
+        "wss://*.tawk.to",
+        "https://va.tawk.to",
+        "wss://va.tawk.to",
+        "https://us.i.posthog.com",
+        "https://us-assets.i.posthog.com",
+        "https://api.stripe.com",
+        "https://api.resend.com"
+      ],
+      frameSrc: ["'self'", "https://*.tawk.to", "https://embed.tawk.to", "https://js.stripe.com"],
+      workerSrc: ["'self'", "blob:"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: []
     }
