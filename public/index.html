@@ -130,12 +130,12 @@
   </head>
   <body class="bg-gray-50 text-gray-900">
     <!-- Login Modal -->
-    <div id="login-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+    <div id="login-modal" class="fixed inset-0 z-50 hidden">
       <div
         class="modal-backdrop absolute inset-0"
         id="login-modal-backdrop"
       ></div>
-      <div class="relative px-4 w-full max-w-md">
+      <div class="absolute top-16 right-4 w-full max-w-md px-4">
         <div
           class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative animate-fade-in"
         >
@@ -985,38 +985,6 @@
 
         <div class="p-6 space-y-6">
           <section id="dashboard" class="section">
-            <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 p-6 mb-6">
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <span>👋</span> Welcome to ReviewGuard!
-                  </h3>
-                  <p class="text-sm text-slate-600 mt-1">Here's how to get more 5-star reviews:</p>
-                  <ul class="mt-3 space-y-2 text-sm text-slate-700">
-                    <li class="flex items-start gap-2">
-                      <span class="text-green-500 mt-0.5">✓</span>
-                      <span><strong>Send SMS</strong> - Snap a receipt photo to auto-extract customer info</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                      <span class="text-green-500 mt-0.5">✓</span>
-                      <span><strong>Manage Customers</strong> - Build your customer database automatically</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                      <span class="text-green-500 mt-0.5">✓</span>
-                      <span><strong>Track Reviews</strong> - Monitor who clicks your review links</span>
-                    </li>
-                  </ul>
-                  <div class="mt-4 pt-4 border-t border-indigo-100 flex items-center gap-3">
-                    <button onclick="openQRStandModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg font-medium transition-colors">
-                      <span>🖨️</span> Print QR Stand
-                    </button>
-                    <span class="text-xs text-slate-500">Customers scan & review in 15 seconds</span>
-                  </div>
-                </div>
-                <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full">TIPS</span>
-              </div>
-            </div>
-
             <div
               class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
             >
