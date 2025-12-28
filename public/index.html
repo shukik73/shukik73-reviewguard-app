@@ -1155,85 +1155,59 @@
                   );
                 "
               >
-                <div
-                  class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center mb-4"
-                >
-                  <svg
-                    class="w-5 h-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                    />
-                  </svg>
-                </div>
-                <h3 class="text-xl font-bold italic mb-1">Quick Send</h3>
-                <p class="text-white/80 text-sm mb-5">
-                  Instantly reach a customer without leaving the dashboard.
-                </p>
-
-                <div class="space-y-4">
-                  <div>
-                    <label
-                      class="text-xs font-semibold text-white/90 uppercase tracking-wide block mb-2"
-                      >Phone Number</label
-                    >
-                    <input
-                      type="tel"
-                      id="quick-phone"
-                      placeholder="+1 (555) 000-0000"
-                      class="w-full px-4 py-3 rounded-lg bg-white text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      class="text-xs font-semibold text-white/90 uppercase tracking-wide block mb-2"
-                      >Message</label
-                    >
-                    <select
-                      id="quick-template"
-                      class="w-full mb-2 px-4 py-2.5 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
-                    >
-                      <option value="">Select a template...</option>
-                      <option value="pickup">📦 Device ready for pickup</option>
-                      <option value="delayed">
-                        ⏳ Repair delayed - will update soon
-                      </option>
-                      <option value="review">
-                        ⭐ Please leave us a review
-                      </option>
-                      <option value="custom">✏️ Custom message</option>
-                    </select>
-                    <textarea
-                      id="quick-message"
-                      rows="3"
-                      placeholder="Your device is ready for pickup..."
-                      class="w-full px-4 py-3 rounded-lg bg-white text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-white/50 resize-none"
-                    ></textarea>
-                  </div>
-                  <button
-                    id="quick-send-btn"
-                    class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-full transition-colors text-sm flex items-center justify-center gap-2"
-                  >
-                    Send Notification
-                    <svg
-                      class="w-3.5 h-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M14 5l7 7m0 0l-7 7m7-7H3"
-                      />
+                <div class="flex items-center gap-3 mb-4">
+                  <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
                     </svg>
+                  </div>
+                  <div>
+                    <h3 class="text-lg font-bold">QR Counter Stand</h3>
+                    <p class="text-white/70 text-xs">Customers scan & review in 15 seconds</p>
+                  </div>
+                </div>
+
+                <div id="dashboard-qr-container" class="bg-white rounded-lg p-4 mb-4">
+                  <div id="dashboard-qr-code" class="flex items-center justify-center min-h-[140px]">
+                    <div class="text-center text-gray-500 text-sm">
+                      <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                      </svg>
+                      <p>No review link configured</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="qr-link-display" class="hidden mb-3">
+                  <div class="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+                    <span id="qr-link-text" class="text-xs text-white/90 truncate flex-1"></span>
+                    <button onclick="copyReviewLink()" class="text-white/80 hover:text-white p-1" title="Copy link">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div id="qr-setup-instructions" class="bg-white/10 rounded-lg p-3 mb-4 text-xs">
+                  <p class="font-medium text-white mb-2">How to get your Google Review link:</p>
+                  <ol class="text-white/80 space-y-1 list-decimal list-inside">
+                    <li>Go to Google Maps and find your business</li>
+                    <li>Click "Write a review" and copy the URL</li>
+                    <li>Paste it in Settings > Google Review Link</li>
+                  </ol>
+                </div>
+
+                <div class="flex gap-2">
+                  <button onclick="openQRStandModal()" class="flex-1 py-2 bg-white text-purple-600 font-medium rounded-lg text-sm hover:bg-gray-100 transition-colors flex items-center justify-center gap-2">
+                    <span>🖨️</span> Print Stand
+                  </button>
+                  <button onclick="showSection('settings')" class="flex-1 py-2 bg-slate-900/50 hover:bg-slate-900/70 text-white font-medium rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Settings
                   </button>
                 </div>
               </div>
@@ -2996,69 +2970,51 @@
 
           document.getElementById('new-message-btn').addEventListener('click', () => showSection('send-sms'));
 
-          document.getElementById('quick-template')?.addEventListener('change', (e) => {
-            const templates = {
-              'pickup': 'Hi! Your device is ready for pickup at Techy Miramar. See you soon!',
-              'delayed': "Hi, we wanted to let you know your repair is taking a bit longer than expected. We'll update you as soon as it's ready.",
-              'review': 'Thanks for choosing Techy Miramar! If you were happy with our service, we\'d love a Google review: [Link]',
-              'custom': ''
-            };
-            const message = templates[e.target.value] || '';
-            document.getElementById('quick-message').value = message;
-          });
-
-          document.getElementById('quick-send-btn').addEventListener('click', async () => {
-            const phone = document.getElementById('quick-phone').value.trim();
-            const message = document.getElementById('quick-message').value.trim();
-
-            if (!phone) {
-              showNotification('Please enter a phone number', 'error');
-              return;
-            }
-            if (!message) {
-              showNotification('Please enter a message', 'error');
-              return;
-            }
-
-            const btn = document.getElementById('quick-send-btn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sending...';
-            btn.disabled = true;
-
-            try {
-              const response = await fetch('/api/send-sms', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  customerPhone: phone,
-                  customerName: 'Quick Send',
-                  messageType: 'ready',
-                  customMessage: message,
-                  smsConsentConfirmed: true
-                })
+          function copyReviewLink() {
+            const reviewLink = localStorage.getItem('googleReviewLink') || localStorage.getItem('userReviewLink');
+            if (reviewLink) {
+              navigator.clipboard.writeText(reviewLink).then(() => {
+                showNotification('Review link copied!', 'success');
+              }).catch(() => {
+                showNotification('Failed to copy link', 'error');
               });
-
-              const data = await response.json();
-
-              if (data.success) {
-                showNotification('Message sent successfully!', 'success');
-                if (typeof posthog !== 'undefined') posthog.capture('sms_sent', { vertical: localStorage.getItem('vertical') || 'repair' });
-                document.getElementById('quick-phone').value = '';
-                document.getElementById('quick-message').value = '';
-                loadDashboard();
-              } else {
-                showNotification(data.error || 'Failed to send message', 'error');
-              }
-            } catch (error) {
-              console.error('Quick send error:', error);
-              showNotification('Failed to send message', 'error');
-            } finally {
-              btn.innerHTML = originalText;
-              btn.disabled = false;
             }
-          });
+          }
+
+          function initializeDashboardQR() {
+            const reviewLink = localStorage.getItem('googleReviewLink') || localStorage.getItem('userReviewLink');
+            const qrContainer = document.getElementById('dashboard-qr-code');
+            const linkDisplay = document.getElementById('qr-link-display');
+            const linkText = document.getElementById('qr-link-text');
+            const setupInstructions = document.getElementById('qr-setup-instructions');
+
+            if (reviewLink && qrContainer) {
+              if (typeof QRCode !== 'undefined') {
+                qrContainer.innerHTML = '';
+                new QRCode(qrContainer, {
+                  text: reviewLink,
+                  width: 140,
+                  height: 140,
+                  colorDark: '#1e293b',
+                  colorLight: '#ffffff',
+                  correctLevel: QRCode.CorrectLevel.H
+                });
+              }
+              if (linkDisplay) {
+                linkDisplay.classList.remove('hidden');
+                linkText.textContent = reviewLink.replace('https://', '').substring(0, 40) + (reviewLink.length > 45 ? '...' : '');
+              }
+              if (setupInstructions) {
+                setupInstructions.classList.add('hidden');
+              }
+            } else {
+              if (linkDisplay) linkDisplay.classList.add('hidden');
+              if (setupInstructions) setupInstructions.classList.remove('hidden');
+            }
+          }
 
           async function loadDashboard() {
+            initializeDashboardQR();
             try {
               const response = await fetch('/api/stats');
               const data = await response.json();
