@@ -49,3 +49,6 @@ externalPort = 80
 
 [userenv.development]
 SKIP_TWILIO_WEBHOOK_VALIDATION = "true"
+
+[userenv.shared]
+BASE_URL = "https://reviews.techymiramar.com"
