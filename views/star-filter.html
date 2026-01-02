@@ -319,8 +319,13 @@
         <textarea id="feedback-text" class="form-textarea" placeholder="Tell us what happened and how we can make it right. The owner will personally review your message..."></textarea>
         
         <button id="submit-feedback" class="submit-btn">Send Direct Message to Owner</button>
-        
+
         <p class="privacy-note">🔒 This goes directly to the owner - not posted publicly</p>
+
+        <!-- FTC COMPLIANCE: Google review link must ALWAYS be visible -->
+        <div id="secondary-google-link" class="secondary-action" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.15); text-align: center;">
+          <a id="public-review-link" href="#" target="_blank" rel="noopener noreferrer" style="color: rgba(255,255,255,0.5); font-size: 13px; text-decoration: underline; text-underline-offset: 2px;">Or skip and leave public feedback</a>
+        </div>
       </div>
     </div>
     
@@ -349,6 +354,12 @@
     const successScreen = document.getElementById('success-screen');
     const submitBtn = document.getElementById('submit-feedback');
     const feedbackText = document.getElementById('feedback-text');
+    const publicReviewLink = document.getElementById('public-review-link');
+
+    // FTC COMPLIANCE: Set Google link for secondary action
+    if (publicReviewLink && googleLink) {
+      publicReviewLink.href = googleLink;
+    }
     
     starBtns.forEach(btn => {
       btn.addEventListener('click', function() {

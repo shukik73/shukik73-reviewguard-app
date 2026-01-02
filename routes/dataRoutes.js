@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as dataController from '../controllers/dataController.js';
 import { createBasicAuth } from '../middleware/security.js';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'k.shuki@gmail.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
 export default function createDataRoutes(pool, requireAuth) {
   const router = Router();
