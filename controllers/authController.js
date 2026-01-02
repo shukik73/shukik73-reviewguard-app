@@ -521,7 +521,7 @@ export const getMe = (pool) => async (req, res) => {
       [userEmail]
     );
 
-    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'k.shuki@gmail.com';
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
     res.json({
       success: true,
