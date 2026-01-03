@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - TrustLoop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #0F766E;
+      --color-primary-dark: #0D5D56;
+      --color-success: #10B981;
+      --color-warning: #F59E0B;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #F1F5F9;
+      min-height: 100vh;
+    }
+    .nav {
+      background: white;
+      border-bottom: 1px solid #E2E8F0;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav-brand {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+    .nav-link {
+      color: #64748B;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: var(--color-primary);
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    .page-header {
+      margin-bottom: 2rem;
+    }
+    .page-title {
+      font-size: 1.5rem;
+      color: #1E293B;
+      margin-bottom: 0.25rem;
+    }
+    .page-subtitle {
+      color: #64748B;
+      font-size: 0.875rem;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748B;
+      margin-bottom: 0.5rem;
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1E293B;
+    }
+    .stat-value.positive { color: var(--color-success); }
+    .stat-value.warning { color: var(--color-warning); }
+    .card {
+      background: white;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 1.5rem;
+    }
+    .card-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #E2E8F0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1E293B;
+    }
+    .card-body {
+      padding: 1.5rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: 0.375rem;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--color-primary);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: var(--color-primary-dark);
+    }
+    .btn-secondary {
+      background: #E2E8F0;
+      color: #475569;
+    }
+    .btn-secondary:hover {
+      background: #CBD5E1;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid #E2E8F0;
+    }
+    th {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748B;
+      font-weight: 600;
+    }
+    td {
+      font-size: 0.875rem;
+      color: #1E293B;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.625rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border-radius: 9999px;
+    }
+    .badge-positive {
+      background: #D1FAE5;
+      color: #065F46;
+    }
+    .badge-negative {
+      background: #FEE2E2;
+      color: #991B1B;
+    }
+    .badge-pending {
+      background: #E0E7FF;
+      color: #3730A3;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #64748B;
+    }
+    .empty-state h3 {
+      margin-bottom: 0.5rem;
+      color: #1E293B;
+    }
+    /* Add Customer Form */
+    .form-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .form-group {
+      flex: 1;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 0.375rem;
+    }
+    .form-input {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      font-size: 0.875rem;
+      border: 1px solid #D1D5DB;
+      border-radius: 0.375rem;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+    }
+    .link-display {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 0.375rem;
+      padding: 0.75rem 1rem;
+      font-family: monospace;
+      font-size: 0.8125rem;
+      word-break: break-all;
+      display: none;
+    }
+    .link-display.show {
+      display: block;
+    }
+    .alert-success {
+      background: #D1FAE5;
+      border: 1px solid #A7F3D0;
+      color: #065F46;
+      padding: 0.875rem 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .alert-success.show {
+      display: block;
+    }
+    @media (max-width: 768px) {
+      .form-row { flex-direction: column; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/dashboard" class="nav-brand">TrustLoop</a>
+    <div class="nav-links">
+      <a href="/dashboard" class="nav-link active">Dashboard</a>
+      <a href="/dashboard/customers" class="nav-link">Customers</a>
+      <a href="/dashboard/analytics" class="nav-link">Analytics</a>
+      <a href="/dashboard/settings" class="nav-link">Settings</a>
+      <a href="/auth/logout" class="nav-link">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h1 class="page-title">Welcome, <%= user.business_name %></h1>
+      <p class="page-subtitle">Monitor your customer experience and sentiment</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Journeys</div>
+        <div class="stat-value"><%= analytics.total_journeys || 0 %></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Positive Sentiment</div>
+        <div class="stat-value positive"><%= analytics.positive_count || 0 %></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Needs Resolution</div>
+        <div class="stat-value warning"><%= analytics.negative_count || 0 %></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Google Reviews</div>
+        <div class="stat-value"><%= analytics.google_clicks || 0 %></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Add New Customer</h2>
+      </div>
+      <div class="card-body">
+        <div id="successAlert" class="alert-success">
+          Customer added! Link generated below.
+        </div>
+        <form id="addCustomerForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="name">Name *</label>
+              <input type="text" id="name" name="name" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="email">Email</label>
+              <input type="email" id="email" name="email" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="phone">Phone</label>
+              <input type="tel" id="phone" name="phone" class="form-input">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Generate Experience Link</button>
+        </form>
+        <div id="linkDisplay" class="link-display" style="margin-top: 1rem;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Recent Customers</h2>
+        <a href="/dashboard/customers" class="btn btn-secondary">View All</a>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <% if (customers.length === 0) { %>
+          <div class="empty-state">
+            <h3>No customers yet</h3>
+            <p>Add your first customer above to get started</p>
+          </div>
+        <% } else { %>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Status</th>
+                <th>Sentiment</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% customers.forEach(customer => { %>
+                <tr>
+                  <td><%= customer.name %></td>
+                  <td><%= customer.email || customer.phone || '-' %></td>
+                  <td>
+                    <span class="badge badge-pending"><%= customer.current_state || 'INVITED' %></span>
+                  </td>
+                  <td>
+                    <% if (customer.sentiment === 'positive') { %>
+                      <span class="badge badge-positive">Positive</span>
+                    <% } else if (customer.sentiment === 'negative') { %>
+                      <span class="badge badge-negative">Needs Resolution</span>
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('addCustomerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value
+      };
+
+      try {
+        const response = await fetch('/dashboard/customers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          document.getElementById('successAlert').classList.add('show');
+          document.getElementById('linkDisplay').classList.add('show');
+          document.getElementById('linkDisplay').textContent = data.experienceLink;
+          document.getElementById('addCustomerForm').reset();
+
+          // Auto-reload after 2 seconds to show new customer
+          setTimeout(() => location.reload(), 2000);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to add customer');
+      }
+    });
+  </script>
+</body>
+</html>

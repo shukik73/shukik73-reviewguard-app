@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrustLoop - Customer Experience Resolution Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #0F766E;
+      --color-primary-dark: #0D5D56;
+      --color-primary-light: #14B8A6;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #0F766E 0%, #1E293B 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav {
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-brand {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: white;
+      text-decoration: none;
+    }
+
+    .nav-links a {
+      color: rgba(255,255,255,0.9);
+      text-decoration: none;
+      margin-left: 2rem;
+      font-weight: 500;
+    }
+
+    .nav-links a:hover {
+      color: white;
+    }
+
+    .hero {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .hero-content {
+      max-width: 700px;
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 1.5rem;
+      line-height: 1.2;
+    }
+
+    .hero p {
+      font-size: 1.25rem;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 2.5rem;
+      line-height: 1.7;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.875rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-white {
+      background: white;
+      color: var(--color-primary);
+    }
+
+    .btn-white:hover {
+      background: #F8FAFC;
+      transform: translateY(-2px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: white;
+      border: 2px solid rgba(255,255,255,0.5);
+    }
+
+    .btn-outline:hover {
+      border-color: white;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .features {
+      background: white;
+      padding: 4rem 2rem;
+    }
+
+    .features-container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .features h2 {
+      text-align: center;
+      font-size: 2rem;
+      color: #1E293B;
+      margin-bottom: 3rem;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+    }
+
+    .feature-card {
+      padding: 1.5rem;
+      border-radius: 0.75rem;
+      background: #F8FAFC;
+    }
+
+    .feature-card h3 {
+      font-size: 1.125rem;
+      color: #1E293B;
+      margin-bottom: 0.75rem;
+    }
+
+    .feature-card p {
+      color: #64748B;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    .footer {
+      background: #1E293B;
+      padding: 2rem;
+      text-align: center;
+      color: rgba(255,255,255,0.6);
+      font-size: 0.875rem;
+    }
+
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 2rem; }
+      .hero p { font-size: 1rem; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/" class="nav-brand">TrustLoop</a>
+    <div class="nav-links">
+      <a href="/auth/login">Login</a>
+      <a href="/auth/register">Sign Up</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Turn Every Experience Into Trust</h1>
+      <p>
+        TrustLoop helps you understand customer sentiment and resolve issues before they become public reviews.
+        FTC-compliant, customer-first approach.
+      </p>
+      <div class="hero-buttons">
+        <a href="/auth/register" class="btn btn-white">Get Started Free</a>
+        <a href="/auth/login" class="btn btn-outline">Sign In</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="features-container">
+      <h2>Why TrustLoop?</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <h3>Binary Sentiment</h3>
+          <p>Simple "Great!" or "I had an issue" feedback. No confusing star ratings. Clear signals for action.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Resolution First</h3>
+          <p>Address concerns directly with customers. Fix issues before they become negative reviews.</p>
+        </div>
+        <div class="feature-card">
+          <h3>FTC Compliant</h3>
+          <p>Google review links are always visible. No gating, no blocking. Just honest customer choice.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Smart Analytics</h3>
+          <p>Track customer journeys, sentiment trends, and resolution success. Make data-driven decisions.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Easy Integration</h3>
+          <p>Generate unique links for each customer. Share via email, SMS, or QR code. Simple and effective.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Privacy Focused</h3>
+          <p>Your customer data stays yours. No third-party sharing. Built with privacy in mind.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>TrustLoop - Customer Experience Resolution Engine</p>
+  </footer>
+</body>
+</html>

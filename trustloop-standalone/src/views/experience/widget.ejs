@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How was your experience? - <%= businessName %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #0F766E;
+      --color-primary-dark: #0D5D56;
+      --color-primary-light: #14B8A6;
+      --color-success: #10B981;
+      --color-warning: #F59E0B;
+      --color-gray-50: #F8FAFC;
+      --color-gray-100: #F1F5F9;
+      --color-gray-200: #E2E8F0;
+      --color-gray-500: #64748B;
+      --color-gray-700: #334155;
+      --color-gray-900: #0F172A;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, var(--color-primary) 0%, #1E293B 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .widget-container {
+      background: white;
+      border-radius: 1.5rem;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+    }
+
+    .widget-header {
+      background: var(--color-gray-50);
+      padding: 1.5rem 2rem;
+      text-align: center;
+      border-bottom: 1px solid var(--color-gray-200);
+    }
+
+    .business-name {
+      font-size: 0.875rem;
+      color: var(--color-gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    .widget-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-gray-900);
+    }
+
+    .widget-body {
+      padding: 2rem;
+    }
+
+    /* Step: Sentiment Selection */
+    .step {
+      display: none;
+    }
+
+    .step.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .sentiment-question {
+      text-align: center;
+      font-size: 1.125rem;
+      color: var(--color-gray-700);
+      margin-bottom: 1.5rem;
+    }
+
+    .sentiment-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .sentiment-btn {
+      flex: 1;
+      padding: 1.25rem 1rem;
+      border: 2px solid var(--color-gray-200);
+      border-radius: 1rem;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .sentiment-btn:hover {
+      border-color: var(--color-primary);
+      background: var(--color-gray-50);
+    }
+
+    .sentiment-btn.positive:hover {
+      border-color: var(--color-success);
+    }
+
+    .sentiment-btn.negative:hover {
+      border-color: var(--color-warning);
+    }
+
+    .sentiment-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .sentiment-label {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-gray-700);
+    }
+
+    /* Step: Positive - Review Request */
+    .review-section {
+      text-align: center;
+    }
+
+    .thank-you {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-success);
+      margin-bottom: 0.5rem;
+    }
+
+    .review-text {
+      color: var(--color-gray-500);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .google-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 1rem 1.5rem;
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .google-btn:hover {
+      background: var(--color-primary-dark);
+    }
+
+    .google-btn svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* Step: Negative - Resolution */
+    .resolution-section {
+      text-align: center;
+    }
+
+    .sorry-text {
+      font-size: 1.125rem;
+      color: var(--color-gray-700);
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+
+    .contact-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .contact-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 1rem;
+      background: var(--color-gray-100);
+      border: 1px solid var(--color-gray-200);
+      border-radius: 0.75rem;
+      color: var(--color-gray-700);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .contact-btn:hover {
+      background: var(--color-gray-200);
+    }
+
+    /* FTC COMPLIANCE: Google link ALWAYS visible */
+    .secondary-action {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--color-gray-200);
+      text-align: center;
+    }
+
+    .secondary-link {
+      color: var(--color-gray-500);
+      font-size: 0.875rem;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .secondary-link:hover {
+      color: var(--color-primary);
+    }
+
+    /* Completed State */
+    .completed-section {
+      text-align: center;
+    }
+
+    .completed-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .completed-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-gray-900);
+      margin-bottom: 0.5rem;
+    }
+
+    .completed-text {
+      color: var(--color-gray-500);
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 480px) {
+      .widget-body { padding: 1.5rem; }
+      .sentiment-buttons { flex-direction: column; }
+      .sentiment-btn { padding: 1rem; }
+      .sentiment-icon { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="widget-container">
+    <div class="widget-header">
+      <div class="business-name"><%= businessName %></div>
+      <h1 class="widget-title">How was your experience?</h1>
+    </div>
+
+    <div class="widget-body">
+      <!-- Step 1: Sentiment Selection -->
+      <div id="step-sentiment" class="step active">
+        <p class="sentiment-question">We'd love to hear about your experience</p>
+        <div class="sentiment-buttons">
+          <button class="sentiment-btn positive" onclick="selectSentiment('positive')">
+            <div class="sentiment-icon">&#128515;</div>
+            <div class="sentiment-label">Great!</div>
+          </button>
+          <button class="sentiment-btn negative" onclick="selectSentiment('negative')">
+            <div class="sentiment-icon">&#128533;</div>
+            <div class="sentiment-label">I had an issue</div>
+          </button>
+        </div>
+
+        <!-- FTC COMPLIANCE: Google link always visible, even on first step -->
+        <div class="secondary-action">
+          <a href="<%= googleReviewUrl %>" target="_blank" rel="noopener noreferrer" class="secondary-link" onclick="trackGoogleClick()">
+            Or leave public feedback on Google
+          </a>
+        </div>
+      </div>
+
+      <!-- Step 2a: Positive Sentiment - Review Request -->
+      <div id="step-positive" class="step">
+        <div class="review-section">
+          <div class="thank-you">Thank you!</div>
+          <p class="review-text">
+            We're so glad you had a great experience. Would you mind sharing your feedback on Google? It helps others discover us.
+          </p>
+          <a href="<%= googleReviewUrl %>" target="_blank" rel="noopener noreferrer" class="google-btn" onclick="trackGoogleClick()">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Leave a Google Review
+          </a>
+        </div>
+      </div>
+
+      <!-- Step 2b: Negative Sentiment - Resolution -->
+      <div id="step-negative" class="step">
+        <div class="resolution-section">
+          <p class="sorry-text">
+            We're sorry to hear that. We'd love the chance to make it right. Please reach out to us directly:
+          </p>
+
+          <div class="contact-options">
+            <% if (supportEmail) { %>
+              <a href="mailto:<%= supportEmail %>" class="contact-btn" onclick="trackResolution()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+                Email Us
+              </a>
+            <% } %>
+
+            <% if (supportPhone) { %>
+              <a href="tel:<%= supportPhone %>" class="contact-btn" onclick="trackResolution()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                Call Us
+              </a>
+            <% } %>
+          </div>
+
+          <!-- FTC COMPLIANCE: Google link always visible -->
+          <div class="secondary-action">
+            <a href="<%= googleReviewUrl %>" target="_blank" rel="noopener noreferrer" class="secondary-link" onclick="trackGoogleClick()">
+              Or leave public feedback on Google
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Completed -->
+      <div id="step-completed" class="step">
+        <div class="completed-section">
+          <div class="completed-icon">&#10003;</div>
+          <div class="completed-title">Thank you for your feedback!</div>
+          <p class="completed-text">We appreciate you taking the time to share your experience.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = '<%= token %>';
+    const currentState = '<%= currentState %>';
+
+    // Resume from previous state if any
+    if (currentState === 'SENTIMENT_POSITIVE') {
+      showStep('positive');
+    } else if (currentState === 'SENTIMENT_NEGATIVE') {
+      showStep('negative');
+    } else if (currentState === 'COMPLETED' || currentState === 'RESOLUTION_ACCEPTED') {
+      showStep('completed');
+    }
+
+    function showStep(stepName) {
+      document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+      document.getElementById('step-' + stepName).classList.add('active');
+    }
+
+    async function selectSentiment(sentiment) {
+      try {
+        const response = await fetch('/experience/' + token + '/sentiment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sentiment })
+        });
+
+        if (response.ok) {
+          showStep(sentiment);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    async function trackGoogleClick() {
+      try {
+        await fetch('/experience/' + token + '/google-click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        console.error('Error tracking click:', error);
+      }
+    }
+
+    async function trackResolution() {
+      try {
+        await fetch('/experience/' + token + '/resolution', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accepted: true })
+        });
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics - TrustLoop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --color-primary: #0F766E; --color-primary-dark: #0D5D56; --color-success: #10B981; --color-warning: #F59E0B; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #F1F5F9; min-height: 100vh; }
+    .nav { background: white; border-bottom: 1px solid #E2E8F0; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    .nav-brand { font-size: 1.25rem; font-weight: 700; color: var(--color-primary); text-decoration: none; }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-link { color: #64748B; text-decoration: none; font-size: 0.875rem; font-weight: 500; }
+    .nav-link:hover, .nav-link.active { color: var(--color-primary); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+    .page-header { margin-bottom: 2rem; }
+    .page-title { font-size: 1.5rem; color: #1E293B; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+    .card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .card-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid #E2E8F0; }
+    .card-title { font-size: 1rem; font-weight: 600; color: #1E293B; }
+    .card-body { padding: 1.5rem; }
+    .stat-list { list-style: none; }
+    .stat-item { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #F1F5F9; }
+    .stat-item:last-child { border-bottom: none; }
+    .stat-label { color: #64748B; font-size: 0.875rem; }
+    .stat-value { font-weight: 600; color: #1E293B; }
+    .stat-value.positive { color: var(--color-success); }
+    .stat-value.warning { color: var(--color-warning); }
+    .empty-state { text-align: center; color: #64748B; padding: 2rem; }
+    .bar-chart { margin-top: 1rem; }
+    .bar-item { display: flex; align-items: center; margin-bottom: 0.75rem; }
+    .bar-label { width: 120px; font-size: 0.75rem; color: #64748B; text-transform: uppercase; }
+    .bar-container { flex: 1; height: 24px; background: #F1F5F9; border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--color-primary); border-radius: 4px; transition: width 0.3s; }
+    .bar-value { width: 50px; text-align: right; font-size: 0.875rem; font-weight: 600; color: #1E293B; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/dashboard" class="nav-brand">TrustLoop</a>
+    <div class="nav-links">
+      <a href="/dashboard" class="nav-link">Dashboard</a>
+      <a href="/dashboard/customers" class="nav-link">Customers</a>
+      <a href="/dashboard/analytics" class="nav-link active">Analytics</a>
+      <a href="/dashboard/settings" class="nav-link">Settings</a>
+      <a href="/auth/logout" class="nav-link">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h1 class="page-title">Analytics</h1>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Journey States</h2>
+        </div>
+        <div class="card-body">
+          <% if (stateStats.length === 0) { %>
+            <div class="empty-state">No journey data yet</div>
+          <% } else { %>
+            <%
+              const total = stateStats.reduce((sum, s) => sum + parseInt(s.count), 0);
+            %>
+            <div class="bar-chart">
+              <% stateStats.forEach(stat => { %>
+                <div class="bar-item">
+                  <div class="bar-label"><%= stat.current_state.replace('_', ' ') %></div>
+                  <div class="bar-container">
+                    <div class="bar-fill" style="width: <%= (stat.count / total * 100) %>%"></div>
+                  </div>
+                  <div class="bar-value"><%= stat.count %></div>
+                </div>
+              <% }); %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Last 30 Days</h2>
+        </div>
+        <div class="card-body">
+          <% if (dailyStats.length === 0) { %>
+            <div class="empty-state">No data for this period</div>
+          <% } else { %>
+            <ul class="stat-list">
+              <% dailyStats.slice(-10).forEach(day => { %>
+                <li class="stat-item">
+                  <span class="stat-label"><%= new Date(day.date).toLocaleDateString() %></span>
+                  <span class="stat-value"><%= day.count %> journeys</span>
+                </li>
+              <% }); %>
+            </ul>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
